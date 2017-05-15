@@ -1,0 +1,41 @@
+<component name="libraryTable">
+  <library name="GOPATH &lt;adder&gt;">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../../git.gdsx.com" />
+      <root url="file://$PROJECT_DIR$/../../../code.google.com" />
+      <root url="file://$PROJECT_DIR$/../../../github.com" />
+      <root url="file://$PROJECT_DIR$/../.." />
+      <root url="file://$PROJECT_DIR$/../../../golang.org" />
+      <root url="file://$PROJECT_DIR$/../../../scratch" />
+      <root url="file://$PROJECT_DIR$/../../../hellowho" />
+      <root url="file://$PROJECT_DIR$/../../../go60" />
+      <root url="file://$PROJECT_DIR$/../../../test2" />
+      <root url="file://$PROJECT_DIR$/../../../test3" />
+      <root url="file://$PROJECT_DIR$/../../../gostuff" />
+      <root url="file://$PROJECT_DIR$/../../../hello" />
+      <root url="file://$PROJECT_DIR$/../../../sourcegraph.com" />
+      <root url="file://$PROJECT_DIR$/../../../go59" />
+      <root url="file://$PROJECT_DIR$/../../../caleb1" />
+    </CLASSES>
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../../../git.gdsx.com" />
+      <root url="file://$PROJECT_DIR$/../../../code.google.com" />
+      <root url="file://$PROJECT_DIR$/../../../github.com" />
+      <root url="file://$PROJECT_DIR$/../.." />
+      <root url="file://$PROJECT_DIR$/../../../golang.org" />
+      <root url="file://$PROJECT_DIR$/../../../scratch" />
+      <root url="file://$PROJECT_DIR$/../../../hellowho" />
+      <root url="file://$PROJECT_DIR$/../../../go60" />
+      <root url="file://$PROJECT_DIR$/../../../test2" />
+      <root url="file://$PROJECT_DIR$/../../../test3" />
+      <root url="file://$PROJECT_DIR$/../../../gostuff" />
+      <root url="file://$PROJECT_DIR$/../../../hello" />
+      <root url="file://$PROJECT_DIR$/../../../sourcegraph.com" />
+      <root url="file://$PROJECT_DIR$/../../../go59" />
+      <root url="file://$PROJECT_DIR$/../../../caleb1" />
+    </SOURCES>
+    <excluded>
+      <root url="file://$PROJECT_DIR$" />
+    </excluded>
+  </library>
+</component>
