@@ -1,31 +1,5 @@
 package circuit
 
-// Contact that is receiving power if ANY source is emitting power
-type orContact struct {
-	sources []emitter
-}
-
-func newORContact(emitters ...emitter) *orContact {
-	c := &orContact{}
-
-	for _, e := range emitters {
-		c.sources = append(c.sources, e)
-	}
-
-	return c
-}
-
-// Emitting returns true if any of its tracked power sources are emitting power
-func (c *orContact) Emitting() bool {
-	for _, s := range c.sources {
-		if s != nil && s.Emitting() {
-			return true
-		}
-	}
-
-	return false
-}
-
 type andContact struct {
 	sources []emitter
 }

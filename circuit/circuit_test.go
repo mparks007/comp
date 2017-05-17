@@ -6,37 +6,6 @@ import (
 	"testing"
 )
 
-func TestORContact(t *testing.T) {
-	testCases := []struct {
-		sources []emitter
-		want    bool
-	}{
-		{[]emitter{nil}, false},
-		{[]emitter{&battery{}}, true},
-		{[]emitter{nil, nil}, false},
-		{[]emitter{&battery{}, nil}, true},
-		{[]emitter{nil, &battery{}}, true},
-		{[]emitter{&battery{}, &battery{}}, true},
-	}
-
-	stringFromSources := func(sources []emitter) string {
-		str := ""
-		for _, s := range sources {
-			str += fmt.Sprintf("%T,", s)
-		}
-		return str
-	}
-
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting sources to %s", stringFromSources(tc.sources)), func(t *testing.T) {
-			p := newORContact(tc.sources...)
-			if got := p.Emitting(); got != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got)
-			}
-		})
-	}
-}
-
 func TestANDContact(t *testing.T) {
 	testCases := []struct {
 		sources []emitter
@@ -386,7 +355,7 @@ func TestSixteenBitAdder_BadInputs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s", tc.bytes1, tc.bytes2), func(t *testing.T) {
-			a, err := newSixteenBitAdder(tc.bytes1, tc.bytes2, nil)
+			a, err := NewSixteenBitAdder(tc.bytes1, tc.bytes2, nil)
 
 			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
 				t.Error("Unexpected error: " + err.Error())
@@ -421,11 +390,12 @@ func TestSixteenBitAdder_GoodInputs(t *testing.T) {
 		{"0000000001111111", "0000000011111111", &battery{}, "0000000101111111", false},
 		{"1010101010101010", "0101010101010101", nil, "1111111111111111", false},
 		{"1010101010101010", "0101010101010101", &battery{}, "10000000000000000", true},
+		{"1001110110011101", "1101011011010110", nil, "10111010001110011", true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", tc.bytes1, tc.bytes2, tc.carryIn), func(t *testing.T) {
-			a, err := newSixteenBitAdder(tc.bytes1, tc.bytes2, tc.carryIn)
+			a, err := NewSixteenBitAdder(tc.bytes1, tc.bytes2, tc.carryIn)
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())

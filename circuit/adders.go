@@ -102,7 +102,7 @@ func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, err
 		if i == 7 {
 			f = newFullAdder(pin1, pin2, carryIn)
 		} else {
-			f = newFullAdder(pin1, pin2, a.fullAdders[i+1].carry)
+			f = newFullAdder(pin1, pin2, a.fullAdders[i+1].carry) // carry-in is the neighboring adders carry-out
 		}
 
 		a.fullAdders[i] = f
@@ -122,10 +122,6 @@ func (a *EightbitAdder) String() string {
 
 	for _, v := range a.fullAdders {
 
-		//		if i == 0 && v.carry.Emitting() {
-		//answer += "1"
-		//}
-
 		if v.sum.Emitting() {
 			answer += "1"
 		} else {
@@ -136,9 +132,11 @@ func (a *EightbitAdder) String() string {
 	return answer
 }
 
-/**********************************/
-/*********** 16bitAdder ***********/
-/**********************************/
+// 16-bit Adder
+// Handles a Carry bit in from the far right, chains the two, inner half-adder on a Carry, and holds potential Carry bit after summing all 16 bits
+//    1001110110011101
+// +  1101011011010110
+// = 10111010001110011
 
 type SixteenBitAdder struct {
 	rightAdder *EightbitAdder
@@ -146,7 +144,7 @@ type SixteenBitAdder struct {
 	carryOut   emitter
 }
 
-func newSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdder, error) {
+func NewSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdder, error) {
 	match, err := regexp.MatchString("[01]{16}", bytes1)
 	if err != nil {
 		return nil, err
