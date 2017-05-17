@@ -1,608 +1,449 @@
 package circuit
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
-/**********************************/
-/*************** Pin **************/
-/**********************************/
+func TestORContact(t *testing.T) {
+	testCases := []struct {
+		sources []emitter
+		want    bool
+	}{
+		{[]emitter{nil}, false},
+		{[]emitter{&battery{}}, true},
+		{[]emitter{nil, nil}, false},
+		{[]emitter{&battery{}, nil}, true},
+		{[]emitter{nil, &battery{}}, true},
+		{[]emitter{&battery{}, &battery{}}, true},
+	}
 
-func TestPin_InPin_NoPower(t *testing.T) {
-	p := inPin{}
+	stringFromSources := func(sources []emitter) string {
+		str := ""
+		for _, s := range sources {
+			str += fmt.Sprintf("%T,", s)
+		}
+		return str
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an input pin, with no power supplied, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting sources to %s", stringFromSources(tc.sources)), func(t *testing.T) {
+			p := newORContact(tc.sources...)
+			if got := p.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_InPin_HasPower(t *testing.T) {
-	p := inPin{&battery{}}
+func TestANDContact(t *testing.T) {
+	testCases := []struct {
+		sources []emitter
+		want    bool
+	}{
+		{[]emitter{nil}, false},
+		{[]emitter{&battery{}}, true},
+		{[]emitter{nil, nil}, false},
+		{[]emitter{&battery{}, nil}, false},
+		{[]emitter{nil, &battery{}}, false},
+		{[]emitter{&battery{}, &battery{}}, true},
+	}
 
-	want := true
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an input pin, with power supplied, to return power (on)")
+	stringFromSources := func(sources []emitter) string {
+		str := ""
+		for _, s := range sources {
+			str += fmt.Sprintf("%T,", s)
+		}
+		return str
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting sources to %s", stringFromSources(tc.sources)), func(t *testing.T) {
+			p := newANDContact(tc.sources...)
+			if got := p.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
+	}
+}
+func TestXContact(t *testing.T) {
+	testCases := []struct {
+		sourceA emitter
+		sourceB emitter
+		want    bool
+	}{
+		{nil, nil, false},
+		{&battery{}, nil, true},
+		{nil, &battery{}, false},
+		{&battery{}, &battery{}, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting source A to %T and source B to %T", tc.sourceA, tc.sourceB), func(t *testing.T) {
+			p := xContact{tc.sourceA, tc.sourceB}
+
+			if got := p.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutOpenPin_NoPower(t *testing.T) {
-	p := outOpenPin{}
+func TestRelay(t *testing.T) {
+	testCases := []struct {
+		aIn          emitter
+		bIn          emitter
+		wantAtOpen   bool
+		wantAtClosed bool
+	}{
+		{nil, nil, false, false},
+		{&battery{}, nil, true, false},
+		{nil, &battery{}, false, false},
+		{&battery{}, &battery{}, false, true},
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (open) pin, with no power supplied at either source pin, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			r := newRelay(tc.aIn, tc.bIn)
+
+			if got := r.openOut.Emitting(); got != tc.wantAtOpen {
+				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, got)
+			}
+
+			if got := r.closedOut.Emitting(); got != tc.wantAtClosed {
+				t.Errorf("Wanted power at the closed position to be %t, but got %t", tc.wantAtClosed, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutOpenPin_SourceAPowerOnly_HasPower(t *testing.T) {
-	p := outOpenPin{&battery{}, nil}
+func TestANDGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, false},
+		{&battery{}, nil, false},
+		{nil, &battery{}, false},
+		{&battery{}, &battery{}, true},
+	}
 
-	want := true
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (open) pin, with power supplied only at source pin A, to return power (on)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newANDGate(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutOpenPin_SourceBPowerOnly_NoPower(t *testing.T) {
-	p := outOpenPin{nil, &battery{}}
+func TestORGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, false},
+		{&battery{}, nil, true},
+		{nil, &battery{}, true},
+		{&battery{}, &battery{}, true},
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (open) pin, with power supplied only at source pin B, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newORGate(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutOpenPin_BothSourcesPowered_NoPower(t *testing.T) {
-	p := outOpenPin{&battery{}, &battery{}}
+func TestNANDGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, true},
+		{&battery{}, nil, true},
+		{nil, &battery{}, true},
+		{&battery{}, &battery{}, false},
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (open) pin, with power supplied to both source pins, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newNANDGate(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutClosedPin_NoPower(t *testing.T) {
-	p := outClosedPin{}
+func TestNORGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, true},
+		{&battery{}, nil, false},
+		{nil, &battery{}, false},
+		{&battery{}, &battery{}, false},
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (closed) pin, with no power supplied at either source pin, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newNORGate(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutClosedPin_SourceAPowerOnly_HasPower(t *testing.T) {
-	p := outClosedPin{&battery{}, nil}
+func TestXORGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, false},
+		{&battery{}, nil, true},
+		{nil, &battery{}, true},
+		{&battery{}, &battery{}, false},
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (closed) pin, with power supplied only at source pin A, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newXORGate(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutClosedPin_SourceBPowerOnly_NoPower(t *testing.T) {
-	p := outClosedPin{nil, &battery{}}
+func TestHalfAdder(t *testing.T) {
+	testCases := []struct {
+		aIn       emitter
+		bIn       emitter
+		wantSum   bool
+		wantCarry bool
+	}{
+		{nil, nil, false, false},
+		{&battery{}, nil, true, false},
+		{nil, &battery{}, true, false},
+		{&battery{}, &battery{}, false, true},
+	}
 
-	want := false
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (closed) pin, with power supplied only at source pin B, to return no power (off)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input source A to %T and source B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			h := newHalfAdder(tc.aIn, tc.bIn)
+
+			if got := h.sum.Emitting(); got != tc.wantSum {
+				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, got)
+			}
+
+			if got := h.carry.Emitting(); got != tc.wantCarry {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarry, got)
+			}
+		})
 	}
 }
 
-func TestPin_OutClosedPin_BothSourcesPowered_NoPower(t *testing.T) {
-	p := outClosedPin{&battery{}, &battery{}}
+func TestFullAdder(t *testing.T) {
+	testCases := []struct {
+		aIn       emitter
+		bIn       emitter
+		carryIn   emitter
+		wantSum   bool
+		wantCarry bool
+	}{
+		{nil, nil, nil, false, false},
+		{&battery{}, nil, nil, true, false},
+		{&battery{}, &battery{}, nil, false, true},
+		{&battery{}, &battery{}, &battery{}, true, true},
+		{nil, &battery{}, nil, true, false},
+		{nil, &battery{}, &battery{}, false, true},
+		{nil, nil, &battery{}, true, false},
+		{&battery{}, nil, &battery{}, false, true},
+	}
 
-	want := true
-	got := p.Emitting()
-	if got != want {
-		t.Error("Expected an out (closed) pin, with power supplied to both source pins, to return power (on)")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input source A to %T and source B to %T with carry in of %T", tc.aIn, tc.bIn, tc.carryIn), func(t *testing.T) {
+			h := newFullAdder(tc.aIn, tc.bIn, tc.carryIn)
+
+			if got := h.sum.Emitting(); got != tc.wantSum {
+				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, got)
+			}
+
+			if got := h.carry.Emitting(); got != tc.wantCarry {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarry, got)
+			}
+		})
 	}
 }
 
-/**********************************/
-/************* Relay **************/
-/**********************************/
+func TestEightBitAdder_BadInputs(t *testing.T) {
+	testCases := []struct {
+		byte1     string
+		byte2     string
+		wantError string
+	}{
+		{"0000000", "00000000", "First input not in 8-bit binary format:"},  // only 7 bits on first byte
+		{"00000000", "0000000", "Second input not in 8-bit binary format:"}, // only 7 bits on second byte
+		{"bad", "00000000", "First input not in 8-bit binary format:"},
+		{"00000000", "bad", "Second input not in 8-bit binary format:"},
+		{"", "", "First input not in 8-bit binary format:"},
+	}
 
-func TestRelay_AInPowerOnly_HasOpenPowerOnly(t *testing.T) {
-	r := newRelay(&battery{}, nil)
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
+			a, err := NewEightBitAdder(tc.byte1, tc.byte2, nil)
 
-	want := true
-	got := r.emittingOpen() && !r.emittingClosed()
-	if got != want {
-		t.Error("Expected a relay, with a battery only on AIn, to output power out the open position and only out that position.")
+			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
+				t.Error("Unexpected error: " + err.Error())
+				return // expecting to have a nil adder here so cannot do further tests using one
+			}
+
+			if a != nil {
+				t.Error("Did not expect an adder to return due to bad inputs, but got one.")
+			}
+		})
 	}
 }
 
-func TestRelay_BInPowerOnly_HasNoPower(t *testing.T) {
-	r := newRelay(nil, &battery{})
+func TestEightBitAdder_GoodInputs(t *testing.T) {
+	testCases := []struct {
+		byte1        string
+		byte2        string
+		carryIn      emitter
+		wantAnswer   string
+		wantCarryOut bool
+	}{
+		{"00000000", "00000000", nil, "00000000", false},
+		{"00000001", "00000000", nil, "00000001", false},
+		{"00000000", "00000001", nil, "00000001", false},
+		{"00000001", "00000000", &battery{}, "00000010", false},
+		{"00000000", "00000001", &battery{}, "00000010", false},
+		{"10000000", "10000000", nil, "100000000", true},
+		{"10000001", "10000000", nil, "100000001", true},
+		{"11111111", "11111111", nil, "111111110", true},
+		{"11111111", "11111111", &battery{}, "111111111", true},
+		{"01111111", "11111111", nil, "101111110", true},
+		{"01111111", "11111111", &battery{}, "101111111", true},
+		{"10101010", "01010101", nil, "11111111", false},
+		{"10101010", "01010101", &battery{}, "100000000", true},
+	}
 
-	want := false
-	got := r.emittingOpen() || r.emittingClosed()
-	if got != want {
-		t.Error("Expected a relay, with a battery only on BIn, to output no power.")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", tc.byte1, tc.byte2, tc.carryIn), func(t *testing.T) {
+			a, err := NewEightBitAdder(tc.byte1, tc.byte2, tc.carryIn)
+
+			if err != nil {
+				t.Error("Unexpected error: " + err.Error())
+				return // on error, expecting to have a nil adder here so cannot do further tests using one
+			}
+
+			if a == nil {
+				t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+				return // cannot continue tests if no adder to test
+			}
+
+			if got := a.String(); got != tc.wantAnswer {
+				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
+			}
+
+			if got := a.carryOut.Emitting(); got != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, got)
+			}
+		})
 	}
 }
 
-func TestRelay_AInAndBInPower_HasClosedPowerOnly(t *testing.T) {
-	r := newRelay(&battery{}, &battery{})
+func TestSixteenBitAdder_BadInputs(t *testing.T) {
+	testCases := []struct {
+		bytes1    string
+		bytes2    string
+		wantError string
+	}{
+		{"000000000000000", "0000000000000000", "First input not in 16-bit binary format:"},  // only 15 bits on first byte
+		{"0000000000000000", "000000000000000", "Second input not in 16-bit binary format:"}, // only 15 bits on second byte
+		{"bad", "0000000000000000", "First input not in 16-bit binary format:"},
+		{"0000000000000000", "bad", "Second input not in 16-bit binary format:"},
+		{"", "", "First input not in 16-bit binary format:"},
+	}
 
-	want := true
-	got := r.emittingClosed() && !r.emittingOpen()
-	if got != want {
-		t.Error("Expected a relay, with a battery on AIn and BIn, to output power out the closed position and only out that position.")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s", tc.bytes1, tc.bytes2), func(t *testing.T) {
+			a, err := newSixteenBitAdder(tc.bytes1, tc.bytes2, nil)
+
+			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
+				t.Error("Unexpected error: " + err.Error())
+				return // expecting to have a nil adder here so cannot do further tests using one
+			}
+
+			if a != nil {
+				t.Error("Did not expect an adder to return due to bad inputs, but got one.")
+			}
+		})
 	}
 }
 
-func TestRelay_AInAndBInNoPower_HasNoPower(t *testing.T) {
-	r := &relay{}
+func TestSixteenBitAdder_GoodInputs(t *testing.T) {
+	testCases := []struct {
+		bytes1       string
+		bytes2       string
+		carryIn      emitter
+		wantAnswer   string
+		wantCarryOut bool
+	}{
+		{"0000000000000000", "0000000000000000", nil, "0000000000000000", false},
+		{"0000000000000001", "0000000000000000", nil, "0000000000000001", false},
+		{"0000000000000000", "0000000000000001", nil, "0000000000000001", false},
+		{"0000000000000001", "0000000000000000", &battery{}, "0000000000000010", false},
+		{"0000000000000000", "0000000000000001", &battery{}, "0000000000000010", false},
+		{"1000000000000000", "1000000000000000", nil, "10000000000000000", true},
+		{"1000000000000001", "1000000000000000", nil, "10000000000000001", true},
+		{"1111111111111111", "1111111111111111", nil, "11111111111111110", true},
+		{"1111111111111111", "1111111111111111", &battery{}, "11111111111111111", true},
+		{"0000000001111111", "0000000011111111", nil, "0000000101111110", false},
+		{"0000000001111111", "0000000011111111", &battery{}, "0000000101111111", false},
+		{"1010101010101010", "0101010101010101", nil, "1111111111111111", false},
+		{"1010101010101010", "0101010101010101", &battery{}, "10000000000000000", true},
+	}
 
-	want := false
-	got := r.emittingOpen() || r.emittingClosed()
-	if got != want {
-		t.Error("Expected a relay, with no input power, to output no power.")
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", tc.bytes1, tc.bytes2, tc.carryIn), func(t *testing.T) {
+			a, err := newSixteenBitAdder(tc.bytes1, tc.bytes2, tc.carryIn)
+
+			if err != nil {
+				t.Error("Unexpected error: " + err.Error())
+				return // on error, expecting to have a nil adder here so cannot do further tests using one
+			}
+
+			if a == nil {
+				t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+				return // cannot continue tests if no adder to test
+			}
+
+			if got := a.String(); got != tc.wantAnswer {
+				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
+			}
+
+			if got := a.carryOut.Emitting(); got != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, got)
+			}
+		})
 	}
 }
-
-/**********************************/
-/************** AND ***************/
-/**********************************/
-
-func TestANDGate_BothInputsUnpowered_NoPower(t *testing.T) {
-	g := newANDGate(nil, nil)
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an AND gate, with no powered inputs, to output no power (off).")
-	}
-}
-
-func TestANDGate_OnlyFirstInputPowered_NoPower(t *testing.T) {
-	g := newANDGate(&battery{}, nil)
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an AND gate, with only its first input pin powered, to outuput no power (off).")
-	}
-}
-
-func TestANDGate_OnlySecondInputPowered_NoPower(t *testing.T) {
-	g := newANDGate(nil, &battery{})
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an AND gate, with only its second input pin powered, to output no power (off).")
-	}
-}
-
-func TestANDGate_BothInputsPowered_HasPower(t *testing.T) {
-	g := newANDGate(&battery{}, &battery{})
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an AND gate, with both its input pins powered, to output power (on).")
-	}
-}
-
-/**********************************/
-/*************  OR  ***************/
-/**********************************/
-
-func TestORGate_BothInputsUnpowered_NoPower(t *testing.T) {
-	g := newORGate(nil, nil)
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an OR gate, with no powered inputs, to output no power (off).")
-	}
-}
-
-func TestORGate_OnlyFirstInputPowered_HasPower(t *testing.T) {
-	g := newORGate(&battery{}, nil)
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an OR gate, with only its first input pin powered, to output power (on).")
-	}
-}
-
-func TestORGate_OnlySecondInputPowered_HasPower(t *testing.T) {
-	g := newORGate(nil, &battery{})
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an OR gate, with only its second input pin powered, to output power (on).")
-	}
-}
-
-func TestORGate_BothInputsPowered_HasPower(t *testing.T) {
-	g := newORGate(&battery{}, &battery{})
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an OR gate, with both its input pins powered, to output power (on).")
-	}
-}
-
-/**********************************/
-/************* NAND ***************/
-/**********************************/
-
-func TestNANDGate_BothInputsUnpowered_HasPower(t *testing.T) {
-	g := newNANDGate(nil, nil)
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NAND gate, with no powered inputs, to output power (on).")
-	}
-}
-
-func TestNANDGate_OnlyFirstInputPowered_HasPower(t *testing.T) {
-	g := newNANDGate(&battery{}, nil)
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NAND gate, with only its first input pin powered, to outuput power (on).")
-	}
-}
-
-func TestNANDGate_OnlySecondInputPowered_HasPower(t *testing.T) {
-	g := newNANDGate(nil, &battery{})
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NAND gate, with only its second input pin powered, to output power (on).")
-	}
-}
-
-func TestNANDGate_BothInputsPowered_NoPower(t *testing.T) {
-	g := newNANDGate(&battery{}, &battery{})
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NAND gate, with both its input pins powered, to output no power (off).")
-	}
-}
-
-/**********************************/
-/************** NOR ***************/
-/**********************************/
-
-func TestNORGate_BothInputsUnpowered_HasPower(t *testing.T) {
-	g := newNORGate(nil, nil)
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NOR gate, with no powered inputs, to output power (on).")
-	}
-}
-
-func TestNORGate_OnlyFirstInputPowered_NoPower(t *testing.T) {
-	g := newNORGate(&battery{}, nil)
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NOR gate, with only its first input pin powered, to outuput no power (off).")
-	}
-}
-
-func TestNORGate_OnlySecondInputPowered_NoPower(t *testing.T) {
-	g := newNORGate(nil, &battery{})
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NOR gate, with only its second input pin powered, to output no power (off).")
-	}
-}
-
-func TestNORGate_BothInputsPowered_NoPower(t *testing.T) {
-	g := newNORGate(&battery{}, &battery{})
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected a NOR gate, with both its input pins powered, to output no power (off).")
-	}
-}
-
-/**********************************/
-/************** XOR ***************/
-/**********************************/
-
-func TestXORGate_BothInputsUnpowered_NoPower(t *testing.T) {
-	g := newXORGate(nil, nil)
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an XOR gate, with no powered inputs, to output no power (off).")
-	}
-}
-
-func TestXORGate_OnlyFirstInputPowered_HasPower(t *testing.T) {
-	g := newXORGate(&battery{}, nil)
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an XOR gate, with only its first input pin powered, to outuput power (on).")
-	}
-}
-
-func TestXORGate_OnlySecondInputPowered_HasPower(t *testing.T) {
-	g := newXORGate(nil, &battery{})
-
-	want := true
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an XOR gate, with only its second input pin powered, to output power (on).")
-	}
-}
-
-func TestXORGate_BothInputsPowered_NoPower(t *testing.T) {
-	g := newXORGate(&battery{}, &battery{})
-
-	want := false
-	got := g.Emitting()
-	if got != want {
-		t.Error("Expected an XOR gate, with both its input pins powered, to output no power (off).")
-	}
-}
-
-/*********************************/
-/********** HalfAdder ************/
-/*********************************/
-
-func TestHalfAdder_BothInputsUnPowered_NoSumNoCarry(t *testing.T) {
-	h := newHalfAdder(nil, nil)
-
-	want := false
-	got := h.Sum()
-	if got != want {
-		t.Error("Expected a HalfAdder, with both its input pins unpowered, to return no sum.")
-	}
-
-	want = false
-	got = h.Carry()
-	if got != want {
-		t.Error("Expected a HalfAdder, with both its input pins unpowered, to return no carry.")
-	}
-}
-
-func TestHalfAdder_OnlyFirstInputsPowered_YesSumNoCarry(t *testing.T) {
-	h := newHalfAdder(&battery{}, nil)
-
-	want := true
-	got := h.Sum()
-	if got != want {
-		t.Error("Expected a HalfAdder, with only its first input powered, to return a sum.")
-	}
-
-	want = false
-	got = h.Carry()
-	if got != want {
-		t.Error("Expected a HalfAdder, with only its first input powered, to return no carry.")
-	}
-}
-
-func TestHalfAdder_OnlySecondInputsPowered_YesSumNoCarry(t *testing.T) {
-	h := newHalfAdder(nil, &battery{})
-
-	want := true
-	got := h.Sum()
-	if got != want {
-		t.Error("Expected a HalfAdder, with only its second input powered, to return a sum.")
-	}
-
-	want = false
-	got = h.Carry()
-	if got != want {
-		t.Error("Expected a HalfAdder, with only its second input powered, to return no carry.")
-	}
-}
-
-func TestHalfAdder_BothInputsAsOnes_NoSumYesCarry(t *testing.T) {
-	h := newHalfAdder(&battery{}, &battery{})
-
-	want := false
-	got := h.Sum()
-	if got != want {
-		t.Error("Expected a HalfAdder, with both its input pins as ones, to return no sum.")
-	}
-
-	want = true
-	got = h.Carry()
-	if got != want {
-		t.Error("Expected a HalfAdder, with both its input pins as ones, to return a carry.")
-	}
-}
-
-/*********************************/
-/********** HalfAdder ************/
-/*********************************/
-
-func TestFullAdder_AllInputsUnPowered_NoSumNoCarry(t *testing.T) {
-	f := newFullAdder(nil, nil, nil)
-
-	want := false
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with all its input pins unpowered, to return no sum.")
-	}
-
-	want = false
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with all its input pins unpowered, to return no carry.")
-	}
-}
-
-func TestFullAdder_OnlyFirstInputPowered_YesSumNoCarry(t *testing.T) {
-	f := newFullAdder(&battery{}, nil, nil)
-
-	want := true
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with only its first input pins powered, to return a sum.")
-	}
-
-	want = false
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with only its first input pins powered, to return no carry.")
-	}
-}
-
-func TestFullAdder_OnlySecondInputPowered_YesSumNoCarry(t *testing.T) {
-	f := newFullAdder(nil, &battery{}, nil)
-
-	want := true
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with only its first input pins powered, to return a sum.")
-	}
-
-	want = false
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with only its first input pins powered, to return no carry.")
-	}
-}
-
-func TestFullAdder_OnlyCarryPowered_YesSumNoCarry(t *testing.T) {
-	f := newFullAdder(nil, nil, &battery{})
-
-	want := true
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with only its carry input pin powered, to return a sum.")
-	}
-
-	want = false
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with only its carry input pin powered, to return no carry.")
-	}
-}
-
-func TestFullAdder_FirstInputAndCarryPowered_NoSumYesCarry(t *testing.T) {
-	f := newFullAdder(&battery{}, nil, &battery{})
-
-	want := false
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with its first input and carry pins powered, to return no sum.")
-	}
-
-	want = true
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with its first input and carry pins powered, to return a carry.")
-	}
-}
-
-func TestFullAdder_OnlySecondInputAndCarryPowered_NoSumYesCarry(t *testing.T) {
-	f := newFullAdder(nil, &battery{}, &battery{})
-
-	want := false
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with its second input and carry pins powered, to return no sum.")
-	}
-
-	want = true
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with its second input and carry pins powered, to return carry.")
-	}
-}
-
-func TestFullAdder_AllInputsPowered_YesSumYesCarry(t *testing.T) {
-	f := newFullAdder(&battery{}, &battery{}, &battery{})
-
-	want := true
-	got := f.Sum()
-	if got != want {
-		t.Error("Expected a FullAdder, with all its input pins powered, to return a sum.")
-	}
-
-	want = true
-	got = f.Carry()
-	if got != want {
-		t.Error("Expected a FullAdder, with all its input pins powered, to return a carry.")
-	}
-}
-
-/*********************************/
-/*********** bitsAdder ***********/
-/*********************************/
-/*
-func TestBitAdder_ThreeBitAllZeros_ZeroSum(t *testing.T) {
-	b := NewBitAdder("000", "000")
-
-	want := "000"
-	got := b.String()
-	if got != want {
-		t.Errorf("Adding three zeros to three zeros.  Wanted %v, got %v", want, got)
-	}
-}
-
-func TestBitAdder_ThreeBitAllOnes_ZeroSum(t *testing.T) {
-	b := NewBitAdder("111", "111")
-
-	want := "1000"
-	got := b.String()
-	if got != want {
-		t.Errorf("Adding three bits to three bits.  Wanted %v, got %v", want, got)
-	}
-}
-
-//    0110011101
-// +  1011010110
-// = 10001110011
-
-func TestBitAdder_TenBitNumbers_SumWithCarry(t *testing.T) {
-	b := NewBitAdder("0110011101", "1011010110")
-
-	want := "10001110011"
-	got := b.String()
-	if got != want {
-		t.Errorf("Adding two, 10 bit numbers with final carry.  Wanted %v, got %v", want, got)
-	}
-}
-
-//   0100011101
-// + 1011010110
-// = 1101110011
-
-func TestBitAdder_TenBitNumbers_SumWithNoCarry(t *testing.T) {
-	b := NewBitAdder("0100011101", "1011010110")
-
-	want := "1101110011"
-	got := b.String()
-	if got != want {
-		t.Errorf("Adding two, 10 bit numbers with no final carry.  Wanted %v, got %v", want, got)
-	}
-}
-*/

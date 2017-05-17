@@ -1,9 +1,6 @@
 package circuit
 
-/***********************************/
-/************** AND ****************/
-/***********************************/
-
+// AND
 // 0 0 0
 // 1 0 0
 // 0 1 0
@@ -14,7 +11,7 @@ type andGate struct {
 	relay2 *relay
 }
 
-func newANDGate(pin1 emitter, pin2 emitter) *andGate {
+func newANDGate(pin1, pin2 emitter) *andGate {
 	g := &andGate{}
 
 	g.relay1 = newRelay(&battery{}, pin1)
@@ -27,10 +24,7 @@ func (g *andGate) Emitting() bool {
 	return g.relay2.closedOut.Emitting()
 }
 
-/***********************************/
-/*************** OR ****************/
-/***********************************/
-
+// OR
 // 0 0 0
 // 1 0 1
 // 0 1 1
@@ -41,7 +35,7 @@ type orGate struct {
 	relay2 *relay
 }
 
-func newORGate(pin1 emitter, pin2 emitter) *orGate {
+func newORGate(pin1, pin2 emitter) *orGate {
 	return &orGate{
 		newRelay(&battery{}, pin1),
 		newRelay(&battery{}, pin2),
@@ -52,10 +46,7 @@ func (g *orGate) Emitting() bool {
 	return g.relay1.closedOut.Emitting() || g.relay2.closedOut.Emitting()
 }
 
-/***********************************/
-/************** NAND ***************/
-/***********************************/
-
+// NAND
 // 0 0 1
 // 1 0 1
 // 0 1 1
@@ -66,7 +57,7 @@ type nandGate struct {
 	relay2 *relay
 }
 
-func newNANDGate(pin1 emitter, pin2 emitter) *nandGate {
+func newNANDGate(pin1, pin2 emitter) *nandGate {
 	return &nandGate{
 		newRelay(&battery{}, pin1),
 		newRelay(&battery{}, pin2),
@@ -77,10 +68,7 @@ func (g *nandGate) Emitting() bool {
 	return g.relay1.openOut.Emitting() || g.relay2.openOut.Emitting()
 }
 
-/***********************************/
-/*************** NOR ***************/
-/***********************************/
-
+// NOR
 // 0 0 1
 // 1 0 0
 // 0 1 0
@@ -91,7 +79,7 @@ type norGate struct {
 	relay2 *relay
 }
 
-func newNORGate(pin1 emitter, pin2 emitter) *norGate {
+func newNORGate(pin1, pin2 emitter) *norGate {
 	g := &norGate{}
 
 	g.relay1 = newRelay(&battery{}, pin1)
@@ -104,10 +92,7 @@ func (g *norGate) Emitting() bool {
 	return g.relay2.openOut.Emitting()
 }
 
-/***********************************/
-/*************** XOR ***************/
-/***********************************/
-
+// XOR
 // 0 0 0
 // 1 0 1
 // 0 1 1
@@ -119,7 +104,7 @@ type xorGate struct {
 	andGate  emitter
 }
 
-func newXORGate(pin1 emitter, pin2 emitter) *xorGate {
+func newXORGate(pin1, pin2 emitter) *xorGate {
 	g := &xorGate{}
 
 	g.orGate = newORGate(pin1, pin2)

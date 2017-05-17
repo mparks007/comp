@@ -7,20 +7,11 @@ type relay struct {
 	closedOut emitter
 }
 
-func newRelay(a emitter, b emitter) *relay {
+func newRelay(pin1, pin2 emitter) *relay {
 	return &relay{
-		a,
-		b,
-		newOutOpenPin(a, b),
-		newOutClosedPin(a, b),
+		pin1,
+		pin2,
+		newXContact(pin1, pin2),
+		newANDContact(pin1, pin2),
 	}
-}
-
-// DELETE THESE TWO
-func (r *relay) emittingOpen() bool {
-	return r.openOut != nil && r.openOut.Emitting()
-}
-
-func (r *relay) emittingClosed() bool {
-	return r.closedOut != nil && r.closedOut.Emitting()
 }
