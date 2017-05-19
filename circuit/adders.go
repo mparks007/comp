@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sync"
 )
 
 // Half Adder
@@ -59,7 +60,7 @@ type EightbitAdder struct {
 }
 
 func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, error) {
-	match, err := regexp.MatchString("[01]{8}", byte1)
+	match, err := regexp.MatchString("^[01]{8}$", byte1)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, err
 		return nil, err
 	}
 
-	match, err = regexp.MatchString("[01]{8}", byte2)
+	match, err = regexp.MatchString("^[01]{8}$", byte2)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ type SixteenBitAdder struct {
 }
 
 func NewSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdder, error) {
-	match, err := regexp.MatchString("[01]{16}", bytes1)
+	match, err := regexp.MatchString("^[01]{16}$", bytes1)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,7 @@ func NewSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdde
 		return nil, err
 	}
 
-	match, err = regexp.MatchString("[01]{16}", bytes2)
+	match, err = regexp.MatchString("^[01]{16}$", bytes2)
 	if err != nil {
 		return nil, err
 	}
@@ -182,29 +183,44 @@ func NewSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdde
 }
 
 func (a *SixteenBitAdder) String() string {
-	answer := ""
+	answerCarry := ""
+	answerLeft := ""
+	answerRight := ""
 
 	if a.leftAdder.carryOut.Emitting() {
-		answer += "1"
+		answerCarry += "1"
 	}
 
-	for _, v := range a.leftAdder.fullAdders {
+	wg := &sync.WaitGroup{}
 
-		if v.sum.Emitting() {
-			answer += "1"
-		} else {
-			answer += "0"
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for _, v := range a.leftAdder.fullAdders {
+
+			if v.sum.Emitting() {
+				answerLeft += "1"
+			} else {
+				answerLeft += "0"
+			}
 		}
-	}
+	}()
 
-	for _, v := range a.rightAdder.fullAdders {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, v := range a.rightAdder.fullAdders {
 
-		if v.sum.Emitting() {
-			answer += "1"
-		} else {
-			answer += "0"
+			if v.sum.Emitting() {
+				answerRight += "1"
+			} else {
+				answerRight += "0"
+			}
 		}
-	}
+	}()
 
-	return answer
+	wg.Wait()
+
+	return answerCarry + answerLeft + answerRight
 }

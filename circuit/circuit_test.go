@@ -6,6 +6,9 @@ import (
 	"testing"
 )
 
+// go test
+// go test -v
+
 func TestANDContact(t *testing.T) {
 	testCases := []struct {
 		sources []emitter
@@ -36,6 +39,7 @@ func TestANDContact(t *testing.T) {
 		})
 	}
 }
+
 func TestXContact(t *testing.T) {
 	testCases := []struct {
 		sourceA emitter
@@ -274,6 +278,10 @@ func TestEightBitAdder_BadInputs(t *testing.T) {
 		{"bad", "00000000", "First input not in 8-bit binary format:"},
 		{"00000000", "bad", "Second input not in 8-bit binary format:"},
 		{"", "", "First input not in 8-bit binary format:"},
+		{"X00000000", "00000000", "First input not in 8-bit binary format:"},
+		{"00000000", "X00000000", "Second input not in 8-bit binary format:"},
+		{"00000000X", "00000000", "First input not in 8-bit binary format:"},
+		{"00000000", "00000000X", "Second input not in 8-bit binary format:"},
 	}
 
 	for _, tc := range testCases {
@@ -351,6 +359,10 @@ func TestSixteenBitAdder_BadInputs(t *testing.T) {
 		{"bad", "0000000000000000", "First input not in 16-bit binary format:"},
 		{"0000000000000000", "bad", "Second input not in 16-bit binary format:"},
 		{"", "", "First input not in 16-bit binary format:"},
+		{"X0000000000000000", "0000000000000000", "First input not in 16-bit binary format:"},
+		{"0000000000000000", "X0000000000000000", "Second input not in 16-bit binary format:"},
+		{"0000000000000000X", "0000000000000000", "First input not in 16-bit binary format:"},
+		{"0000000000000000", "0000000000000000X", "Second input not in 16-bit binary format:"},
 	}
 
 	for _, tc := range testCases {
@@ -414,6 +426,51 @@ func TestSixteenBitAdder_GoodInputs(t *testing.T) {
 			if got := a.carryOut.Emitting(); got != tc.wantCarryOut {
 				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, got)
 			}
+		})
+	}
+}
+
+// -run=XXX prevents the test running aspect from finding any tests
+// go test -run=XXX -bench=. -benchmem -count 5 > old.txt
+// ---change some code---
+// go test -run=XXX -bench=. -benchmem -count 5 > new.txt
+
+// go get golang.org/x/perf/cmd/benchstat
+// benchstat old.txt new.txt
+
+func BenchmarkNewSixteenBitAdder(b *testing.B) {
+	benchmarks := []struct {
+		bytes1  string
+		bytes2  string
+		carryIn emitter
+	}{
+		{"0000000000000000", "0000000000000000", nil},
+		{"1111111111111111", "1111111111111111", nil},
+		{"0000000000000000", "0000000000000000", &battery{}},
+		{"1111111111111111", "1111111111111111", &battery{}},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", bm.bytes1, bm.bytes2, bm.carryIn), func(b *testing.B) {
+			NewSixteenBitAdder(bm.bytes1, bm.bytes2, bm.carryIn)
+		})
+	}
+}
+
+func BenchmarkSixteenBitAdder_String(b *testing.B) {
+	benchmarks := []struct {
+		name    string
+		bytes1  string
+		bytes2  string
+		carryIn emitter
+	}{
+		{"All zeros", "0000000000000000", "0000000000000000", nil},
+		{"All ones", "1111111111111111", "1111111111111111", nil},
+	}
+	for _, bm := range benchmarks {
+		a, _ := NewSixteenBitAdder(bm.bytes1, bm.bytes2, bm.carryIn)
+		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", bm.bytes1, bm.bytes2, bm.carryIn), func(b *testing.B) {
+			a.String()
 		})
 	}
 }

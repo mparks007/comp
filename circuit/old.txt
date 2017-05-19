@@ -1,0 +1,4 @@
+BenchmarkSixteenBitAdder_String/Adding_0000000000000000_to_0000000000000000_with_carry_in_of_<nil>-8         	2000000000	         0.00 ns/op	       0 B/op	       0 allocs/op
+BenchmarkSixteenBitAdder_String/Adding_1111111111111111_to_1111111111111111_with_carry_in_of_<nil>-8         	2000000000	         0.00 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.concur.com/mparks/adder/circuit	0.342s
