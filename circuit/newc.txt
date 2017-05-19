@@ -1,2 +1,0 @@
-exit status 2
-FAIL	github.concur.com/mparks/adder/circuit	0.266s

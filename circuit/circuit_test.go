@@ -20,6 +20,7 @@ func TestANDContact(t *testing.T) {
 		{[]emitter{&battery{}, nil}, false},
 		{[]emitter{nil, &battery{}}, false},
 		{[]emitter{&battery{}, &battery{}}, true},
+		{nil, false},
 	}
 
 	stringFromSources := func(sources []emitter) string {
@@ -86,6 +87,26 @@ func TestRelay(t *testing.T) {
 
 			if got := r.closedOut.Emitting(); got != tc.wantAtClosed {
 				t.Errorf("Wanted power at the closed position to be %t, but got %t", tc.wantAtClosed, got)
+			}
+		})
+	}
+}
+
+func TestInverter(t *testing.T) {
+	testCases := []struct {
+		bIn        emitter
+		wantAtOpen bool
+	}{
+		{nil, true},
+		{&battery{}, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Input as %T.", tc.bIn), func(t *testing.T) {
+			i := newInverter(tc.bIn)
+
+			if got := i.openOut.Emitting(); got != tc.wantAtOpen {
+				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, got)
 			}
 		})
 	}
@@ -160,6 +181,29 @@ func TestNANDGate(t *testing.T) {
 	}
 }
 
+func TestInvANDGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, true},
+		{&battery{}, nil, true},
+		{nil, &battery{}, true},
+		{&battery{}, &battery{}, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newNANDGate2(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
+	}
+}
+
 func TestNORGate(t *testing.T) {
 	testCases := []struct {
 		aIn  emitter
@@ -183,6 +227,29 @@ func TestNORGate(t *testing.T) {
 	}
 }
 
+func TestInvORGate_Emitting(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, true},
+		{&battery{}, nil, false},
+		{nil, &battery{}, false},
+		{&battery{}, &battery{}, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newNORGate2(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
+	}
+}
+
 func TestXORGate(t *testing.T) {
 	testCases := []struct {
 		aIn  emitter
@@ -198,6 +265,29 @@ func TestXORGate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
 			g := newXORGate(tc.aIn, tc.bIn)
+
+			if got := g.Emitting(); got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestXNORGate(t *testing.T) {
+	testCases := []struct {
+		aIn  emitter
+		bIn  emitter
+		want bool
+	}{
+		{nil, nil, true},
+		{&battery{}, nil, false},
+		{nil, &battery{}, false},
+		{&battery{}, &battery{}, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting input A to %T and B to %T", tc.aIn, tc.bIn), func(t *testing.T) {
+			g := newXNORGate(tc.aIn, tc.bIn)
 
 			if got := g.Emitting(); got != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got)
