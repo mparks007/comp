@@ -90,14 +90,14 @@ func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, err
 		case '0':
 			pin1 = nil
 		case '1':
-			pin1 = &battery{}
+			pin1 = &Battery{}
 		}
 
 		switch byte2[i] {
 		case '0':
 			pin2 = nil
 		case '1':
-			pin2 = &battery{}
+			pin2 = &Battery{}
 		}
 
 		if i == 7 {
@@ -179,7 +179,7 @@ func NewSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdde
 
 	a.carryOut = a.leftAdder.carryOut
 
-	return a, err
+	return a, nil
 }
 
 func (a *SixteenBitAdder) String() string {

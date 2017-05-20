@@ -15,15 +15,20 @@ func TestANDContact(t *testing.T) {
 		want    bool
 	}{
 		{[]emitter{nil}, false},
-		{[]emitter{&battery{}}, true},
+		{[]emitter{&Battery{}}, true},
 		{[]emitter{nil, nil}, false},
-		{[]emitter{&battery{}, nil}, false},
-		{[]emitter{nil, &battery{}}, false},
-		{[]emitter{&battery{}, &battery{}}, true},
+		{[]emitter{&Battery{}, nil}, false},
+		{[]emitter{nil, &Battery{}}, false},
+		{[]emitter{&Battery{}, &Battery{}}, true},
 		{nil, false},
 	}
 
 	stringFromSources := func(sources []emitter) string {
+
+		if sources == nil {
+			return "very nil"
+		}
+
 		str := ""
 		for _, s := range sources {
 			str += fmt.Sprintf("%T,", s)
@@ -48,9 +53,9 @@ func TestXContact(t *testing.T) {
 		want    bool
 	}{
 		{nil, nil, false},
-		{&battery{}, nil, true},
-		{nil, &battery{}, false},
-		{&battery{}, &battery{}, false},
+		{&Battery{}, nil, true},
+		{nil, &Battery{}, false},
+		{&Battery{}, &Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -72,9 +77,9 @@ func TestRelay(t *testing.T) {
 		wantAtClosed bool
 	}{
 		{nil, nil, false, false},
-		{&battery{}, nil, true, false},
-		{nil, &battery{}, false, false},
-		{&battery{}, &battery{}, false, true},
+		{&Battery{}, nil, true, false},
+		{nil, &Battery{}, false, false},
+		{&Battery{}, &Battery{}, false, true},
 	}
 
 	for _, tc := range testCases {
@@ -98,7 +103,7 @@ func TestInverter(t *testing.T) {
 		wantAtOpen bool
 	}{
 		{nil, true},
-		{&battery{}, false},
+		{&Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -119,9 +124,9 @@ func TestANDGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, false},
-		{&battery{}, nil, false},
-		{nil, &battery{}, false},
-		{&battery{}, &battery{}, true},
+		{&Battery{}, nil, false},
+		{nil, &Battery{}, false},
+		{&Battery{}, &Battery{}, true},
 	}
 
 	for _, tc := range testCases {
@@ -142,9 +147,9 @@ func TestORGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, false},
-		{&battery{}, nil, true},
-		{nil, &battery{}, true},
-		{&battery{}, &battery{}, true},
+		{&Battery{}, nil, true},
+		{nil, &Battery{}, true},
+		{&Battery{}, &Battery{}, true},
 	}
 
 	for _, tc := range testCases {
@@ -165,9 +170,9 @@ func TestNANDGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, true},
-		{&battery{}, nil, true},
-		{nil, &battery{}, true},
-		{&battery{}, &battery{}, false},
+		{&Battery{}, nil, true},
+		{nil, &Battery{}, true},
+		{&Battery{}, &Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -188,9 +193,9 @@ func TestInvANDGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, true},
-		{&battery{}, nil, true},
-		{nil, &battery{}, true},
-		{&battery{}, &battery{}, false},
+		{&Battery{}, nil, true},
+		{nil, &Battery{}, true},
+		{&Battery{}, &Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -211,9 +216,9 @@ func TestNORGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, true},
-		{&battery{}, nil, false},
-		{nil, &battery{}, false},
-		{&battery{}, &battery{}, false},
+		{&Battery{}, nil, false},
+		{nil, &Battery{}, false},
+		{&Battery{}, &Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -234,9 +239,9 @@ func TestInvORGate_Emitting(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, true},
-		{&battery{}, nil, false},
-		{nil, &battery{}, false},
-		{&battery{}, &battery{}, false},
+		{&Battery{}, nil, false},
+		{nil, &Battery{}, false},
+		{&Battery{}, &Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -257,9 +262,9 @@ func TestXORGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, false},
-		{&battery{}, nil, true},
-		{nil, &battery{}, true},
-		{&battery{}, &battery{}, false},
+		{&Battery{}, nil, true},
+		{nil, &Battery{}, true},
+		{&Battery{}, &Battery{}, false},
 	}
 
 	for _, tc := range testCases {
@@ -280,9 +285,9 @@ func TestXNORGate(t *testing.T) {
 		want bool
 	}{
 		{nil, nil, true},
-		{&battery{}, nil, false},
-		{nil, &battery{}, false},
-		{&battery{}, &battery{}, true},
+		{&Battery{}, nil, false},
+		{nil, &Battery{}, false},
+		{&Battery{}, &Battery{}, true},
 	}
 
 	for _, tc := range testCases {
@@ -304,9 +309,9 @@ func TestHalfAdder(t *testing.T) {
 		wantCarry bool
 	}{
 		{nil, nil, false, false},
-		{&battery{}, nil, true, false},
-		{nil, &battery{}, true, false},
-		{&battery{}, &battery{}, false, true},
+		{&Battery{}, nil, true, false},
+		{nil, &Battery{}, true, false},
+		{&Battery{}, &Battery{}, false, true},
 	}
 
 	for _, tc := range testCases {
@@ -333,13 +338,13 @@ func TestFullAdder(t *testing.T) {
 		wantCarry bool
 	}{
 		{nil, nil, nil, false, false},
-		{&battery{}, nil, nil, true, false},
-		{&battery{}, &battery{}, nil, false, true},
-		{&battery{}, &battery{}, &battery{}, true, true},
-		{nil, &battery{}, nil, true, false},
-		{nil, &battery{}, &battery{}, false, true},
-		{nil, nil, &battery{}, true, false},
-		{&battery{}, nil, &battery{}, false, true},
+		{&Battery{}, nil, nil, true, false},
+		{&Battery{}, &Battery{}, nil, false, true},
+		{&Battery{}, &Battery{}, &Battery{}, true, true},
+		{nil, &Battery{}, nil, true, false},
+		{nil, &Battery{}, &Battery{}, false, true},
+		{nil, nil, &Battery{}, true, false},
+		{&Battery{}, nil, &Battery{}, false, true},
 	}
 
 	for _, tc := range testCases {
@@ -380,7 +385,6 @@ func TestEightBitAdder_BadInputs(t *testing.T) {
 
 			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
 				t.Error("Unexpected error: " + err.Error())
-				return // expecting to have a nil adder here so cannot do further tests using one
 			}
 
 			if a != nil {
@@ -401,16 +405,16 @@ func TestEightBitAdder_GoodInputs(t *testing.T) {
 		{"00000000", "00000000", nil, "00000000", false},
 		{"00000001", "00000000", nil, "00000001", false},
 		{"00000000", "00000001", nil, "00000001", false},
-		{"00000001", "00000000", &battery{}, "00000010", false},
-		{"00000000", "00000001", &battery{}, "00000010", false},
+		{"00000001", "00000000", &Battery{}, "00000010", false},
+		{"00000000", "00000001", &Battery{}, "00000010", false},
 		{"10000000", "10000000", nil, "100000000", true},
 		{"10000001", "10000000", nil, "100000001", true},
 		{"11111111", "11111111", nil, "111111110", true},
-		{"11111111", "11111111", &battery{}, "111111111", true},
+		{"11111111", "11111111", &Battery{}, "111111111", true},
 		{"01111111", "11111111", nil, "101111110", true},
-		{"01111111", "11111111", &battery{}, "101111111", true},
+		{"01111111", "11111111", &Battery{}, "101111111", true},
 		{"10101010", "01010101", nil, "11111111", false},
-		{"10101010", "01010101", &battery{}, "100000000", true},
+		{"10101010", "01010101", &Battery{}, "100000000", true},
 	}
 
 	for _, tc := range testCases {
@@ -461,7 +465,6 @@ func TestSixteenBitAdder_BadInputs(t *testing.T) {
 
 			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
 				t.Error("Unexpected error: " + err.Error())
-				return // expecting to have a nil adder here so cannot do further tests using one
 			}
 
 			if a != nil {
@@ -482,16 +485,16 @@ func TestSixteenBitAdder_GoodInputs(t *testing.T) {
 		{"0000000000000000", "0000000000000000", nil, "0000000000000000", false},
 		{"0000000000000001", "0000000000000000", nil, "0000000000000001", false},
 		{"0000000000000000", "0000000000000001", nil, "0000000000000001", false},
-		{"0000000000000001", "0000000000000000", &battery{}, "0000000000000010", false},
-		{"0000000000000000", "0000000000000001", &battery{}, "0000000000000010", false},
+		{"0000000000000001", "0000000000000000", &Battery{}, "0000000000000010", false},
+		{"0000000000000000", "0000000000000001", &Battery{}, "0000000000000010", false},
 		{"1000000000000000", "1000000000000000", nil, "10000000000000000", true},
 		{"1000000000000001", "1000000000000000", nil, "10000000000000001", true},
 		{"1111111111111111", "1111111111111111", nil, "11111111111111110", true},
-		{"1111111111111111", "1111111111111111", &battery{}, "11111111111111111", true},
+		{"1111111111111111", "1111111111111111", &Battery{}, "11111111111111111", true},
 		{"0000000001111111", "0000000011111111", nil, "0000000101111110", false},
-		{"0000000001111111", "0000000011111111", &battery{}, "0000000101111111", false},
+		{"0000000001111111", "0000000011111111", &Battery{}, "0000000101111111", false},
 		{"1010101010101010", "0101010101010101", nil, "1111111111111111", false},
-		{"1010101010101010", "0101010101010101", &battery{}, "10000000000000000", true},
+		{"1010101010101010", "0101010101010101", &Battery{}, "10000000000000000", true},
 		{"1001110110011101", "1101011011010110", nil, "10111010001110011", true},
 	}
 
@@ -536,8 +539,8 @@ func BenchmarkNewSixteenBitAdder(b *testing.B) {
 	}{
 		{"0000000000000000", "0000000000000000", nil},
 		{"1111111111111111", "1111111111111111", nil},
-		{"0000000000000000", "0000000000000000", &battery{}},
-		{"1111111111111111", "1111111111111111", &battery{}},
+		{"0000000000000000", "0000000000000000", &Battery{}},
+		{"1111111111111111", "1111111111111111", &Battery{}},
 	}
 
 	for _, bm := range benchmarks {
@@ -563,4 +566,77 @@ func BenchmarkSixteenBitAdder_String(b *testing.B) {
 			a.String()
 		})
 	}
+}
+
+func TestOnesCompliment_BadInputs(t *testing.T) {
+
+	testCases := []struct {
+		bits      string
+		wantError string
+	}{
+		{"", "Input bits not in binary format:"},
+		{"X", "Input bits not in binary format:"},
+		{"X0", "Input bits not in binary format:"},
+		{"0X", "Input bits not in binary format:"},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Complimenting %s", tc.bits), func(t *testing.T) {
+			c, err := NewOnesComplimenter([]byte(tc.bits), nil)
+
+			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
+				t.Error("Unexpected error: " + err.Error())
+			}
+
+			if c != nil {
+				t.Error("Did not expect a OnesComplementer to return due to bad inputs, but got one.")
+			}
+		})
+	}
+}
+
+func TestOnesCompliment_GoodInputs(t *testing.T) {
+
+	testCases := []struct {
+		bits   string
+		signal emitter
+		want   string
+	}{
+		{"0", nil, "0"},
+		{"0", &Battery{}, "1"},
+		{"1", nil, "1"},
+		{"1", &Battery{}, "0"},
+		{"00000000", nil, "00000000"},
+		{"00000000", &Battery{}, "11111111"},
+		{"10101010", nil, "10101010"},
+		{"10101010", &Battery{}, "01010101"},
+		{"1010101010101010101010101010101010101010", nil, "1010101010101010101010101010101010101010"},
+		{"1010101010101010101010101010101010101010", &Battery{}, "0101010101010101010101010101010101010101"},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Complimenting %s with signal of %T", tc.bits, tc.signal), func(t *testing.T) {
+			c, err := NewOnesComplimenter([]byte(tc.bits), tc.signal)
+
+			if err != nil {
+				t.Error("Unexpected error: " + err.Error())
+				return // on error, expecting to have a nil OnesComplementer here so cannot do further tests using one
+			}
+
+			if c == nil {
+				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
+				return // cannot continue tests if no OnesComplementer to test
+			}
+
+			if got := c.Compliment(); got != tc.want {
+				t.Errorf(fmt.Sprintf("Wanted %s, but got %s", tc.want, got))
+			}
+		})
+	}
+}
+
+func TestComplimenting_EightBitAdder(t *testing.T) {
+
+}
+
+func TestComplimenting_SixteenBitAdder(t *testing.T) {
+
 }

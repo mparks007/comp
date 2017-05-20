@@ -1,9 +1,9 @@
 package circuit
 
-type battery struct {
+type Battery struct {
 }
 
-// Emitting on a battery is always considered true (battery never drains)
-func (b *battery) Emitting() bool {
+// Emitting on a Battery is always considered true (Battery never drains)
+func (b *Battery) Emitting() bool {
 	return true
 }

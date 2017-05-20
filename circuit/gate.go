@@ -14,7 +14,7 @@ type andGate struct {
 func newANDGate(pin1, pin2 emitter) *andGate {
 	g := &andGate{}
 
-	g.relay1 = newRelay(&battery{}, pin1)
+	g.relay1 = newRelay(&Battery{}, pin1)
 	g.relay2 = newRelay(g.relay1.closedOut, pin2)
 
 	return g
@@ -37,8 +37,8 @@ type orGate struct {
 
 func newORGate(pin1, pin2 emitter) *orGate {
 	return &orGate{
-		newRelay(&battery{}, pin1),
-		newRelay(&battery{}, pin2),
+		newRelay(&Battery{}, pin1),
+		newRelay(&Battery{}, pin2),
 	}
 }
 
@@ -59,8 +59,8 @@ type nandGate struct {
 
 func newNANDGate(pin1, pin2 emitter) *nandGate {
 	return &nandGate{
-		newRelay(&battery{}, pin1),
-		newRelay(&battery{}, pin2),
+		newRelay(&Battery{}, pin1),
+		newRelay(&Battery{}, pin2),
 	}
 }
 
@@ -82,7 +82,7 @@ type norGate struct {
 func newNORGate(pin1, pin2 emitter) *norGate {
 	g := &norGate{}
 
-	g.relay1 = newRelay(&battery{}, pin1)
+	g.relay1 = newRelay(&Battery{}, pin1)
 	g.relay2 = newRelay(g.relay1.openOut, pin2)
 
 	return g

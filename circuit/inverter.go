@@ -8,7 +8,7 @@ type inverter struct {
 func newInverter(pin emitter) *inverter {
 	return &inverter{
 		pin,
-		newXContact(&battery{}, pin),
+		newXContact(&Battery{}, pin),
 	}
 }
 
