@@ -1,6 +1,6 @@
 package circuit
 
-// NAND (using Inverter on an AND gate signal)
+// NAND (using Inverter on an AND gate emit)
 // 0 0 1
 // 1 0 1
 // 0 1 1
@@ -22,7 +22,7 @@ func (g *nandGate2) Emitting() bool {
 	return g.inverter.Emitting()
 }
 
-// NOR (using Inverter on an OR gate signal)
+// NOR (using Inverter on an OR gate emit)
 // 0 0 1
 // 1 0 0
 // 0 1 0
@@ -44,7 +44,7 @@ func (g *norGate2) Emitting() bool {
 	return g.inverter.Emitting()
 }
 
-// XNOR (aka equivalence gate) (using Inverter on an XOR gate signal)
+// XNOR (aka equivalence gate) (using Inverter on an XOR gate emit)
 // 0 0 1
 // 1 0 0
 // 0 1 0

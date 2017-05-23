@@ -10,7 +10,7 @@ func NewEightBitSubtractor(byte1, byte2 string) (*EightBitSubtractor, error) {
 	s := &EightBitSubtractor{}
 
 	var err error                                                // why did I have to do this?
-	s.comp, err = NewOnesComplementer([]byte(byte2), &Battery{}) // the battery ensures the compliment occurs since the complimentor can conditional compliment based on that signal
+	s.comp, err = NewOnesComplementer([]byte(byte2), &Battery{}) // the battery ensures the compliment occurs since the complimentor can conditional compliment based on that emit
 	if err != nil {
 		return nil, err
 	}

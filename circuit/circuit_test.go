@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 // go test
@@ -525,10 +526,10 @@ func TestSixteenBitAdder_GoodInputs(t *testing.T) {
 	}
 }
 
-// -run=XXX prevents the test running aspect from finding any tests
-// go test -run=XXX -bench=. -benchmem -count 5 > old.txt
+// -stopCh=XXX prevents the test running aspect from finding any tests
+// go test -stopCh=XXX -bench=. -benchmem -count 5 > old.txt
 // ---change some code---
-// go test -run=XXX -bench=. -benchmem -count 5 > new.txt
+// go test -stopCh=XXX -bench=. -benchmem -count 5 > new.txt
 
 // go get golang.org/x/perf/cmd/benchstat
 // benchstat old.txt new.txt
@@ -616,7 +617,7 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 		{"1010101010101010101010101010101010101010", &Battery{}, "0101010101010101010101010101010101010101"},
 	}
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Complimenting %s with signal of %T", tc.bits, tc.signal), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Complimenting %s with emit of %T", tc.bits, tc.signal), func(t *testing.T) {
 			c, err := NewOnesComplementer([]byte(tc.bits), tc.signal)
 
 			if err != nil {
@@ -708,4 +709,33 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOscillator(t *testing.T) {
+	testcases := []struct {
+		initState     bool
+		oscHertz      int
+		checkInterval int
+		allTrue       bool
+		allFalse      bool
+		mixedBool     bool
+	}{
+		{false, 20, 5, false, false, true},
+		{true, 20, 30, false, true, false},
+	}
+
+	for _, tc := range testcases {
+		t.Run(fmt.Sprintf("Run %v", tc), func(t *testing.T) {
+			o := newOscillator(tc.initState)
+
+			o.Oscillate(tc.oscHertz)
+			for i := 0; i < 100; i++ {
+				fmt.Println(i)
+				fmt.Printf("Emitting: %t\n", o.Emitting())
+				time.Sleep(time.Millisecond * 1)
+			}
+			o.Stop()
+		})
+	}
+
 }
