@@ -636,7 +636,39 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 	}
 }
 
-func TestEightBitSubtracter(t *testing.T) {
+func TestEightBitSubtracter_BadInputs(t *testing.T) {
+
+	testCases := []struct {
+		minuend    string
+		subtrahend string
+		wantError  string
+	}{
+		{"0000000", "00000000", "First input not in 8-bit binary format:"},  // only 7 bits on first byte
+		{"00000000", "0000000", "Second input not in 8-bit binary format:"}, // only 7 bits on second byte
+		{"bad", "00000000", "First input not in 8-bit binary format:"},
+		{"00000000", "bad", "Input bits not in binary format:"},
+		{"", "", "Input bits not in binary format:"},
+		{"X00000000", "00000000", "First input not in 8-bit binary format:"},
+		{"00000000", "X00000000", "Input bits not in binary format:"},
+		{"00000000X", "00000000", "First input not in 8-bit binary format:"},
+		{"00000000", "00000000X", "Input bits not in binary format:"},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
+			s, err := NewEightBitSubtractor(tc.minuend, tc.subtrahend)
+
+			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
+				t.Error("Unexpected error: " + err.Error())
+			}
+
+			if s != nil {
+				t.Error("Did not expect a subtractor to return due to bad inputs, but got one.")
+			}
+		})
+	}
+}
+
+func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 	testCases := []struct {
 		minuend    string
 		subtrahend string
