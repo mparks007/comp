@@ -405,6 +405,7 @@ func TestEightBitAdder_GoodInputs(t *testing.T) {
 		{"00000000", "00000000", nil, "00000000", false},
 		{"00000001", "00000000", nil, "00000001", false},
 		{"00000000", "00000001", nil, "00000001", false},
+		{"00000000", "00000000", &Battery{}, "00000001", false},
 		{"00000001", "00000000", &Battery{}, "00000010", false},
 		{"00000000", "00000001", &Battery{}, "00000010", false},
 		{"10000000", "10000000", nil, "100000000", true},
@@ -485,6 +486,7 @@ func TestSixteenBitAdder_GoodInputs(t *testing.T) {
 		{"0000000000000000", "0000000000000000", nil, "0000000000000000", false},
 		{"0000000000000001", "0000000000000000", nil, "0000000000000001", false},
 		{"0000000000000000", "0000000000000001", nil, "0000000000000001", false},
+		{"0000000000000000", "0000000000000000", &Battery{}, "0000000000000001", false},
 		{"0000000000000001", "0000000000000000", &Battery{}, "0000000000000010", false},
 		{"0000000000000000", "0000000000000001", &Battery{}, "0000000000000010", false},
 		{"1000000000000000", "1000000000000000", nil, "10000000000000000", true},
@@ -607,6 +609,7 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 		{"1", &Battery{}, "0"},
 		{"00000000", nil, "00000000"},
 		{"00000000", &Battery{}, "11111111"},
+		{"11111111", &Battery{}, "00000000"},
 		{"10101010", nil, "10101010"},
 		{"10101010", &Battery{}, "01010101"},
 		{"1010101010101010101010101010101010101010", nil, "1010101010101010101010101010101010101010"},
@@ -633,10 +636,44 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 	}
 }
 
-func TestComplimenting_EightBitAdder(t *testing.T) {
+func TestEightBitSubtracter(t *testing.T) {
+	testCases := []struct {
+		minuend    string
+		subtrahend string
+		wantAnswer string
+	}{
+		{"00000000", "00000000", "100000000"}, // 0 - 0 = 0
+		{"00000001", "00000000", "100000001"}, // 1 - 0 = 1
+		{"00000001", "00000001", "100000000"}, // 1 - 1 = 0
+		{"00000011", "00000001", "100000010"}, // 3 - 1 = 2
+		{"10000000", "00000001", "101111111"}, // (or 128 - 1 = 127 unsigned)
+		{"11111111", "11111111", "100000000"}, // -1 - -1 = 0 signed (or 255 - 255 = 0 unsigned)
+		{"11111111", "00000001", "111111110"}, // -1 - 1 = -2 signed (or 255 - 1 = 254 unsigned)
+		{"10000001", "00000001", "110000000"}, // -127 - 1 = -128 signed (or 129 - 1 = 128 unsigned)
+		{"11111110", "11111011", "100000011"}, // -2 - -5 = 3 (or 254 - 251 = 3 unsigned)
+		{"00000000", "00000001", "11111111"},  // 0 - 1 = -1 signed (or 255 unsigned)
+		{"00000010", "00000011", "11111111"},  // 2 - 3 = -1 signed (or 255 unsigned)
+		{"11111110", "11111111", "11111111"},  // -2 - -1 = -1 signed or (254 - 255 = 255 unsigned)
+		{"10000001", "01111110", "100000011"}, // -127 - 126 = 3 signed or (129 - 126 = 3 unsigned)
+	}
 
-}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
+			s, err := NewEightBitSubtractor(tc.minuend, tc.subtrahend)
 
-func TestComplimenting_SixteenBitAdder(t *testing.T) {
+			if err != nil {
+				t.Error("Unexpected error: " + err.Error())
+				return // on error, expecting to have s nil subtractor here so cannot do further tests using one
+			}
 
+			if s == nil {
+				t.Error("Expected an subtractor to return due to good inputs, but got s nil one.")
+				return // cannot continue tests if no subtractor to test
+			}
+
+			if got := s.String(); got != tc.wantAnswer {
+				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
+			}
+		})
+	}
 }

@@ -16,7 +16,9 @@ var bitString2 = flag.String("bits2", "00000000", "Second string of bits in an a
 func main() {
 	flag.Parse()
 
-	executeAdder()
+	var b byte = 254
+	fmt.Println(b - 255)
+	//executeAdder()
 }
 
 func executeAdder() {

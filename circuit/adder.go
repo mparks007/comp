@@ -54,12 +54,12 @@ func newFullAdder(pin1, pin2, carryIn emitter) *fullAdder {
 // +  11010110
 // = 101110011
 
-type EightbitAdder struct {
+type EightBitAdder struct {
 	fullAdders [8]*fullAdder
 	carryOut   emitter
 }
 
-func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, error) {
+func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightBitAdder, error) {
 	match, err := regexp.MatchString("^[01]{8}$", byte1)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, err
 		return nil, err
 	}
 
-	a := &EightbitAdder{}
+	a := &EightBitAdder{}
 
 	for i := 7; i >= 0; i-- {
 		var f *fullAdder
@@ -114,7 +114,7 @@ func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightbitAdder, err
 	return a, nil
 }
 
-func (a *EightbitAdder) String() string {
+func (a *EightBitAdder) String() string {
 	answer := ""
 
 	if a.carryOut.Emitting() {
@@ -140,8 +140,8 @@ func (a *EightbitAdder) String() string {
 // = 10111010001110011
 
 type SixteenBitAdder struct {
-	rightAdder *EightbitAdder
-	leftAdder  *EightbitAdder
+	rightAdder *EightBitAdder
+	leftAdder  *EightBitAdder
 	carryOut   emitter
 }
 
