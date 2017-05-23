@@ -16,9 +16,7 @@ var bitString2 = flag.String("bits2", "00000000", "Second string of bits in an a
 func main() {
 	flag.Parse()
 
-	var b byte = 254
-	fmt.Println(b - 255)
-	//executeAdder()
+	executeAdder()
 }
 
 func executeAdder() {
@@ -41,11 +39,12 @@ func executeAdder() {
 			}
 		}
 	case "comp":
-		c, err := circuit.NewOnesComplimenter([]byte(*bitString1), &circuit.Battery{})
+		c, err := circuit.NewOnesComplementer([]byte(*bitString1), &circuit.Battery{})
 		if err != nil {
 			fmt.Println("Error:" + err.Error())
 		} else {
-			fmt.Printf(c.Compliment())
+			fmt.Println("   Input String: " + *bitString1)
+			fmt.Println("Ones Complement: " + c.Complement())
 		}
 	}
 }

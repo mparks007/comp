@@ -583,7 +583,7 @@ func TestOnesCompliment_BadInputs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Complimenting %s", tc.bits), func(t *testing.T) {
-			c, err := NewOnesComplimenter([]byte(tc.bits), nil)
+			c, err := NewOnesComplementer([]byte(tc.bits), nil)
 
 			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
 				t.Error("Unexpected error: " + err.Error())
@@ -617,7 +617,7 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Complimenting %s with signal of %T", tc.bits, tc.signal), func(t *testing.T) {
-			c, err := NewOnesComplimenter([]byte(tc.bits), tc.signal)
+			c, err := NewOnesComplementer([]byte(tc.bits), tc.signal)
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
@@ -629,7 +629,7 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 				return // cannot continue tests if no OnesComplementer to test
 			}
 
-			if got := c.Compliment(); got != tc.want {
+			if got := c.Complement(); got != tc.want {
 				t.Errorf(fmt.Sprintf("Wanted %s, but got %s", tc.want, got))
 			}
 		})

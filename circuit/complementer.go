@@ -6,11 +6,11 @@ import (
 	"regexp"
 )
 
-type onesComplimenter struct {
+type onesComplementer struct {
 	xorGates []emitter
 }
 
-func NewOnesComplimenter(bits []byte, signal emitter) (*onesComplimenter, error) {
+func NewOnesComplementer(bits []byte, signal emitter) (*onesComplementer, error) {
 
 	match, err := regexp.MatchString("^[01]+$", string(bits))
 	if err != nil {
@@ -22,7 +22,7 @@ func NewOnesComplimenter(bits []byte, signal emitter) (*onesComplimenter, error)
 		return nil, err
 	}
 
-	c := &onesComplimenter{}
+	c := &onesComplementer{}
 
 	for _, b := range bits {
 		switch b {
@@ -36,7 +36,7 @@ func NewOnesComplimenter(bits []byte, signal emitter) (*onesComplimenter, error)
 	return c, nil
 }
 
-func (c *onesComplimenter) Compliment() string {
+func (c *onesComplementer) Complement() string {
 	s := ""
 
 	for _, x := range c.xorGates {
