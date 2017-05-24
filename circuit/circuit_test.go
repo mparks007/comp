@@ -711,24 +711,24 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 	}
 }
 
+// Fragile test due to timing of asking oscillator vs. state of oscillator at the time being asked
 func TestOscillator(t *testing.T) {
 	testCases := []struct {
-		initState       bool
-		oscHertz        int
-		checkIntervalMS int
-		checkTimes      int
-		wantAllTrues    bool
-		wantAllFalses   bool
-		wantTrueFalse   bool
+		initState     bool
+		oscHertz      int
+		checkTimes    int
+		wantAllTrues  bool
+		wantAllFalses bool
+		wantTrueFalse bool
 	}{
-		{false, 10, 1000, 1, false, true, false},
-		{true, 10, 1000, 1, true, false, false},
-		{false, 20, 1000, 10, false, false, true},
-		{true, 20, 1000, 10, false, false, true},
+		{false, 10, 1, false, true, false},
+		{true, 10, 1, true, false, false},
+		{false, 20, 5, false, false, true},
+		{true, 20, 5, false, false, true},
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t), checking every %d second(s), %d times.", tc.oscHertz, tc.initState, tc.checkIntervalMS, tc.checkTimes), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t), checking %d times.", tc.oscHertz, tc.initState, tc.checkTimes), func(t *testing.T) {
 
 			var results string
 
@@ -741,7 +741,7 @@ func TestOscillator(t *testing.T) {
 				} else {
 					results += "F"
 				}
-				time.Sleep(time.Millisecond * time.Duration(tc.checkIntervalMS))
+				time.Sleep(time.Millisecond * 500)
 			}
 			o.Stop()
 

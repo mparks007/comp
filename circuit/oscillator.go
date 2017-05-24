@@ -22,7 +22,7 @@ func newOscillator(init bool) *oscillator {
 func (o *oscillator) Oscillate(hertz int) {
 
 	go func() {
-		t := time.NewTicker(time.Second * time.Duration(hertz) / 20)
+		t := time.NewTicker(time.Second / time.Duration(hertz))
 		for {
 			select {
 			case <-t.C:
