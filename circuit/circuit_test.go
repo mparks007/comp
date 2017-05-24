@@ -712,30 +712,45 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 }
 
 func TestOscillator(t *testing.T) {
-	testcases := []struct {
-		initState     bool
-		oscHertz      int
-		checkInterval int
-		allTrue       bool
-		allFalse      bool
-		mixedBool     bool
+	testCases := []struct {
+		initState       bool
+		oscHertz        int
+		checkIntervalMS int
+		checkTimes      int
+		wantAllTrues    bool
+		wantAllFalses   bool
+		wantTrueFalse   bool
 	}{
-		{false, 20, 5, false, false, true},
-		{true, 20, 30, false, true, false},
+		{false, 10, 1000, 1, false, true, false},
+		{true, 10, 1000, 1, true, false, false},
+		{false, 20, 1000, 10, false, false, true},
+		{true, 20, 1000, 10, false, false, true},
 	}
 
-	for _, tc := range testcases {
-		t.Run(fmt.Sprintf("Run %v", tc), func(t *testing.T) {
-			o := newOscillator(tc.initState)
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t), checking every %d second(s), %d times.", tc.oscHertz, tc.initState, tc.checkIntervalMS, tc.checkTimes), func(t *testing.T) {
 
+			var results string
+
+			o := newOscillator(tc.initState)
 			o.Oscillate(tc.oscHertz)
-			for i := 0; i < 100; i++ {
-				fmt.Println(i)
-				fmt.Printf("Emitting: %t\n", o.Emitting())
-				time.Sleep(time.Millisecond * 1)
+
+			for i := 0; i < tc.checkTimes; i++ {
+				if o.Emitting() {
+					results += "T"
+				} else {
+					results += "F"
+				}
+				time.Sleep(time.Millisecond * time.Duration(tc.checkIntervalMS))
 			}
 			o.Stop()
+
+			gotAllTrues := !strings.Contains(results, "F")
+			gotAllFalses := !strings.Contains(results, "T")
+
+			if (gotAllTrues != tc.wantAllTrues) || (gotAllFalses != tc.wantAllFalses) {
+				t.Errorf(fmt.Sprintf("Wanted all trues (%t), all falses (%t), and mixed (%t), but got results of %s.", tc.wantAllTrues, tc.wantAllFalses, tc.wantTrueFalse, results))
+			}
 		})
 	}
-
 }

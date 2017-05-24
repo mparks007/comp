@@ -2,14 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="108d38c3-0e12-48c1-b6a4-f0c31193e38f" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/circuit/oscillator.go" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/circuit/battery.go" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/circuit.go" afterPath="$PROJECT_DIR$/circuit/circuit.go" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/circuit_test.go" afterPath="$PROJECT_DIR$/circuit/circuit_test.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/gateinvert.go" afterPath="$PROJECT_DIR$/circuit/gateinvert.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/relay.go" afterPath="$PROJECT_DIR$/circuit/relay.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/subtractor.go" afterPath="$PROJECT_DIR$/circuit/subtractor.go" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -38,8 +31,8 @@
       <file leaf-file-name="oscillator.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/circuit/oscillator.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="20" column="0" lean-forward="true" selection-start-line="20" selection-start-column="0" selection-end-line="20" selection-end-column="0" />
+            <state relative-caret-position="180">
+              <caret line="16" column="22" lean-forward="true" selection-start-line="16" selection-start-column="22" selection-end-line="16" selection-end-column="22" />
               <folding>
                 <element signature="e#17#50#0" expanded="true" />
               </folding>
@@ -50,8 +43,8 @@
       <file leaf-file-name="circuit_test.go" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/circuit/circuit_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="355">
-              <caret line="724" column="5" lean-forward="true" selection-start-line="724" selection-start-column="5" selection-end-line="724" selection-end-column="5" />
+            <state relative-caret-position="589">
+              <caret line="733" column="0" lean-forward="true" selection-start-line="733" selection-start-column="0" selection-end-line="733" selection-end-column="0" />
               <folding>
                 <element signature="e#17#64#0" expanded="true" />
               </folding>
@@ -309,7 +302,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.TestOscillator in circuit_test.go">
+  <component name="RunManager" selected="Go Test.TestA in circuit_test.go">
     <configuration default="false" name="TestOscilator in circuit_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
       <module name="adder" />
       <working_directory value="$PROJECT_DIR$/circuit" />
@@ -328,6 +321,16 @@
       <kind value="PACKAGE" />
       <package value="github.concur.com/mparks/adder/circuit" />
       <pattern value="^TestOscillator$" />
+      <method />
+    </configuration>
+    <configuration default="false" name="TestA in circuit_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
+      <module name="adder" />
+      <working_directory value="$PROJECT_DIR$/circuit" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.concur.com/mparks/adder/circuit" />
+      <pattern value="^TestA$" />
       <method />
     </configuration>
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
@@ -393,15 +396,17 @@
       <filePath value="C:\gospace\src\github.concur.com\mparks\adder\circuit\circuit_test.go" />
       <method />
     </configuration>
-    <list size="3">
+    <list size="4">
       <item index="0" class="java.lang.String" itemvalue="Go Test.Test" />
       <item index="1" class="java.lang.String" itemvalue="Go Test.TestOscilator in circuit_test.go" />
       <item index="2" class="java.lang.String" itemvalue="Go Test.TestOscillator in circuit_test.go" />
+      <item index="3" class="java.lang.String" itemvalue="Go Test.TestA in circuit_test.go" />
     </list>
     <recent_temporary>
-      <list size="2">
-        <item index="0" class="java.lang.String" itemvalue="Go Test.TestOscillator in circuit_test.go" />
-        <item index="1" class="java.lang.String" itemvalue="Go Test.TestOscilator in circuit_test.go" />
+      <list size="3">
+        <item index="0" class="java.lang.String" itemvalue="Go Test.TestA in circuit_test.go" />
+        <item index="1" class="java.lang.String" itemvalue="Go Test.TestOscillator in circuit_test.go" />
+        <item index="2" class="java.lang.String" itemvalue="Go Test.TestOscilator in circuit_test.go" />
       </list>
     </recent_temporary>
   </component>
@@ -409,8 +414,8 @@
     <option name="remove_strategy" value="false" />
   </component>
   <component name="TestHistory">
-    <history-entry file="TestOscillator_in_circuit_test_go - 2017.05.23 at 15h 37m 19s.xml">
-      <configuration name="TestOscillator in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestA_in_circuit_test_go - 2017.05.24 at 10h 17m 44s.xml">
+      <configuration name="TestA in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
     <history-entry file="TestOscillator_in_circuit_test_go - 2017.05.23 at 15h 37m 53s.xml">
       <configuration name="TestOscillator in circuit_test.go" configurationId="GoTestRunConfiguration" />
@@ -820,8 +825,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/oscillator.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="20" column="0" lean-forward="true" selection-start-line="20" selection-start-column="0" selection-end-line="20" selection-end-column="0" />
+        <state relative-caret-position="180">
+          <caret line="16" column="22" lean-forward="true" selection-start-line="16" selection-start-column="22" selection-end-line="16" selection-end-column="22" />
           <folding>
             <element signature="e#17#50#0" expanded="true" />
           </folding>
@@ -830,8 +835,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/circuit_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="355">
-          <caret line="724" column="5" lean-forward="true" selection-start-line="724" selection-start-column="5" selection-end-line="724" selection-end-column="5" />
+        <state relative-caret-position="589">
+          <caret line="733" column="0" lean-forward="true" selection-start-line="733" selection-start-column="0" selection-end-line="733" selection-end-column="0" />
           <folding>
             <element signature="e#17#64#0" expanded="true" />
           </folding>
