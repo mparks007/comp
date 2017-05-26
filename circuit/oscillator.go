@@ -44,3 +44,6 @@ func (o *oscillator) Emitting() bool {
 	b, _ := o.emit.Load().(bool)
 	return b
 }
+
+
+

@@ -723,8 +723,8 @@ func TestOscillator(t *testing.T) {
 	}{
 		{false, 10, 1, false, true, false},
 		{true, 10, 1, true, false, false},
-		{false, 20, 5, false, false, true},
-		{true, 20, 5, false, false, true},
+		{false, 40, 5, false, false, true},
+		{true, 40, 10, false, false, true},
 	}
 
 	for _, tc := range testCases {
@@ -753,4 +753,11 @@ func TestOscillator(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRSFlipFlop(t *testing.T) {
+	//	f := newRSFlipFLop(nil, nil)
+
+	//	fmt.Printf("Q:    %t", f.qOut.Emitting())
+	//	fmt.Printf("QBar: %t", f.qBarOut.Emitting())
 }
