@@ -8,6 +8,8 @@ import (
 )
 
 // go test
+// go test -race -v (verbose)
+// go test -race -cpu=1,2,4 (go max prox)
 // go test -v
 
 func TestANDContact(t *testing.T) {
@@ -548,7 +550,9 @@ func BenchmarkNewSixteenBitAdder(b *testing.B) {
 
 	for _, bm := range benchmarks {
 		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", bm.bytes1, bm.bytes2, bm.carryIn), func(b *testing.B) {
-			NewSixteenBitAdder(bm.bytes1, bm.bytes2, bm.carryIn)
+			for i := 0; i < b.N; i++ {
+				NewSixteenBitAdder(bm.bytes1, bm.bytes2, bm.carryIn)
+			}
 		})
 	}
 }
@@ -566,7 +570,9 @@ func BenchmarkSixteenBitAdder_String(b *testing.B) {
 	for _, bm := range benchmarks {
 		a, _ := NewSixteenBitAdder(bm.bytes1, bm.bytes2, bm.carryIn)
 		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %T", bm.bytes1, bm.bytes2, bm.carryIn), func(b *testing.B) {
-			a.String()
+			for i := 0; i < b.N; i++ {
+				a.String()
+			}
 		})
 	}
 }
@@ -755,9 +761,77 @@ func TestOscillator(t *testing.T) {
 	}
 }
 
-func TestRSFlipFlop(t *testing.T) {
-	//	f := newRSFlipFLop(nil, nil)
+func TestRSFlipFlop_ValidateInputs(t *testing.T) {
+	testCases := []struct {
+		rPin      emitter
+		sPin      emitter
+		wantError string
+	}{
+		{nil, nil, ""},
+		{nil, &Battery{}, ""},
+		{&Battery{}, nil, ""},
+		{&Battery{}, &Battery{}, "Both inputs of an RS FlipFlop cannot be powered simultaneously."},
+	}
 
-	//	fmt.Printf("Q:    %t", f.qOut.Emitting())
-	//	fmt.Printf("QBar: %t", f.qBarOut.Emitting())
+	// starting with no input signals
+	f := newRSFlipFLop(nil, nil)
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting up as rIn (%T) and sIn (%T)", tc.rPin, tc.sPin), func(t *testing.T) {
+			err := f.updateInputs(tc.rPin, tc.sPin)
+
+			if err != nil && err.Error() != tc.wantError {
+				t.Errorf(fmt.Sprintf("Got error %s but wanted %s.", err.Error(), tc.wantError))
+			}
+		})
+	}
+}
+
+func TestRSFlipFlop(t *testing.T) {
+	testCases := []struct {
+		rPin     emitter
+		sPin     emitter
+		wantQ    bool
+		wantQBar bool
+	}{
+		{nil, nil, false, true},
+		{nil, &Battery{}, true, false},
+		{nil, nil, true, false},
+		{&Battery{}, nil, false, true},
+		{nil, nil, false, true},
+		{nil, &Battery{}, true, false},
+		{nil, nil, true, false},
+	}
+
+	testName := func(i int) string {
+		var priorR emitter
+		var priorS emitter
+
+		if i == 0 {
+			priorR = nil
+			priorS = nil
+		} else {
+			priorR = testCases[i-1].rPin
+			priorS = testCases[i-1].sPin
+		}
+
+		return fmt.Sprintf("Stage %d: Switching from [rIn (%T) sIn (%T)] to [rIn (%T) sIn (%T)]", i+1, priorR, priorS, testCases[i].rPin, testCases[i].sPin)
+	}
+
+	// starting with no input signals
+	f := newRSFlipFLop(nil, nil)
+
+	for i, tc := range testCases {
+		t.Run(testName(i), func(t *testing.T) {
+			f.updateInputs(tc.rPin, tc.sPin)
+
+			if gotQ := f.qEmitting(); gotQ != tc.wantQ {
+				t.Errorf(fmt.Sprintf("Wanted power on Q, but got none."))
+			}
+
+			if gotQBar := f.qBarEmitting(); gotQBar != tc.wantQBar {
+				t.Errorf(fmt.Sprintf("Wanted power on QBar, but got none."))
+			}
+		})
+	}
 }
