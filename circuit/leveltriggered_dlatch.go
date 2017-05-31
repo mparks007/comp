@@ -7,7 +7,7 @@ package circuit
 // 1 1     1  0
 // X 0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
 
-type ltDLatch struct {
+type levTrigDLatch struct {
 	dataIn emitter
 	clkIn  emitter
 	rs     *rsFlipFlop
@@ -15,8 +15,8 @@ type ltDLatch struct {
 	sAnd   *andGate
 }
 
-func newLtDLatch(dataIn, clkIn emitter) (*ltDLatch, error) {
-	l := &ltDLatch{}
+func newLtDLatch(dataIn, clkIn emitter) (*levTrigDLatch, error) {
+	l := &levTrigDLatch{}
 
 	l.updateInputs(dataIn, clkIn)
 
@@ -30,12 +30,12 @@ func newLtDLatch(dataIn, clkIn emitter) (*ltDLatch, error) {
 	return l, nil
 }
 
-func (l *ltDLatch) updateInputs(dataIn, clkIn emitter) {
+func (l *levTrigDLatch) updateInputs(dataIn, clkIn emitter) {
 	l.dataIn = dataIn
 	l.clkIn = clkIn
 }
 
-func (l *ltDLatch) setupComponents() error {
+func (l *levTrigDLatch) setupComponents() error {
 	l.rAnd = newANDGate(newInverter(l.dataIn), l.clkIn)
 	l.sAnd = newANDGate(l.dataIn, l.clkIn)
 
@@ -48,7 +48,7 @@ func (l *ltDLatch) setupComponents() error {
 	return nil
 }
 
-func (l *ltDLatch) qEmitting() (bool, error) {
+func (l *levTrigDLatch) qEmitting() (bool, error) {
 
 	err := l.setupComponents()
 	if err != nil {
@@ -62,7 +62,7 @@ func (l *ltDLatch) qEmitting() (bool, error) {
 	}
 }
 
-func (l *ltDLatch) qBarEmitting() (bool, error) {
+func (l *levTrigDLatch) qBarEmitting() (bool, error) {
 	if qBarEmitting, err := l.rs.qBarEmitting(); err != nil {
 		return qBarEmitting, err
 	} else {

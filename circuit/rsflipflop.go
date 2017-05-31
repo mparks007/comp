@@ -21,11 +21,11 @@ type rsFlipFlop struct {
 func newRSFlipFLop(rPin, sPin emitter) (*rsFlipFlop, error) {
 	f := &rsFlipFlop{}
 
-	f.sNorTempPin2 = nil // due to recursion, nil'ing the link from rNor's output.  qEmitting() will handle the rest.
-
 	if err := f.updateInputs(rPin, sPin); err != nil {
 		return nil, err
 	}
+
+	f.sNorTempPin2 = nil // due to recursion, nil'ing the link from rNor's output.  qEmitting() will handle the rest.
 
 	f.setupNors()
 

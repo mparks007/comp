@@ -913,7 +913,7 @@ func TestRSFlipFlop(t *testing.T) {
 	}
 }
 
-func TestLtDLatch(t *testing.T) {
+func TestLevTrigDLatch(t *testing.T) {
 	testCases := []struct {
 		dataPin   emitter
 		clkPin    emitter
