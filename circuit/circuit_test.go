@@ -761,6 +761,29 @@ func TestOscillator(t *testing.T) {
 	}
 }
 
+func TestRSFlipFlop_Construction(t *testing.T) {
+	testCases := []struct {
+		rPin      emitter
+		sPin      emitter
+		wantError string
+	}{
+		{nil, nil, ""},
+		{nil, &Battery{}, ""},
+		{&Battery{}, nil, ""},
+		{&Battery{}, &Battery{}, "Both inputs of an RS Flip-Flop cannot be powered simultaneously"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Creating as rIn (%T) and sIn (%T)", tc.rPin, tc.sPin), func(t *testing.T) {
+			_, err := newRSFlipFLop(tc.rPin, tc.sPin)
+
+			if err != nil && err.Error() != tc.wantError {
+				t.Errorf(fmt.Sprintf("Wanted error %s but got %s.", tc.wantError, err.Error()))
+			}
+		})
+	}
+}
+
 func TestRSFlipFlop_ValidateInputs(t *testing.T) {
 	testCases := []struct {
 		rPin      emitter
@@ -770,18 +793,62 @@ func TestRSFlipFlop_ValidateInputs(t *testing.T) {
 		{nil, nil, ""},
 		{nil, &Battery{}, ""},
 		{&Battery{}, nil, ""},
-		{&Battery{}, &Battery{}, "Both inputs of an RS FlipFlop cannot be powered simultaneously."},
+		{&Battery{}, &Battery{}, "Both inputs of an RS Flip-Flop cannot be powered simultaneously"},
 	}
 
 	// starting with no input signals
-	f := newRSFlipFLop(nil, nil)
+	f, err := newRSFlipFLop(nil, nil)
+
+	if err != nil {
+		t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+	}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting up as rIn (%T) and sIn (%T)", tc.rPin, tc.sPin), func(t *testing.T) {
 			err := f.updateInputs(tc.rPin, tc.sPin)
 
 			if err != nil && err.Error() != tc.wantError {
-				t.Errorf(fmt.Sprintf("Got error %s but wanted %s.", err.Error(), tc.wantError))
+				t.Errorf(fmt.Sprintf("Wanted error %s but got %s.", tc.wantError, err.Error()))
+			}
+		})
+	}
+}
+
+func TestRSFlipFlop_qEmitting_InputValidation(t *testing.T) {
+	testCases := []struct {
+		rPin      emitter
+		sPin      emitter
+		wantError string
+	}{
+		//{nil, nil, ""},
+		//{nil, &Battery{}, ""},
+		//{&Battery{}, nil, ""},
+		{&Battery{}, &Battery{}, "Both inputs of an RS Flip-Flop cannot be powered simultaneously"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Creating as rIn (%T) and sIn (%T)", tc.rPin, tc.sPin), func(t *testing.T) {
+			var rPin emitter = nil
+			var sPin emitter = nil
+
+			// starting with no input signals
+			f, err := newRSFlipFLop(rPin, sPin)
+
+			if err != nil {
+				t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+			}
+
+			// this doesn't seem to actually change the flip-flop's inner pins (hmmmm)
+			// this doesn't seem to actually change the flip-flop's inner pins (hmmmm)
+			// this doesn't seem to actually change the flip-flop's inner pins (hmmmm)
+			// this doesn't seem to actually change the flip-flop's inner pins (hmmmm)
+			rPin = tc.rPin
+			sPin = tc.sPin
+
+			_, err = f.qEmitting()
+
+			if err != nil && err.Error() != tc.wantError {
+				t.Errorf(fmt.Sprintf("Wanted error %t on Q, but got %t.", tc.wantError, err))
 			}
 		})
 	}
@@ -789,18 +856,19 @@ func TestRSFlipFlop_ValidateInputs(t *testing.T) {
 
 func TestRSFlipFlop(t *testing.T) {
 	testCases := []struct {
-		rPin     emitter
-		sPin     emitter
-		wantQ    bool
-		wantQBar bool
+		rPin      emitter
+		sPin      emitter
+		wantQ     bool
+		wantQBar  bool
+		wantError string
 	}{
-		{nil, nil, false, true},
-		{nil, &Battery{}, true, false},
-		{nil, nil, true, false},
-		{&Battery{}, nil, false, true},
-		{nil, nil, false, true},
-		{nil, &Battery{}, true, false},
-		{nil, nil, true, false},
+		{nil, nil, false, true, ""},
+		{nil, &Battery{}, true, false, ""},
+		{nil, nil, true, false, ""},
+		{&Battery{}, nil, false, true, ""},
+		{nil, nil, false, true, ""},
+		{nil, &Battery{}, true, false, ""},
+		{&Battery{}, &Battery{}, true, false, "Both inputs of an RS Flip-Flop cannot be powered simultaneously"},
 	}
 
 	testName := func(i int) string {
@@ -819,19 +887,87 @@ func TestRSFlipFlop(t *testing.T) {
 	}
 
 	// starting with no input signals
-	f := newRSFlipFLop(nil, nil)
+	f, err := newRSFlipFLop(nil, nil)
+
+	if err != nil {
+		t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+	}
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
-			f.updateInputs(tc.rPin, tc.sPin)
+			err := f.updateInputs(tc.rPin, tc.sPin)
 
-			if gotQ := f.qEmitting(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power on Q, but got none."))
+			if err != nil && err.Error() != tc.wantError {
+				t.Error(fmt.Sprintf("Wanted error %s but got %s.", tc.wantError, err))
 			}
 
-			if gotQBar := f.qBarEmitting(); gotQBar != tc.wantQBar {
-				t.Errorf(fmt.Sprintf("Wanted power on QBar, but got none."))
+			if gotQ, _ := f.qEmitting(); gotQ != tc.wantQ {
+				t.Errorf(fmt.Sprintf("Wanted power of %t on Q, but got %t.", tc.wantQ, gotQ))
+			}
+
+			if gotQBar, _ := f.qBarEmitting(); gotQBar != tc.wantQBar {
+				t.Errorf(fmt.Sprintf("Wanted power of %t on QBar, but got %t.", tc.wantQBar, gotQBar))
 			}
 		})
 	}
 }
+
+/*
+func TestLtDLatch(t *testing.T) {
+	testCases := []struct {
+		dataPin      emitter
+		clkPin      emitter
+		wantQ     bool
+		wantQBar  bool
+		wantError string
+	}{
+		{nil, nil, false, true, ""},
+		{nil, &Battery{}, true, false, ""},
+		{nil, nil, true, false, ""},
+		{&Battery{}, nil, false, true, ""},
+		{nil, nil, false, true, ""},
+		{nil, &Battery{}, true, false, ""},
+		{&Battery{}, &Battery{}, true, false, "Both inputs of an RS Flip-Flop cannot be powered simultaneously"},
+	}
+
+	testName := func(i int) string {
+		var priorR emitter
+		var priorS emitter
+
+		if i == 0 {
+			priorR = nil
+			priorS = nil
+		} else {
+			priorR = testCases[i-1].rPin
+			priorS = testCases[i-1].sPin
+		}
+
+		return fmt.Sprintf("Stage %d: Switching from [rIn (%T) sIn (%T)] to [rIn (%T) sIn (%T)]", i+1, priorR, priorS, testCases[i].rPin, testCases[i].sPin)
+	}
+
+	// starting with no input signals
+	f, err := newRSFlipFLop(nil, nil)
+
+	if err != nil {
+		t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+	}
+
+	for i, tc := range testCases {
+		t.Run(testName(i), func(t *testing.T) {
+			err := f.updateInputs(tc.rPin, tc.sPin)
+
+			if err != nil && err.Error() != tc.wantError {
+				t.Error(fmt.Sprintf("Wanted error %s but got %s.", tc.wantError, err))
+			}
+
+			if gotQ, _ := f.qEmitting(); gotQ != tc.wantQ {
+				t.Errorf(fmt.Sprintf("Wanted power of %t on Q, but got %t.", tc.wantQ, gotQ))
+			}
+
+			if gotQBar, _ := f.qBarEmitting(); gotQBar != tc.wantQBar {
+				t.Errorf(fmt.Sprintf("Wanted power of %t on QBar, but got %t.", tc.wantQBar, gotQBar))
+			}
+		})
+	}
+}
+*/
