@@ -15,10 +15,10 @@ type ltDLatch struct {
 	sAnd   *andGate
 }
 
-func newLtDLatch(clkIn, dataIn emitter) (*ltDLatch, error) {
+func newLtDLatch(dataIn, clkIn emitter) (*ltDLatch, error) {
 	l := &ltDLatch{}
 
-	l.updateInputs(clkIn, dataIn)
+	l.updateInputs(dataIn, clkIn)
 
 	l.rs, _ = newRSFlipFLop(nil, nil) // make defaulted inner flipflop. setupComponents will set it up fully
 
@@ -30,7 +30,7 @@ func newLtDLatch(clkIn, dataIn emitter) (*ltDLatch, error) {
 	return l, nil
 }
 
-func (l *ltDLatch) updateInputs(clkIn, dataIn emitter) {
+func (l *ltDLatch) updateInputs(dataIn, clkIn emitter) {
 	l.dataIn = dataIn
 	l.clkIn = clkIn
 }
@@ -39,7 +39,7 @@ func (l *ltDLatch) setupComponents() error {
 	l.rAnd = newANDGate(newInverter(l.dataIn), l.clkIn)
 	l.sAnd = newANDGate(l.dataIn, l.clkIn)
 
-	// pass along the new current input states to the inner flipflop
+	// pass along the new input states to the inner flipflop
 	err := l.rs.updateInputs(l.rAnd, l.sAnd)
 	if err != nil {
 		return err
@@ -63,9 +63,9 @@ func (l *ltDLatch) qEmitting() (bool, error) {
 }
 
 func (l *ltDLatch) qBarEmitting() (bool, error) {
-	if qEmitting, err := l.qEmitting(); err != nil {
-		return !qEmitting, err
+	if qBarEmitting, err := l.rs.qBarEmitting(); err != nil {
+		return qBarEmitting, err
 	} else {
-		return !qEmitting, nil
+		return qBarEmitting, nil
 	}
 }

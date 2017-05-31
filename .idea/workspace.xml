@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="108d38c3-0e12-48c1-b6a4-f0c31193e38f" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/circuit/leveltriggered_dlatch.go" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/circuit/rsflipflop.go" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/circuit/flipflop.go" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/circuit_test.go" afterPath="$PROJECT_DIR$/circuit/circuit_test.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/leveltriggered_dlatch.go" afterPath="$PROJECT_DIR$/circuit/leveltriggered_dlatch.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/rsflipflop.go" afterPath="$PROJECT_DIR$/circuit/rsflipflop.go" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -55,8 +53,8 @@
       <file leaf-file-name="rsflipflop.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/circuit/rsflipflop.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="592">
-              <caret line="61" column="25" lean-forward="true" selection-start-line="61" selection-start-column="25" selection-end-line="61" selection-end-column="25" />
+            <state relative-caret-position="0">
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding>
                 <element signature="e#17#32#0" expanded="true" />
               </folding>
@@ -67,8 +65,8 @@
       <file leaf-file-name="leveltriggered_dlatch.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/circuit/leveltriggered_dlatch.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1008">
-              <caret line="56" column="0" lean-forward="true" selection-start-line="56" selection-start-column="0" selection-end-line="56" selection-end-column="0" />
+            <state relative-caret-position="453">
+              <caret line="65" column="33" lean-forward="false" selection-start-line="65" selection-start-column="33" selection-end-line="65" selection-end-column="33" />
               <folding />
             </state>
           </provider>
@@ -77,8 +75,8 @@
       <file leaf-file-name="circuit_test.go" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/circuit/circuit_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="578">
-              <caret line="972" column="2" lean-forward="false" selection-start-line="972" selection-start-column="2" selection-end-line="972" selection-end-column="2" />
+            <state relative-caret-position="776">
+              <caret line="956" column="47" lean-forward="true" selection-start-line="956" selection-start-column="47" selection-end-line="956" selection-end-column="47" />
               <folding>
                 <element signature="e#17#64#0" expanded="true" />
               </folding>
@@ -89,8 +87,8 @@
       <file leaf-file-name="complementer.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/circuit/complementer.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="38" column="48" lean-forward="false" selection-start-line="38" selection-start-column="48" selection-end-line="38" selection-end-column="48" />
+            <state relative-caret-position="342">
+              <caret line="29" column="61" lean-forward="false" selection-start-line="29" selection-start-column="55" selection-end-line="29" selection-end-column="61" />
               <folding />
             </state>
           </provider>
@@ -99,8 +97,8 @@
       <file leaf-file-name="oscillator.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/circuit/oscillator.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="720">
-              <caret line="43" column="25" lean-forward="true" selection-start-line="43" selection-start-column="25" selection-end-line="43" selection-end-column="25" />
+            <state relative-caret-position="486">
+              <caret line="27" column="23" lean-forward="true" selection-start-line="27" selection-start-column="23" selection-end-line="27" selection-end-column="23" />
               <folding>
                 <element signature="e#17#50#0" expanded="true" />
               </folding>
@@ -124,7 +122,7 @@
         <entry file="file://$PROJECT_DIR$/circuit/subtractor.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="306">
-              <caret line="17" column="35" lean-forward="false" selection-start-line="17" selection-start-column="19" selection-end-line="17" selection-end-column="35" />
+              <caret line="17" column="26" lean-forward="true" selection-start-line="17" selection-start-column="26" selection-end-line="17" selection-end-column="26" />
               <folding />
             </state>
           </provider>
@@ -173,8 +171,8 @@
         <option value="$PROJECT_DIR$/circuit/gate.go" />
         <option value="$PROJECT_DIR$/circuit/subtractor.go" />
         <option value="$PROJECT_DIR$/circuit/flipflop.go" />
-        <option value="$PROJECT_DIR$/circuit/rsflipflop.go" />
         <option value="$PROJECT_DIR$/circuit/leveltriggered_dlatch.go" />
+        <option value="$PROJECT_DIR$/circuit/rsflipflop.go" />
         <option value="$PROJECT_DIR$/circuit/circuit_test.go" />
       </list>
     </option>
@@ -374,6 +372,16 @@
       <pattern value="^TestRSFlipFlop_qEmitting_InputValidation$" />
       <method />
     </configuration>
+    <configuration default="false" name="TestLtDLatch in circuit_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
+      <module name="adder" />
+      <working_directory value="$PROJECT_DIR$/circuit" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.concur.com/mparks/adder/circuit" />
+      <pattern value="^TestLtDLatch$" />
+      <method />
+    </configuration>
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="" />
       <working_directory value="$PROJECT_DIR$" />
@@ -437,17 +445,19 @@
       <filePath value="C:\gospace\src\github.concur.com\mparks\adder\circuit\circuit_test.go" />
       <method />
     </configuration>
-    <list size="4">
+    <list size="5">
       <item index="0" class="java.lang.String" itemvalue="Go Test.Test" />
       <item index="1" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop in circuit_test.go" />
       <item index="2" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop_ValidateInputs in circuit_test.go" />
       <item index="3" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop_qEmitting_InputValidation in circuit_test.go" />
+      <item index="4" class="java.lang.String" itemvalue="Go Test.TestLtDLatch in circuit_test.go" />
     </list>
     <recent_temporary>
-      <list size="3">
-        <item index="0" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop_qEmitting_InputValidation in circuit_test.go" />
-        <item index="1" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop in circuit_test.go" />
-        <item index="2" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop_ValidateInputs in circuit_test.go" />
+      <list size="4">
+        <item index="0" class="java.lang.String" itemvalue="Go Test.TestLtDLatch in circuit_test.go" />
+        <item index="1" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop_qEmitting_InputValidation in circuit_test.go" />
+        <item index="2" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop in circuit_test.go" />
+        <item index="3" class="java.lang.String" itemvalue="Go Test.TestRSFlipFlop_ValidateInputs in circuit_test.go" />
       </list>
     </recent_temporary>
   </component>
@@ -461,17 +471,17 @@
     <history-entry file="Test - 2017.05.31 at 10h 52m 41s.xml">
       <configuration name="Test" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRSFlipFlop_ValidateInputs_in_circuit_test_go - 2017.05.31 at 10h 16m 32s.xml">
-      <configuration name="TestRSFlipFlop_ValidateInputs in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="Test - 2017.05.31 at 15h 49m 15s.xml">
+      <configuration name="Test" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestRSFlipFlop_ValidateInputs_in_circuit_test_go - 2017.05.31 at 10h 17m 16s.xml">
-      <configuration name="TestRSFlipFlop_ValidateInputs in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestLtDLatch_in_circuit_test_go - 2017.05.31 at 15h 38m 11s.xml">
+      <configuration name="TestLtDLatch in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="TestLtDLatch_in_circuit_test_go - 2017.05.31 at 15h 38m 23s.xml">
+      <configuration name="TestLtDLatch in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
     <history-entry file="TestRSFlipFlop_ValidateInputs_in_circuit_test_go - 2017.05.31 at 10h 19m 55s.xml">
       <configuration name="TestRSFlipFlop_ValidateInputs in circuit_test.go" configurationId="GoTestRunConfiguration" />
-    </history-entry>
-    <history-entry file="TestRSFlipFlop_in_circuit_test_go - 2017.05.30 at 16h 36m 11s.xml">
-      <configuration name="TestRSFlipFlop in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
     <history-entry file="TestRSFlipFlop_in_circuit_test_go - 2017.05.31 at 10h 31m 00s.xml">
       <configuration name="TestRSFlipFlop in circuit_test.go" configurationId="GoTestRunConfiguration" />
@@ -504,7 +514,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30406854" sideWeight="0.44498777" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32976446" sideWeight="0.49755502" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22376874" sideWeight="0.72982883" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.22376874" sideWeight="0.72982883" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Coverage" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.16748166" sideWeight="0.5" order="4" side_tool="true" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20021413" sideWeight="0.5550122" order="7" side_tool="false" content_ui="tabs" />
@@ -573,7 +583,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="31" />
+      <option name="time" value="32" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -861,32 +871,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/subtractor.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="17" column="35" lean-forward="false" selection-start-line="17" selection-start-column="19" selection-end-line="17" selection-end-column="35" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/complementer.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="38" column="48" lean-forward="false" selection-start-line="38" selection-start-column="48" selection-end-line="38" selection-end-column="48" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/oscillator.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="720">
-          <caret line="43" column="25" lean-forward="true" selection-start-line="43" selection-start-column="25" selection-end-line="43" selection-end-column="25" />
-          <folding>
-            <element signature="e#17#50#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/circuit/gateinvert.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="565">
@@ -921,28 +905,54 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/rsflipflop.go">
+    <entry file="file://$PROJECT_DIR$/circuit/complementer.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="592">
-          <caret line="61" column="25" lean-forward="true" selection-start-line="61" selection-start-column="25" selection-end-line="61" selection-end-column="25" />
+        <state relative-caret-position="342">
+          <caret line="29" column="61" lean-forward="false" selection-start-line="29" selection-start-column="55" selection-end-line="29" selection-end-column="61" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/circuit/subtractor.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="17" column="26" lean-forward="true" selection-start-line="17" selection-start-column="26" selection-end-line="17" selection-end-column="26" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/circuit/oscillator.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="486">
+          <caret line="27" column="23" lean-forward="true" selection-start-line="27" selection-start-column="23" selection-end-line="27" selection-end-column="23" />
           <folding>
-            <element signature="e#17#32#0" expanded="true" />
+            <element signature="e#17#50#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/leveltriggered_dlatch.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1008">
-          <caret line="56" column="0" lean-forward="true" selection-start-line="56" selection-start-column="0" selection-end-line="56" selection-end-column="0" />
+        <state relative-caret-position="453">
+          <caret line="65" column="33" lean-forward="false" selection-start-line="65" selection-start-column="33" selection-end-line="65" selection-end-column="33" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/circuit/rsflipflop.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#17#32#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/circuit_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="578">
-          <caret line="972" column="2" lean-forward="false" selection-start-line="972" selection-start-column="2" selection-end-line="972" selection-end-column="2" />
+        <state relative-caret-position="776">
+          <caret line="956" column="47" lean-forward="true" selection-start-line="956" selection-start-column="47" selection-end-line="956" selection-end-column="47" />
           <folding>
             <element signature="e#17#64#0" expanded="true" />
           </folding>

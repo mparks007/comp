@@ -45,7 +45,7 @@ func (f *rsFlipFlop) updateInputs(rPin, sPin emitter) error {
 
 func (f *rsFlipFlop) validateInputs(rPin, sPin emitter) error {
 	if (rPin != nil && rPin.Emitting()) && (sPin != nil && sPin.Emitting()) {
-		return errors.New("Both inputs of an RS Flip-Flop cannot be powered simultaneously")
+		return errors.New("Both inputs of a Flip-Flop cannot be powered simultaneously")
 	}
 
 	return nil
