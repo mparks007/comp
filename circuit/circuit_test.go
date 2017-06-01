@@ -371,8 +371,8 @@ func TestEightBitAdder_BadInputs(t *testing.T) {
 		byte2     string
 		wantError string
 	}{
-		{"0000000", "00000000", "First input not in 8-bit binary format:"},  // only 7 bits on first byte
-		{"00000000", "0000000", "Second input not in 8-bit binary format:"}, // only 7 bits on second byte
+		{"0000000", "00000000", "First input not in 8-bit binary format:"},  // only 7 bits switchOn first byte
+		{"00000000", "0000000", "Second input not in 8-bit binary format:"}, // only 7 bits switchOn second byte
 		{"bad", "00000000", "First input not in 8-bit binary format:"},
 		{"00000000", "bad", "Second input not in 8-bit binary format:"},
 		{"", "", "First input not in 8-bit binary format:"},
@@ -427,7 +427,7 @@ func TestEightBitAdder_GoodInputs(t *testing.T) {
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
-				return // on error, expecting to have a nil adder here so cannot do further tests using one
+				return // switchOn error, expecting to have a nil adder here so cannot do further tests using one
 			}
 
 			if a == nil {
@@ -452,8 +452,8 @@ func TestSixteenBitAdder_BadInputs(t *testing.T) {
 		bytes2    string
 		wantError string
 	}{
-		{"000000000000000", "0000000000000000", "First input not in 16-bit binary format:"},  // only 15 bits on first byte
-		{"0000000000000000", "000000000000000", "Second input not in 16-bit binary format:"}, // only 15 bits on second byte
+		{"000000000000000", "0000000000000000", "First input not in 16-bit binary format:"},  // only 15 bits switchOn first byte
+		{"0000000000000000", "000000000000000", "Second input not in 16-bit binary format:"}, // only 15 bits switchOn second byte
 		{"bad", "0000000000000000", "First input not in 16-bit binary format:"},
 		{"0000000000000000", "bad", "Second input not in 16-bit binary format:"},
 		{"", "", "First input not in 16-bit binary format:"},
@@ -509,7 +509,7 @@ func TestSixteenBitAdder_GoodInputs(t *testing.T) {
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
-				return // on error, expecting to have a nil adder here so cannot do further tests using one
+				return // switchOn error, expecting to have a nil adder here so cannot do further tests using one
 			}
 
 			if a == nil {
@@ -628,7 +628,7 @@ func TestOnesCompliment_GoodInputs(t *testing.T) {
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
-				return // on error, expecting to have a nil OnesComplementer here so cannot do further tests using one
+				return // switchOn error, expecting to have a nil OnesComplementer here so cannot do further tests using one
 			}
 
 			if c == nil {
@@ -650,8 +650,8 @@ func TestEightBitSubtracter_BadInputs(t *testing.T) {
 		subtrahend string
 		wantError  string
 	}{
-		{"0000000", "00000000", "First input not in 8-bit binary format:"},  // only 7 bits on first byte
-		{"00000000", "0000000", "Second input not in 8-bit binary format:"}, // only 7 bits on second byte
+		{"0000000", "00000000", "First input not in 8-bit binary format:"},  // only 7 bits switchOn first byte
+		{"00000000", "0000000", "Second input not in 8-bit binary format:"}, // only 7 bits switchOn second byte
 		{"bad", "00000000", "First input not in 8-bit binary format:"},
 		{"00000000", "bad", "Input bits not in binary format:"},
 		{"", "", "Input bits not in binary format:"},
@@ -702,7 +702,7 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
-				return // on error, expecting to have s nil subtractor here so cannot do further tests using one
+				return // switchOn error, expecting to have s nil subtractor here so cannot do further tests using one
 			}
 
 			if s == nil {
@@ -800,7 +800,7 @@ func TestRSFlipFlop_ValidateInputs(t *testing.T) {
 	f, err := newRSFlipFLop(nil, nil)
 
 	if err != nil {
-		t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
 	}
 
 	for _, tc := range testCases {
@@ -836,7 +836,7 @@ func TestRSFlipFlop_qEmitting_InputValidation(t *testing.T) {
 			f, err := newRSFlipFLop(rPin, sPin)
 
 			if err != nil {
-				t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+				t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
 			}
 
 			// this doesn't seem to actually change the flip-flop's inner pins (hmmmm)
@@ -849,7 +849,7 @@ func TestRSFlipFlop_qEmitting_InputValidation(t *testing.T) {
 			_, err = f.qEmitting()
 
 			if err != nil && err.Error() != tc.wantError {
-				t.Errorf(fmt.Sprintf("Wanted error %t on Q, but got %t.", tc.wantError, err))
+				t.Errorf(fmt.Sprintf("Wanted error %t switchOn Q, but got %t.", tc.wantError, err))
 			}
 		})
 	}
@@ -891,7 +891,7 @@ func TestRSFlipFlop(t *testing.T) {
 	f, err := newRSFlipFLop(nil, nil)
 
 	if err != nil {
-		t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
 	}
 
 	for i, tc := range testCases {
@@ -903,11 +903,11 @@ func TestRSFlipFlop(t *testing.T) {
 			}
 
 			if gotQ, _ := f.qEmitting(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t on Q, but got %t.", tc.wantQ, gotQ))
+				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn Q, but got %t.", tc.wantQ, gotQ))
 			}
 
 			if gotQBar, _ := f.qBarEmitting(); gotQBar != tc.wantQBar {
-				t.Errorf(fmt.Sprintf("Wanted power of %t on QBar, but got %t.", tc.wantQBar, gotQBar))
+				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn QBar, but got %t.", tc.wantQBar, gotQBar))
 			}
 		})
 	}
@@ -950,7 +950,7 @@ func TestLevTrigDLatch(t *testing.T) {
 	l, err := newLtDLatch(nil, nil)
 
 	if err != nil {
-		t.Error(fmt.Sprintf("Expecting no errors on initial creation but got %s.", err))
+		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
 	}
 
 	for i, tc := range testCases {
@@ -958,11 +958,11 @@ func TestLevTrigDLatch(t *testing.T) {
 			l.updateInputs(tc.dataPin, tc.clkPin)
 
 			if gotQ, _ := l.qEmitting(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t on Q, but got %t.", tc.wantQ, gotQ))
+				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn Q, but got %t.", tc.wantQ, gotQ))
 			}
 
 			if gotQBar, _ := l.qBarEmitting(); gotQBar != tc.wantQBar {
-				t.Errorf(fmt.Sprintf("Wanted power of %t on QBar, but got %t.", tc.wantQBar, gotQBar))
+				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn QBar, but got %t.", tc.wantQBar, gotQBar))
 			}
 		})
 	}

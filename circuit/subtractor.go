@@ -10,12 +10,12 @@ func NewEightBitSubtractor(byte1, byte2 string) (*EightBitSubtractor, error) {
 	s := &EightBitSubtractor{}
 
 	var err error
-	s.comp, err = NewOnesComplementer([]byte(byte2), &Battery{}) // the battery ensures the compliment occurs since the complimentor can conditional compliment based on that emit
+	s.comp, err = NewOnesComplementer([]byte(byte2), &Battery{}) // the switchIsPowered ensures the compliment occurs since the complimentor can conditional compliment based switchOn that emit
 	if err != nil {
 		return nil, err
 	}
 
-	s.adder, err = NewEightBitAdder(byte1, s.comp.Complement(), &Battery{}) // the added battery is the "+1" to make the "two's compliment"
+	s.adder, err = NewEightBitAdder(byte1, s.comp.Complement(), &Battery{}) // the added switchIsPowered is the "+1" to make the "two's compliment"
 	if err != nil {
 		return nil, err
 	}

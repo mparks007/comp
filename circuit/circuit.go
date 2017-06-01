@@ -1,13 +1,20 @@
 package circuit
 
-type emitter interface {
-	Emitting() bool
+type powerPublisher interface {
+	Subscribe(func(bool)) // who do I tell
+	Publish(bool)             // how do I tell them
 }
 
-type Battery struct {
+type publication struct {
+	subscriberCallbacks []func(on bool)
 }
 
-// Emitting on a Battery is always considered true (Battery never drains)
-func (b *Battery) Emitting() bool {
-	return true
+func (p *publication) Subscribe(callback func(bool)) {
+	p.subscriberCallbacks = append(p.subscriberCallbacks, callback)
+}
+
+func (p *publication) Publish(state bool) {
+	for _, callback := range p.subscriberCallbacks {
+		callback(state)
+	}
 }

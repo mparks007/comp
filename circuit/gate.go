@@ -24,6 +24,40 @@ func (g *andGate) Emitting() bool {
 	return g.relay2.closedOut.Emitting()
 }
 
+type AndGate2 struct {
+	pin1Powered bool
+	pin2Powered bool
+	relay1      *Relay2
+	relay2      *Relay2
+}
+
+func NewANDGate2(pin1, pin2 powerPublisher) *AndGate2 {
+	g := &AndGate2{}
+
+	g.relay1 = NewRelay2(&Battery{}, pin1)
+	g.relay2 = NewRelay2(g.relay1.ClosedOut, pin2)
+
+	pin1.Subscribe(g.pin1PowerChange)
+	pin2.Subscribe(g.pin2PowerChange)
+
+	return g
+}
+
+func (g *AndGate2) pin1PowerChange(state bool) {
+	if g.pin1Powered != state {
+		g.pin1Powered = state
+		//r.OpenOut.Publish(state && !r.bInPowered)
+	}
+}
+
+func (g *AndGate2) pin2PowerChange(state bool) {
+	if g.pin2Powered != state {
+		g.pin2Powered = state
+		//r.ClosedOut.Publish(state && r.aInPowered)
+		//r.OpenOut.Publish(state && !r.bInPowered)
+	}
+}
+
 // OR
 // 0 0 0
 // 1 0 1

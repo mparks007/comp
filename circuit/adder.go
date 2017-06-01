@@ -134,7 +134,7 @@ func (a *EightBitAdder) String() string {
 }
 
 // 16-bit Adder
-// Handles a Carry bit in from the far right, chains the two, inner half-adder on a Carry, and holds potential Carry bit after summing all 16 bits
+// Handles a Carry bit in from the far right, chains the two, inner half-adder switchOn a Carry, and holds potential Carry bit after summing all 16 bits
 //    1001110110011101
 // +  1101011011010110
 // = 10111010001110011
