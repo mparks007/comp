@@ -5,11 +5,13 @@ type Battery struct {
 }
 
 func (b *Battery) Charge() {
-	b.Publish(true)
+	b.state = true
+	b.Publish()
 }
 
 func (b *Battery) Discharge() {
-	b.Publish(false)
+	b.state = false
+	b.Publish()
 }
 
 // OLD STUFF

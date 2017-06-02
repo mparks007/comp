@@ -1,20 +1,24 @@
 package circuit
 
-type powerPublisher interface {
-	Subscribe(func(bool)) // who do I tell
-	Publish(bool)             // how do I tell them
+type publisher interface {
+	Publish()
+	Register(func(bool))
 }
 
 type publication struct {
+	state               bool
 	subscriberCallbacks []func(on bool)
 }
 
-func (p *publication) Subscribe(callback func(bool)) {
+func (p *publication) Register(callback func(bool)) {
 	p.subscriberCallbacks = append(p.subscriberCallbacks, callback)
+
+	// ensure newly registered callback immediately gets current state
+	callback(p.state)
 }
 
-func (p *publication) Publish(state bool) {
-	for _, callback := range p.subscriberCallbacks {
-		callback(state)
+func (p *publication) Publish() {
+	for _, subscriber := range p.subscriberCallbacks {
+		subscriber(p.state)
 	}
 }

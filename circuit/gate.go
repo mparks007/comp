@@ -24,37 +24,31 @@ func (g *andGate) Emitting() bool {
 	return g.relay2.closedOut.Emitting()
 }
 
-type AndGate2 struct {
-	pin1Powered bool
-	pin2Powered bool
-	relay1      *Relay2
-	relay2      *Relay2
+type ANDGate2 struct {
+	relays []*Relay2
+	publication
 }
 
-func NewANDGate2(pin1, pin2 powerPublisher) *AndGate2 {
-	g := &AndGate2{}
+func NewANDGate2(pins ...publisher) *ANDGate2 {
+	g := &ANDGate2{}
 
-	g.relay1 = NewRelay2(&Battery{}, pin1)
-	g.relay2 = NewRelay2(g.relay1.ClosedOut, pin2)
+	for i, p := range pins {
+		if i == 0 {
+			g.relays = append(g.relays, NewRelay2(&Battery{}, p))
+		} else {
+			g.relays = append(g.relays, NewRelay2(&g.relays[i-1].ClosedOut, p))
+		}
+	}
 
-	pin1.Subscribe(g.pin1PowerChange)
-	pin2.Subscribe(g.pin2PowerChange)
+	g.relays[len(pins)-1].ClosedOut.Register(g.powerChange)
 
 	return g
 }
 
-func (g *AndGate2) pin1PowerChange(state bool) {
-	if g.pin1Powered != state {
-		g.pin1Powered = state
-		//r.OpenOut.Publish(state && !r.bInPowered)
-	}
-}
-
-func (g *AndGate2) pin2PowerChange(state bool) {
-	if g.pin2Powered != state {
-		g.pin2Powered = state
-		//r.ClosedOut.Publish(state && r.aInPowered)
-		//r.OpenOut.Publish(state && !r.bInPowered)
+func (g *ANDGate2) powerChange(state bool) {
+	if g.state != state {
+		g.state = state
+		g.Publish()
 	}
 }
 
@@ -80,6 +74,39 @@ func (g *orGate) Emitting() bool {
 	return g.relay1.closedOut.Emitting() || g.relay2.closedOut.Emitting()
 }
 
+type ORGate2 struct {
+	relays []*Relay2
+	publication
+}
+
+func NewORGate2(pins ...publisher) *ORGate2 {
+	g := &ORGate2{}
+
+	for i, p := range pins {
+		g.relays = append(g.relays, NewRelay2(&Battery{}, p))
+		g.relays[i].ClosedOut.Register(g.powerChange)
+	}
+
+	return g
+}
+
+func (g *ORGate2) powerChange(state bool) {
+	newState := false
+
+	// check to see if ANY of the relays are closed
+	for _, r := range g.relays {
+		if r.ClosedOut.state {
+			newState = true
+			break
+		}
+	}
+
+	if g.state != newState {
+		g.state = newState
+		g.Publish()
+	}
+}
+
 // NAND
 // 0 0 1
 // 1 0 1
@@ -100,6 +127,39 @@ func newNANDGate(pin1, pin2 emitter) *nandGate {
 
 func (g *nandGate) Emitting() bool {
 	return g.relay1.openOut.Emitting() || g.relay2.openOut.Emitting()
+}
+
+type NANDGate2 struct {
+	relays []*Relay2
+	publication
+}
+
+func NewNANDGate2(pins ...publisher) *NANDGate2 {
+	g := &NANDGate2{}
+
+	for i, p := range pins {
+		g.relays = append(g.relays, NewRelay2(&Battery{}, p))
+		g.relays[i].OpenOut.Register(g.powerChange)
+	}
+
+	return g
+}
+
+func (g *NANDGate2) powerChange(state bool) {
+	newState := false
+
+	// check to see if ANY of the relays are open
+	for _, r := range g.relays {
+		if r.OpenOut.state {
+			newState = true
+			break
+		}
+	}
+
+	if g.state != newState {
+		g.state = newState
+		g.Publish()
+	}
 }
 
 // NOR

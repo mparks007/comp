@@ -1,7 +1,6 @@
 package circuit
 
 type Switch struct {
-	switchOn bool
 	//	switchIsPowered bool
 	publication
 }
@@ -17,9 +16,10 @@ func NewSwitch(init bool, powerSource powerPublisher) *Switch {
 }
 */
 func NewSwitch(init bool) *Switch {
+	//s := &Switch{{init, nil}}  // why cant I initialize like this?
 	s := &Switch{}
 
-	s.switchOn = init
+	s.state = init
 
 	return s
 }
@@ -39,22 +39,22 @@ func (s *Switch) powerUpdate(newState bool) {
 }
 */
 func (s *Switch) TurnOn() {
-	if !s.switchOn {
-		s.switchOn = true
-		s.Publish(true)
+	if !s.state {
+		s.state = true
+		s.Publish()
 		//s.Publish(s.switchIsPowered)
 	}
 }
 
 func (s *Switch) TurnOff() {
-	if s.switchOn {
-		s.switchOn = false
-		s.Publish(false)
+	if s.state {
+		s.state = false
+		s.Publish()
 	}
 }
 
 func (s *Switch) Toggle() {
-	if s.switchOn {
+	if s.state {
 		s.TurnOff()
 	} else {
 		s.TurnOn()
