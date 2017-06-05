@@ -1,62 +1,53 @@
 package circuit
 
+import (
+	"errors"
+	"fmt"
+	"regexp"
+)
+
 type Switch struct {
-	//	switchIsPowered bool
-	publication
+	bitPublication
 }
 
-/*
-func NewSwitch(init bool, powerSource powerPublisher) *Switch {
-	s := &Switch{}
-
-	s.switchOn = init
-	s.SubScribeToPower(powerSource)
-
-	return s
-}
-*/
 func NewSwitch(init bool) *Switch {
-	//s := &Switch{{init, nil}}  // why cant I initialize like this?
 	s := &Switch{}
 
-	s.state = init
+	s.isPowered = init
 
 	return s
 }
 
-/*
-func (s *Switch) SubScribeToPower(powerSource powerPublisher) {
-	powerSource.Subscribe(s.powerUpdate)
-}
-*/
-
-/*
-func (s *Switch) powerUpdate(newState bool) {
-	if s.switchIsPowered != newState {
-		s.switchIsPowered = newState
-		s.Publish(s.switchOn && newState)
-	}
-}
-*/
-func (s *Switch) TurnOn() {
-	if !s.state {
-		s.state = true
-		s.Publish()
-		//s.Publish(s.switchIsPowered)
-	}
+type EightSwitchBank struct {
+	Switches [8]*Switch
 }
 
-func (s *Switch) TurnOff() {
-	if s.state {
-		s.state = false
-		s.Publish()
+func NewEightSwitchBank(bits string) (*EightSwitchBank, error) {
+
+	match, err := regexp.MatchString("^[01]{8}$", bits)
+	if err != nil {
+		return nil, err
 	}
+	if !match {
+		err = errors.New(fmt.Sprint("Input not in 8-bit binary format: " + bits))
+		return nil, err
+	}
+
+	sb := &EightSwitchBank{}
+
+	for i, bit := range bits {
+		sb.Switches[i] = NewSwitch(bit == '1')
+	}
+
+	return sb, nil
 }
 
-func (s *Switch) Toggle() {
-	if s.state {
-		s.TurnOff()
-	} else {
-		s.TurnOn()
+func (s *EightSwitchBank) AsBitPublishers() [8]bitPublisher {
+	bitPubs := [8]bitPublisher{}
+
+	for _, sw := range s.Switches {
+		bitPubs[0] = sw
 	}
+
+	return bitPubs
 }

@@ -717,7 +717,7 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 	}
 }
 
-// Fragile test due to timing of asking oscillator vs. state of oscillator at the time being asked
+// Fragile test due to timing of asking oscillator vs. isPowered of oscillator at the time being asked
 func TestOscillator(t *testing.T) {
 	testCases := []struct {
 		initState     bool
