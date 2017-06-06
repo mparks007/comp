@@ -15,7 +15,7 @@ type rsFlipFlop struct {
 	sIn          emitter
 	rNor         *norGate
 	sNor         *norGate
-	sNorTempPin2 emitter // to avoid a direct link between rNor's output as sNor's input (recursion!)
+	sNorTempPin2 emitter // to avoid a direct link between rNor'c output as sNor'c input (recursion!)
 }
 
 func newRSFlipFLop(rPin, sPin emitter) (*rsFlipFlop, error) {

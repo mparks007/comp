@@ -1,27 +1,22 @@
 package circuit
 
 type Battery struct {
+	bitPublication
 }
 
-func (b *Battery) Register(callback func(bool)) {
-	callback(true)
-}
-
-//func (b *Battery) GetState() bool {
-//	return true
-//}
-
-/*
-func (b *Battery) Charge() {
+func NewBattery() *Battery {
+	b := &Battery{}
 	b.isPowered = true
-	b.Publish()
+	return b
+}
+func (b *Battery) Charge() {
+	b.Publish(true)
 }
 
 func (b *Battery) Discharge() {
-	b.isPowered = false
-	b.Publish()
+	b.Publish(false)
 }
-*/
+
 // OLD STUFF
 // OLD STUFF
 // OLD STUFF

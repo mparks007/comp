@@ -16,7 +16,7 @@ func NewANDGate2(pins ...bitPublisher) *ANDGate2 {
 
 	for i, pin := range pins {
 		if i == 0 {
-			g.relays = append(g.relays, NewRelay2(&Battery{}, pin))
+			g.relays = append(g.relays, NewRelay2(NewBattery(), pin))
 		} else {
 			g.relays = append(g.relays, NewRelay2(&g.relays[i-1].ClosedOut, pin))
 		}
@@ -43,7 +43,7 @@ func NewORGate2(pins ...bitPublisher) *ORGate2 {
 	g := &ORGate2{}
 
 	for i, pin := range pins {
-		g.relays = append(g.relays, NewRelay2(&Battery{}, pin))
+		g.relays = append(g.relays, NewRelay2(NewBattery(), pin))
 
 		// every relay can trigger state in a chain of ORs
 		g.relays[i].ClosedOut.Register(g.powerUpdate)
@@ -81,7 +81,7 @@ func NewNANDGate2(pins ...bitPublisher) *NANDGate2 {
 	g := &NANDGate2{}
 
 	for i, pin := range pins {
-		g.relays = append(g.relays, NewRelay2(&Battery{}, pin))
+		g.relays = append(g.relays, NewRelay2(NewBattery(), pin))
 
 		// every relay can trigger state in a chain of NANDs
 		g.relays[i].OpenOut.Register(g.powerUpdate)
@@ -121,7 +121,7 @@ func NewNORGate2(pins ...bitPublisher) *NORGate2 {
 
 	for i, pin := range pins {
 		if i == 0 {
-			g.relays = append(g.relays, NewRelay2(&Battery{}, pin))
+			g.relays = append(g.relays, NewRelay2(NewBattery(), pin))
 		} else {
 			g.relays = append(g.relays, NewRelay2(&g.relays[i-1].OpenOut, pin))
 		}

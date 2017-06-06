@@ -1,5 +1,9 @@
 package circuit
 
+import (
+	"sync"
+)
+
 // Half Adder
 // A and B in result in Sum and Carry out (doesn't handle carry in, needs full-adder)
 // A B		Sum		Carry
@@ -55,7 +59,7 @@ type EightBitAdder2 struct {
 	CarryOut   bitPublisher
 }
 
-func NewEightBitAdder2(minuendBits, subtrahendBits [8]bitPublisher, carryIn bitPublisher) *EightBitAdder2 {
+func NewEightBitAdder2(addend1Pins, addend2Pins [8]bitPublisher, carryIn bitPublisher) *EightBitAdder2 {
 
 	a := &EightBitAdder2{}
 
@@ -63,9 +67,9 @@ func NewEightBitAdder2(minuendBits, subtrahendBits [8]bitPublisher, carryIn bitP
 		var f *FullAdder2
 
 		if i == 7 {
-			f = NewFullAdder2(minuendBits[i], subtrahendBits[i], carryIn)
+			f = NewFullAdder2(addend1Pins[i], addend2Pins[i], carryIn)
 		} else {
-			f = NewFullAdder2(minuendBits[i], subtrahendBits[i], a.fullAdders[i+1].Carry) // carry-in is the neighboring adders carry-out
+			f = NewFullAdder2(addend1Pins[i], addend2Pins[i], a.fullAdders[i+1].Carry) // carry-in is the neighboring adders carry-out
 		}
 
 		a.Sums[i] = f.Sum
@@ -78,16 +82,12 @@ func NewEightBitAdder2(minuendBits, subtrahendBits [8]bitPublisher, carryIn bitP
 	return a
 }
 
-func (a *EightBitAdder2) AsString() string {
+func (a *EightBitAdder2) AnswerAsString() string {
 	answer := ""
-
-	if a.CarryOut.(bitPublication).isPowered {
-		answer += "1"
-	}
 
 	for _, v := range a.fullAdders {
 
-		if v.Sum.(bitPublication).isPowered {
+		if v.Sum.(*XORGate2).isPowered {
 			answer += "1"
 		} else {
 			answer += "0"
@@ -95,4 +95,92 @@ func (a *EightBitAdder2) AsString() string {
 	}
 
 	return answer
+}
+
+func (a *EightBitAdder2) CarryOutAsBool() bool {
+	return a.CarryOut.(*ORGate2).isPowered
+}
+
+// 16-bit Adder
+// Handles a Carry bit in from the far right, chains the two, inner half-adder switchOn a Carry, and holds potential Carry bit after summing all 16 bits
+//    1001110110011101
+// +  1101011011010110
+// = 10111010001110011
+
+type SixteenBitAdder2 struct {
+	rightAdder *EightBitAdder2
+	leftAdder  *EightBitAdder2
+	Sums       [16]bitPublisher
+	CarryOut   bitPublisher
+}
+
+func NewSixteenBitAdder2(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitPublisher) *SixteenBitAdder2 {
+
+	a := &SixteenBitAdder2{}
+
+	var addend1Right [8]bitPublisher
+	var addend2Right [8]bitPublisher
+	copy(addend1Right[:], addend1Pins[8:])
+	copy(addend2Right[:], addend2Pins[8:])
+
+	var addend1Left [8]bitPublisher
+	var addend2Left [8]bitPublisher
+	copy(addend1Left[:], addend1Pins[:8])
+	copy(addend2Left[:], addend2Pins[:8])
+
+	a.rightAdder = NewEightBitAdder2(addend1Right, addend2Right, carryIn)
+	a.leftAdder = NewEightBitAdder2(addend1Left, addend2Left, a.rightAdder.CarryOut)
+
+	for i, la := range a.leftAdder.Sums {
+		a.Sums[i] = la
+	}
+	for i, ra := range a.rightAdder.Sums {
+		a.Sums[i+8] = ra
+	}
+
+	a.CarryOut = a.leftAdder.CarryOut
+
+	return a
+}
+
+func (a *SixteenBitAdder2) AnswerAsString() string {
+	answerLeft := ""
+	answerRight := ""
+
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for _, v := range a.leftAdder.fullAdders {
+
+			if v.Sum.(*XORGate2).isPowered {
+				answerLeft += "1"
+			} else {
+				answerLeft += "0"
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, v := range a.rightAdder.fullAdders {
+
+			if v.Sum.(*XORGate2).isPowered {
+				answerRight += "1"
+			} else {
+				answerRight += "0"
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	return answerLeft + answerRight
+}
+
+func (a *SixteenBitAdder2) CarryOutAsBool() bool {
+	return a.CarryOut.(*ORGate2).isPowered
 }

@@ -20,6 +20,14 @@ func NewRelay2(pin1, pin2 bitPublisher) *Relay2 {
 	return r
 }
 
+/*
+func (r *Relay2) UpdateControlPin(pin2 bitPublisher) {
+	pin2.DeRegister(r.bInPowerUpdate)
+	if pin2 != nil {
+		pin2.Register(r.bInPowerUpdate)
+	}
+}
+*/
 func (r *Relay2) aInPowerUpdate(newState bool) {
 	if r.aInPowered != newState {
 		r.aInPowered = newState
