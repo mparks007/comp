@@ -1,5 +1,6 @@
 package circuit
 
+/*
 // Level-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
 // d clk   q  !q
@@ -10,7 +11,7 @@ package circuit
 type levTrigDLatch struct {
 	dataIn emitter
 	clkIn  emitter
-	rs     *rsFlipFlop
+	rs     *RSFlipFlop
 	rAnd   *andGate
 	sAnd   *andGate
 }
@@ -20,7 +21,7 @@ func newLtDLatch(dataIn, clkIn emitter) (*levTrigDLatch, error) {
 
 	l.updateInputs(dataIn, clkIn)
 
-	l.rs, _ = newRSFlipFLop(nil, nil) // make defaulted inner flipflop. setupComponents will set it up fully
+	l.rs, _ = NewRSFlipFLop(nil, nil) // make defaulted inner flipflop. setupComponents will set it up fully
 
 	err := l.setupComponents()
 	if err != nil {
@@ -69,3 +70,4 @@ func (l *levTrigDLatch) qBarEmitting() (bool, error) {
 		return qBarEmitting, nil
 	}
 }
+*/

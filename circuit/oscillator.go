@@ -1,33 +1,29 @@
 package circuit
 
-import (
-	"sync/atomic"
-	"time"
-)
+import "time"
 
-type oscillator struct {
+type Oscillator struct {
 	stopCh chan bool
-	emit   atomic.Value
+	bitPublication
 }
 
-func newOscillator(init bool) *oscillator {
-	o := &oscillator{}
+func NewOscillator(init bool) *Oscillator {
+	o := &Oscillator{}
 
 	o.stopCh = make(chan bool)
-	o.emit.Store(init)
+	o.isPowered = init
 
 	return o
 }
 
-func (o *oscillator) Oscillate(hertz int) {
+func (o *Oscillator) Oscillate(hertz int) {
 
 	go func() {
 		t := time.NewTicker(time.Second / time.Duration(hertz))
 		for {
 			select {
 			case <-t.C:
-				b, _ := o.emit.Load().(bool)
-				o.emit.Store(!b)
+				o.Publish(!o.GetIsPowered())
 			case <-o.stopCh:
 				t.Stop()
 				break
@@ -36,14 +32,6 @@ func (o *oscillator) Oscillate(hertz int) {
 	}()
 }
 
-func (o *oscillator) Stop() {
+func (o *Oscillator) Stop() {
 	o.stopCh <- true
 }
-
-func (o *oscillator) Emitting() bool {
-	b, _ := o.emit.Load().(bool)
-	return b
-}
-
-
-

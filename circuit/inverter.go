@@ -1,17 +1,21 @@
 package circuit
 
-type inverter struct {
-	in      emitter
-	openOut emitter
+// Inverter
+// 0 -> 1
+// 1 -> 0
+
+type Inverter struct {
+	relay *Relay
+	bitPublication
 }
 
-func newInverter(pin emitter) *inverter {
-	return &inverter{
-		pin,
-		newXContact(&Battery{}, pin),
-	}
-}
+func NewInverter(pin bitPublisher) *Inverter {
+	inv := &Inverter{}
 
-func (i *inverter) Emitting() bool {
-	return i.openOut.Emitting()
+	inv.relay = NewRelay(NewBattery(), pin)
+
+	// the Open Out is what gets the flipped state in an Inverter
+	inv.relay.OpenOut.Register(inv.Publish)
+
+	return inv
 }

@@ -1,9 +1,6 @@
 package circuit
 
 import (
-	"errors"
-	"fmt"
-	"regexp"
 	"sync"
 )
 
@@ -15,35 +12,37 @@ import (
 // 0 1		1		0
 // 1 1		0		1
 
-type halfAdder struct {
-	sum   emitter
-	carry emitter
+type HalfAdder struct {
+	Sum   bitPublisher
+	Carry bitPublisher
 }
 
-func newHalfAdder(pin1, pin2 emitter) *halfAdder {
-	return &halfAdder{
-		newXORGate(pin1, pin2),
-		newANDGate(pin1, pin2),
-	}
+func NewHalfAdder(pin1, pin2 bitPublisher) *HalfAdder {
+	h := &HalfAdder{}
+
+	h.Sum = NewXORGate(pin1, pin2)
+	h.Carry = NewANDGate(pin1, pin2)
+
+	return h
 }
 
 // Full Adder
-// A, B, and Carry in result in Sum and Carry out (handles 1 + 1 + 'carried over + 1')
+// A, B, and Carry in result in Sum and Carry out (can handle "1 + 1 = 0 carry the 1")
 
-type fullAdder struct {
-	halfAdder1 *halfAdder
-	halfAdder2 *halfAdder
-	sum        emitter
-	carry      emitter
+type FullAdder struct {
+	halfAdder1 *HalfAdder
+	halfAdder2 *HalfAdder
+	Sum        bitPublisher
+	Carry      bitPublisher
 }
 
-func newFullAdder(pin1, pin2, carryIn emitter) *fullAdder {
-	f := &fullAdder{}
+func NewFullAdder(pin1, pin2, carryIn bitPublisher) *FullAdder {
+	f := &FullAdder{}
 
-	f.halfAdder1 = newHalfAdder(pin1, pin2)
-	f.halfAdder2 = newHalfAdder(f.halfAdder1.sum, carryIn)
-	f.sum = f.halfAdder2.sum
-	f.carry = newORGate(f.halfAdder1.carry, f.halfAdder2.carry)
+	f.halfAdder1 = NewHalfAdder(pin1, pin2)
+	f.halfAdder2 = NewHalfAdder(f.halfAdder1.Sum, carryIn)
+	f.Sum = f.halfAdder2.Sum
+	f.Carry = NewORGate(f.halfAdder1.Carry, f.halfAdder2.Carry)
 
 	return f
 }
@@ -55,75 +54,40 @@ func newFullAdder(pin1, pin2, carryIn emitter) *fullAdder {
 // = 101110011
 
 type EightBitAdder struct {
-	fullAdders [8]*fullAdder
-	carryOut   emitter
+	fullAdders [8]*FullAdder
+	Sums       [8]bitPublisher
+	CarryOut   bitPublisher
 }
 
-func NewEightBitAdder(byte1, byte2 string, carryIn emitter) (*EightBitAdder, error) {
-	match, err := regexp.MatchString("^[01]{8}$", byte1)
-	if err != nil {
-		return nil, err
-	}
-	if !match {
-		err = errors.New(fmt.Sprint("First input not in 8-bit binary format: " + byte1))
-		return nil, err
-	}
-
-	match, err = regexp.MatchString("^[01]{8}$", byte2)
-	if err != nil {
-		return nil, err
-	}
-
-	if !match {
-		err = errors.New(fmt.Sprint("Second input not in 8-bit binary format: " + byte2))
-		return nil, err
-	}
+func NewEightBitAdder(addend1Pins, addend2Pins [8]bitPublisher, carryIn bitPublisher) *EightBitAdder {
 
 	a := &EightBitAdder{}
 
 	for i := 7; i >= 0; i-- {
-		var f *fullAdder
-		var pin1 emitter
-		var pin2 emitter
-
-		switch byte1[i] {
-		case '0':
-			pin1 = nil
-		case '1':
-			pin1 = &Battery{}
-		}
-
-		switch byte2[i] {
-		case '0':
-			pin2 = nil
-		case '1':
-			pin2 = &Battery{}
-		}
+		var f *FullAdder
 
 		if i == 7 {
-			f = newFullAdder(pin1, pin2, carryIn)
+			f = NewFullAdder(addend1Pins[i], addend2Pins[i], carryIn)
 		} else {
-			f = newFullAdder(pin1, pin2, a.fullAdders[i+1].carry) // carry-in is the neighboring adders carry-out
+			f = NewFullAdder(addend1Pins[i], addend2Pins[i], a.fullAdders[i+1].Carry) // carry-in is the neighboring adders carry-out
 		}
+
+		a.Sums[i] = f.Sum
 
 		a.fullAdders[i] = f
 	}
 
-	a.carryOut = a.fullAdders[0].carry
+	a.CarryOut = a.fullAdders[0].Carry
 
-	return a, nil
+	return a
 }
 
-func (a *EightBitAdder) String() string {
+func (a *EightBitAdder) AsAnswerString() string {
 	answer := ""
-
-	if a.carryOut.Emitting() {
-		answer += "1"
-	}
 
 	for _, v := range a.fullAdders {
 
-		if v.sum.Emitting() {
+		if v.Sum.(*XORGate).GetIsPowered() {
 			answer += "1"
 		} else {
 			answer += "0"
@@ -131,6 +95,10 @@ func (a *EightBitAdder) String() string {
 	}
 
 	return answer
+}
+
+func (a *EightBitAdder) CarryOutAsBool() bool {
+	return a.CarryOut.(*ORGate).GetIsPowered()
 }
 
 // 16-bit Adder
@@ -142,54 +110,42 @@ func (a *EightBitAdder) String() string {
 type SixteenBitAdder struct {
 	rightAdder *EightBitAdder
 	leftAdder  *EightBitAdder
-	carryOut   emitter
+	Sums       [16]bitPublisher
+	CarryOut   bitPublisher
 }
 
-func NewSixteenBitAdder(bytes1, bytes2 string, carryIn emitter) (*SixteenBitAdder, error) {
-	match, err := regexp.MatchString("^[01]{16}$", bytes1)
-	if err != nil {
-		return nil, err
-	}
-	if !match {
-		err = errors.New(fmt.Sprint("First input not in 16-bit binary format: " + bytes1))
-		return nil, err
-	}
-
-	match, err = regexp.MatchString("^[01]{16}$", bytes2)
-	if err != nil {
-		return nil, err
-	}
-
-	if !match {
-		err = errors.New(fmt.Sprint("Second input not in 16-bit binary format: " + bytes2))
-		return nil, err
-	}
+func NewSixteenBitAdder(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitPublisher) *SixteenBitAdder {
 
 	a := &SixteenBitAdder{}
 
-	a.rightAdder, err = NewEightBitAdder(bytes1[8:], bytes2[8:], carryIn)
-	if err != nil {
-		return nil, err
+	var addend1Right [8]bitPublisher
+	var addend2Right [8]bitPublisher
+	copy(addend1Right[:], addend1Pins[8:])
+	copy(addend2Right[:], addend2Pins[8:])
+
+	var addend1Left [8]bitPublisher
+	var addend2Left [8]bitPublisher
+	copy(addend1Left[:], addend1Pins[:8])
+	copy(addend2Left[:], addend2Pins[:8])
+
+	a.rightAdder = NewEightBitAdder(addend1Right, addend2Right, carryIn)
+	a.leftAdder = NewEightBitAdder(addend1Left, addend2Left, a.rightAdder.CarryOut)
+
+	for i, la := range a.leftAdder.Sums {
+		a.Sums[i] = la
+	}
+	for i, ra := range a.rightAdder.Sums {
+		a.Sums[i+8] = ra
 	}
 
-	a.leftAdder, err = NewEightBitAdder(bytes1[:8], bytes2[:8], a.rightAdder.carryOut)
-	if err != nil {
-		return nil, err
-	}
+	a.CarryOut = a.leftAdder.CarryOut
 
-	a.carryOut = a.leftAdder.carryOut
-
-	return a, nil
+	return a
 }
 
-func (a *SixteenBitAdder) String() string {
-	answerCarry := ""
+func (a *SixteenBitAdder) AsAnswerString() string {
 	answerLeft := ""
 	answerRight := ""
-
-	if a.leftAdder.carryOut.Emitting() {
-		answerCarry += "1"
-	}
 
 	wg := &sync.WaitGroup{}
 
@@ -199,7 +155,7 @@ func (a *SixteenBitAdder) String() string {
 
 		for _, v := range a.leftAdder.fullAdders {
 
-			if v.sum.Emitting() {
+			if v.Sum.(*XORGate).GetIsPowered() {
 				answerLeft += "1"
 			} else {
 				answerLeft += "0"
@@ -212,7 +168,7 @@ func (a *SixteenBitAdder) String() string {
 		defer wg.Done()
 		for _, v := range a.rightAdder.fullAdders {
 
-			if v.sum.Emitting() {
+			if v.Sum.(*XORGate).GetIsPowered() {
 				answerRight += "1"
 			} else {
 				answerRight += "0"
@@ -222,5 +178,9 @@ func (a *SixteenBitAdder) String() string {
 
 	wg.Wait()
 
-	return answerCarry + answerLeft + answerRight
+	return answerLeft + answerRight
+}
+
+func (a *SixteenBitAdder) CarryOutAsBool() bool {
+	return a.CarryOut.(*ORGate).GetIsPowered()
 }

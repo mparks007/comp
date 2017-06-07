@@ -1,46 +1,25 @@
 package circuit
 
-import (
-	"errors"
-	"fmt"
-	"regexp"
-)
-
-type onesComplementer struct {
-	xorGates []emitter
+type OnesComplementer struct {
+	Complements []bitPublisher
 }
 
-func NewOnesComplementer(bits []byte, signal emitter) (*onesComplementer, error) {
+func NewOnesComplementer(bits []bitPublisher, signal bitPublisher) *OnesComplementer {
 
-	match, err := regexp.MatchString("^[01]+$", string(bits))
-	if err != nil {
-		return nil, err
-	}
-
-	if !match {
-		err = errors.New(fmt.Sprint("Input bits not in binary format: " + string(bits)))
-		return nil, err
-	}
-
-	c := &onesComplementer{}
+	c := &OnesComplementer{}
 
 	for _, b := range bits {
-		switch b {
-		case '0':
-			c.xorGates = append(c.xorGates, newXORGate(signal, nil))
-		case '1':
-			c.xorGates = append(c.xorGates, newXORGate(signal, &Battery{}))
-		}
+		c.Complements = append(c.Complements, NewXORGate(signal, b))
 	}
 
-	return c, nil
+	return c
 }
 
-func (c *onesComplementer) Complement() string {
+func (c *OnesComplementer) AsComplementString() string {
 	s := ""
 
-	for _, x := range c.xorGates {
-		if x.Emitting() {
+	for _, x := range c.Complements {
+		if x.(*XORGate).GetIsPowered() {
 			s += "1"
 		} else {
 			s += "0"

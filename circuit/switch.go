@@ -8,7 +8,7 @@ import (
 
 // Switch is a basic On/Off
 type Switch struct {
-	relay       *Relay2
+	relay       *Relay
 	pin2Battery *Battery
 	bitPublication
 }
@@ -23,7 +23,7 @@ func NewSwitch(init bool) *Switch {
 		s.pin2Battery.Discharge()
 	}
 
-	s.relay = NewRelay2(NewBattery(), s.pin2Battery)
+	s.relay = NewRelay(NewBattery(), s.pin2Battery)
 	s.relay.ClosedOut.Register(s.Publish)
 
 	return s

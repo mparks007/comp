@@ -16,17 +16,3 @@ func (b *Battery) Charge() {
 func (b *Battery) Discharge() {
 	b.Publish(false)
 }
-
-// OLD STUFF
-// OLD STUFF
-// OLD STUFF
-// OLD STUFF
-// OLD STUFF
-// OLD STUFF
-type emitter interface {
-	Emitting() bool
-}
-
-func (b *Battery) Emitting() bool {
-	return true
-}

@@ -3,6 +3,7 @@ package circuit
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 // go test
@@ -58,14 +59,14 @@ func TestBattery(t *testing.T) {
 	want = false
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a discharged battery, wanted the subscriber'c IsPowered to be %t but got %t", want, got))
+		t.Errorf(fmt.Sprintf("With a discharged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got))
 	}
 
 	b.Charge()
 	want = true
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a charged battery, wanted the subscriber'c IsPowered to be %t but got %t", want, got))
+		t.Errorf(fmt.Sprintf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got))
 	}
 }
 
@@ -153,7 +154,7 @@ func TestNewEightSwitchBank_GoodInputs(t *testing.T) {
 			}
 
 			for i, s := range sb.Switches {
-				got := s.isPowered
+				got := s.GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -184,7 +185,7 @@ func TestEightSwitchBank_AsBitPublishers(t *testing.T) {
 			}
 
 			for i, pub := range sb.AsBitPublishers() {
-				got := pub.(*Switch).isPowered
+				got := pub.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -244,7 +245,7 @@ func TestNewSixteenSwitchBank_GoodInputs(t *testing.T) {
 			}
 
 			for i, s := range sb.Switches {
-				got := s.isPowered
+				got := s.GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -275,7 +276,7 @@ func TestSixteenSwitchBank_AsBitPublishers(t *testing.T) {
 			}
 
 			for i, pub := range sb.AsBitPublishers() {
-				got := pub.(*Switch).isPowered
+				got := pub.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -286,7 +287,7 @@ func TestSixteenSwitchBank_AsBitPublishers(t *testing.T) {
 	}
 }
 
-func TestRelay2_WithSwitches(t *testing.T) {
+func TestRelay_WithSwitches(t *testing.T) {
 	testCases := []struct {
 		aInPowered   bool
 		bInPowered   bool
@@ -302,7 +303,7 @@ func TestRelay2_WithSwitches(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	r := NewRelay2(aSwitch, bSwitch)
+	r := NewRelay(aSwitch, bSwitch)
 
 	var gotOpenOut, gotClosedOut bool
 	r.OpenOut.Register(func(state bool) { gotOpenOut = state })
@@ -325,7 +326,7 @@ func TestRelay2_WithSwitches(t *testing.T) {
 	}
 }
 
-func TestRelay2_WithBatteries(t *testing.T) {
+func TestRelay_WithBatteries(t *testing.T) {
 	testCases := []struct {
 		aInPowered   bool
 		bInPowered   bool
@@ -353,7 +354,7 @@ func TestRelay2_WithBatteries(t *testing.T) {
 				pin2Battery.Discharge()
 			}
 
-			r := NewRelay2(pin1Battery, pin2Battery)
+			r := NewRelay(pin1Battery, pin2Battery)
 
 			r.OpenOut.Register(func(state bool) { gotOpenOut = state })
 			r.ClosedOut.Register(func(state bool) { gotClosedOut = state })
@@ -369,7 +370,7 @@ func TestRelay2_WithBatteries(t *testing.T) {
 	}
 }
 
-func TestANDGate2_TwoPin(t *testing.T) {
+func TestANDGate_TwoPin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -384,7 +385,7 @@ func TestANDGate2_TwoPin(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewANDGate2(aSwitch, bSwitch)
+	g := NewANDGate(aSwitch, bSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -402,7 +403,7 @@ func TestANDGate2_TwoPin(t *testing.T) {
 	}
 }
 
-func TestANDGate2_ThreePin(t *testing.T) {
+func TestANDGate_ThreePin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -423,7 +424,7 @@ func TestANDGate2_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewANDGate2(aSwitch, bSwitch, cSwitch)
+	g := NewANDGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -442,7 +443,7 @@ func TestANDGate2_ThreePin(t *testing.T) {
 	}
 }
 
-func TestORGate2_TwoPin(t *testing.T) {
+func TestORGate_TwoPin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -457,7 +458,7 @@ func TestORGate2_TwoPin(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewORGate2(aSwitch, bSwitch)
+	g := NewORGate(aSwitch, bSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -475,7 +476,7 @@ func TestORGate2_TwoPin(t *testing.T) {
 	}
 }
 
-func TestORGate2_ThreePin(t *testing.T) {
+func TestORGate_ThreePin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -496,7 +497,7 @@ func TestORGate2_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewORGate2(aSwitch, bSwitch, cSwitch)
+	g := NewORGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -515,7 +516,7 @@ func TestORGate2_ThreePin(t *testing.T) {
 	}
 }
 
-func TestNANDGate2_TwoPin(t *testing.T) {
+func TestNANDGate_TwoPin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -530,7 +531,7 @@ func TestNANDGate2_TwoPin(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewNANDGate2(aSwitch, bSwitch)
+	g := NewNANDGate(aSwitch, bSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -548,7 +549,7 @@ func TestNANDGate2_TwoPin(t *testing.T) {
 	}
 }
 
-func TestNANDGate2_ThreePin(t *testing.T) {
+func TestNANDGate_ThreePin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -569,7 +570,7 @@ func TestNANDGate2_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewNANDGate2(aSwitch, bSwitch, cSwitch)
+	g := NewNANDGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -588,7 +589,7 @@ func TestNANDGate2_ThreePin(t *testing.T) {
 	}
 }
 
-func TestNORGate2_TwoPin(t *testing.T) {
+func TestNORGate_TwoPin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -603,7 +604,7 @@ func TestNORGate2_TwoPin(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewNORGate2(aSwitch, bSwitch)
+	g := NewNORGate(aSwitch, bSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -621,7 +622,7 @@ func TestNORGate2_TwoPin(t *testing.T) {
 	}
 }
 
-func TestNORGate2_ThreePin(t *testing.T) {
+func TestNORGate_ThreePin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -642,7 +643,7 @@ func TestNORGate2_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewNORGate2(aSwitch, bSwitch, cSwitch)
+	g := NewNORGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -661,7 +662,7 @@ func TestNORGate2_ThreePin(t *testing.T) {
 	}
 }
 
-func TestXORGate2(t *testing.T) {
+func TestXORGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -676,7 +677,7 @@ func TestXORGate2(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewXORGate2(aSwitch, bSwitch)
+	g := NewXORGate(aSwitch, bSwitch)
 
 	var got bool
 	g.Register(func(state bool) { got = state })
@@ -694,7 +695,7 @@ func TestXORGate2(t *testing.T) {
 	}
 }
 
-func TestXNORGate2(t *testing.T) {
+func TestXNORGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -727,7 +728,7 @@ func TestXNORGate2(t *testing.T) {
 	}
 }
 
-func TestInverter2(t *testing.T) {
+func TestInverter(t *testing.T) {
 	testCases := []struct {
 		inPowered bool
 		wantOut   bool
@@ -757,7 +758,7 @@ func TestInverter2(t *testing.T) {
 	}
 }
 
-func TestHalfAdder2(t *testing.T) {
+func TestHalfAdder(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -773,7 +774,7 @@ func TestHalfAdder2(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	h := NewHalfAdder2(aSwitch, bSwitch)
+	h := NewHalfAdder(aSwitch, bSwitch)
 
 	var gotSum, gotCarry bool
 	h.Sum.Register(func(state bool) { gotSum = state })
@@ -796,7 +797,7 @@ func TestHalfAdder2(t *testing.T) {
 	}
 }
 
-func TestFullAdder2(t *testing.T) {
+func TestFullAdder(t *testing.T) {
 	testCases := []struct {
 		aInPowered     bool
 		bInPowered     bool
@@ -818,7 +819,7 @@ func TestFullAdder2(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	h := NewFullAdder2(aSwitch, bSwitch, cSwitch)
+	h := NewFullAdder(aSwitch, bSwitch, cSwitch)
 
 	var gotSum, gotCarry bool
 	h.Sum.Register(func(state bool) { gotSum = state })
@@ -842,7 +843,7 @@ func TestFullAdder2(t *testing.T) {
 	}
 }
 
-func TestEightBitAdder2_AsAnswerString(t *testing.T) {
+func TestEightBitAdder_AsAnswerString(t *testing.T) {
 	testCases := []struct {
 		byte1          string
 		byte2          string
@@ -878,7 +879,7 @@ func TestEightBitAdder2_AsAnswerString(t *testing.T) {
 	addend2Switches, _ := NewEightSwitchBank("00000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewEightBitAdder2(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewEightBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
 
 	if a == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
@@ -902,7 +903,7 @@ func TestEightBitAdder2_AsAnswerString(t *testing.T) {
 	}
 }
 
-func TestEightBitAdder2_AnswerViaRegistration(t *testing.T) {
+func TestEightBitAdder_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -931,7 +932,7 @@ func TestEightBitAdder2_AnswerViaRegistration(t *testing.T) {
 	addend2Switches, _ := NewEightSwitchBank("00000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewEightBitAdder2(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewEightBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
 
 	for i, s := range a.Sums {
 		s.Register(f[i])
@@ -988,7 +989,7 @@ func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
 	addend2Switches, _ := NewSixteenSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewSixteenBitAdder2(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewSixteenBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
 
 	if a == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
@@ -1012,7 +1013,7 @@ func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
 	}
 }
 
-func TestSixteenBitAdder2_AnswerViaRegistration(t *testing.T) {
+func TestSixteenBitAdder_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -1049,7 +1050,7 @@ func TestSixteenBitAdder2_AnswerViaRegistration(t *testing.T) {
 	addend2Switches, _ := NewSixteenSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewSixteenBitAdder2(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewSixteenBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
 
 	for i, s := range a.Sums {
 		s.Register(f[i])
@@ -1097,7 +1098,7 @@ func BenchmarkNewSixteenBitAdder(b *testing.B) {
 			addend1BitPubs := addend1Switches.AsBitPublishers()
 			addend2BitPubs := addend2Switches.AsBitPublishers()
 			for i := 0; i < b.N; i++ {
-				NewSixteenBitAdder2(addend1BitPubs, addend2BitPubs, carryInSwitch)
+				NewSixteenBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
 			}
 		})
 	}
@@ -1119,7 +1120,7 @@ func BenchmarkSixteenBitAdder_AsAnswerString(b *testing.B) {
 		addend2Switches, _ := NewSixteenSwitchBank(bm.bytes2)
 		addend1BitPubs := addend1Switches.AsBitPublishers()
 		addend2BitPubs := addend2Switches.AsBitPublishers()
-		a := NewSixteenBitAdder2(addend1BitPubs, addend2BitPubs, carryInSwitch)
+		a := NewSixteenBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
 		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", bm.bytes1, bm.bytes2, bm.carryInPowered), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				a.AsAnswerString()
@@ -1128,7 +1129,7 @@ func BenchmarkSixteenBitAdder_AsAnswerString(b *testing.B) {
 	}
 }
 
-func TestOnesCompliment2_AsComplimentString(t *testing.T) {
+func TestOnesCompliment_AsComplimentString(t *testing.T) {
 
 	testCases := []struct {
 		bits            string
@@ -1160,20 +1161,20 @@ func TestOnesCompliment2_AsComplimentString(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Executing complementer against %s with signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
-			c := NewOnesComplementer2(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
+			c := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
 
 			if c == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
 
-			if got := c.AsComplimentString(); got != tc.want {
+			if got := c.AsComplementString(); got != tc.want {
 				t.Errorf(fmt.Sprintf("Wanted %s, but got %s", tc.want, got))
 			}
 		})
 	}
 }
 
-func TestOnesCompliment2_Compliments(t *testing.T) {
+func TestOnesCompliment_Compliments(t *testing.T) {
 
 	testCases := []struct {
 		bits            string
@@ -1205,14 +1206,14 @@ func TestOnesCompliment2_Compliments(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Executing complementer against %s with signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
-			c := NewOnesComplementer2(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
+			c := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
 
 			if c == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
 
-			for i, pub := range c.Compliments {
-				got := pub.(*XORGate2).isPowered
+			for i, pub := range c.Complements {
+				got := pub.(*XORGate).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -1256,7 +1257,7 @@ func TestEightBitSubtracter_AsAnswerString(t *testing.T) {
 	minuendwitches, _ := NewEightSwitchBank("00000000")
 	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
 
-	s := NewEightBitSubtractor2(minuendwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
+	s := NewEightBitSubtracter(minuendwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
@@ -1273,7 +1274,7 @@ func TestEightBitSubtracter_AsAnswerString(t *testing.T) {
 				t.Errorf("Wanted answer %s, but gotAnswer %s", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotCarryOut := s.SignBitAsBool(); gotCarryOut != tc.wantCarryOut {
+			if gotCarryOut := s.CarryOutAsBool(); gotCarryOut != tc.wantCarryOut {
 				t.Errorf("Wanted carry out %t, but gotAnswer %t", tc.wantCarryOut, gotCarryOut)
 			}
 		})
@@ -1308,13 +1309,13 @@ func TestEightBitSubtracter_AnswerViaRegistration(t *testing.T) {
 	minuendSwitches, _ := NewEightSwitchBank("00000000")
 	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
 
-	s := NewEightBitSubtractor2(minuendSwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
+	s := NewEightBitSubtracter(minuendSwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
 
 	for i, s := range s.Differences {
 		s.Register(f[i])
 	}
 
-	s.SignBit.Register(func(state bool) { gotCarryOut = state })
+	s.CarryOut.Register(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(minuendSwitches, "10000001")
 	updateSwitches(subtrahendSwitches, "01111110")
@@ -1327,3 +1328,110 @@ func TestEightBitSubtracter_AnswerViaRegistration(t *testing.T) {
 		t.Errorf("Wanted carry out %t, but got %t", wantCarryOut, gotCarryOut)
 	}
 }
+
+// Fragile test due to timing of asking Oscillator vs. isPowered of Oscillator at the time being asked
+func TestOscillator(t *testing.T) {
+	testCases := []struct {
+		initState   bool
+		oscHertz    int
+		wantResults string
+	}{
+		{false, 1, "FTF"},
+		{true, 1, "TFT"},
+		{false, 5, "FTFTFTFTFTF"},
+		{true, 5, "TFTFTFTFTFT"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t)", tc.oscHertz, tc.initState), func(t *testing.T) {
+
+			var gotResults string
+
+			o := NewOscillator(tc.initState)
+			o.Oscillate(tc.oscHertz)
+
+			o.Register(func(state bool) {
+				if state {
+					gotResults += "T"
+				} else {
+					gotResults += "F"
+				}
+			})
+
+			time.Sleep(time.Second * 2)
+
+			o.Stop()
+
+			if gotResults != tc.wantResults {
+				t.Errorf(fmt.Sprintf("Wanted results %s but got %s.", tc.wantResults, gotResults))
+			}
+		})
+	}
+}
+
+func TestRSFlipFlop(t *testing.T) {
+	testCases := []struct {
+		rPinPowered bool
+		sPinPowered bool
+		wantQ     bool
+		wantQBar  bool
+		wantError string
+	}{
+		{false, false, false, true, ""},
+		{false, true, true, false, ""},
+		{false, false, true, false, ""},
+		{true, false, false, true, ""},
+		{false, false, false, true, ""},
+		{false, true, true, false, ""},
+		//{true, true, true, false, "A Flip-Flop cannot be powered simultaneously at both Q and QBar"},
+	}
+
+	testName := func(i int) string {
+		var priorR bool
+		var priorS bool
+
+		if i == 0 {
+			priorR = false
+			priorS = false
+		} else {
+			priorR = testCases[i-1].rPinPowered
+			priorS = testCases[i-1].sPinPowered
+		}
+
+		return fmt.Sprintf("Stage %d: Switching from [rInPowered (%t) sInPowered (%t)] to [rInPowered (%t) sInPowered (%t)]", i+1, priorR, priorS, testCases[i].rPinPowered, testCases[i].sPinPowered)
+	}
+
+	var rPinBattery, sPinBattery *Battery
+	rPinBattery = NewBattery()
+	sPinBattery = NewBattery()
+	rPinBattery.Discharge()
+	sPinBattery.Discharge()
+
+	// starting with no input signals
+	f := NewRSFlipFLop(rPinBattery, sPinBattery)
+
+	for i, tc := range testCases {
+		t.Run(testName(i), func(t *testing.T) {
+
+			rPinBattery.Discharge()
+			sPinBattery.Discharge()
+
+			if tc.rPinPowered {
+				rPinBattery.Charge()
+			}
+
+			if tc.sPinPowered {
+				sPinBattery.Charge()
+			}
+
+			if gotQ := f.Q.GetIsPowered(); gotQ != tc.wantQ {
+				t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ))
+			}
+
+			if gotQBar := f.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
+				t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar))
+			}
+		})
+	}
+}
+

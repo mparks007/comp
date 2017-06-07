@@ -1,30 +1,32 @@
 package circuit
 
-type EightBitSubtractor struct {
-	adder   *EightBitAdder
-	comp    *onesComplementer
-	signBit emitter
+type EightBitSubtracter struct {
+	adder       *EightBitAdder
+	comp        *OnesComplementer
+	Differences [8]bitPublisher
+	CarryOut    bitPublisher
 }
 
-func NewEightBitSubtractor(byte1, byte2 string) (*EightBitSubtractor, error) {
-	s := &EightBitSubtractor{}
+func NewEightBitSubtracter(minuendPins, subtrahendPins [8]bitPublisher) *EightBitSubtracter {
+	s := &EightBitSubtracter{}
 
-	var err error
-	s.comp, err = NewOnesComplementer([]byte(byte2), &Battery{}) // the switchIsPowered ensures the compliment occurs since the complimentor can conditional compliment based switchOn that emit
-	if err != nil {
-		return nil, err
-	}
+	s.comp = NewOnesComplementer(subtrahendPins[:], NewBattery()) // the Battery ensures the compliment occurs since the complementer can conditional compliment based that parameter
 
-	s.adder, err = NewEightBitAdder(byte1, s.comp.Complement(), &Battery{}) // the added switchIsPowered is the "+1" to make the "two's compliment"
-	if err != nil {
-		return nil, err
-	}
+	var complimentBits [8]bitPublisher
+	copy(complimentBits[:], s.comp.Complements)
 
-	s.signBit = s.adder.carryOut
+	s.adder = NewEightBitAdder(minuendPins, complimentBits, NewBattery()) // the added Battery is the "+1" to make the "two's compliment"
 
-	return s, nil
+	s.Differences = s.adder.Sums
+	s.CarryOut = s.adder.CarryOut
+
+	return s
 }
 
-func (s *EightBitSubtractor) String() string {
-	return s.adder.String()
+func (s *EightBitSubtracter) AsAnswerString() string {
+	return s.adder.AsAnswerString()
+}
+
+func (a *EightBitSubtracter) CarryOutAsBool() bool {
+	return a.CarryOut.(*ORGate).GetIsPowered()
 }

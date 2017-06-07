@@ -1,5 +1,6 @@
 package circuit
 
+/*
 import (
 	"fmt"
 	"strings"
@@ -11,7 +12,7 @@ import (
 // go test -race -v (verbose)
 // go test -race -cpu=1,2,4 (go max prox)
 // go test -v
-/*
+
 func TestANDContact(t *testing.T) {
 	testCases := []struct {
 		sources []emitter
@@ -664,7 +665,7 @@ func TestEightBitSubtracter_BadInputs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
-			s, err := NewEightBitSubtractor(tc.minuend, tc.subtrahend)
+			s, err := NewEightBitSubtracter(tc.minuend, tc.subtrahend)
 
 			if err != nil && !strings.HasPrefix(err.Error(), tc.wantError) {
 				t.Error("Unexpected error: " + err.Error())
@@ -700,7 +701,7 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
-			s, err := NewEightBitSubtractor(tc.minuend, tc.subtrahend)
+			s, err := NewEightBitSubtracter(tc.minuend, tc.subtrahend)
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
@@ -719,50 +720,8 @@ func TestEightBitSubtracter_GoodInputs(t *testing.T) {
 	}
 }
 */
-// Fragile test due to timing of asking oscillator vs. isPowered of oscillator at the time being asked
-func TestOscillator(t *testing.T) {
-	testCases := []struct {
-		initState     bool
-		oscHertz      int
-		checkTimes    int
-		wantAllTrues  bool
-		wantAllFalses bool
-		wantTrueFalse bool
-	}{
-		{false, 10, 1, false, true, false},
-		{true, 10, 1, true, false, false},
-		{false, 40, 5, false, false, true},
-		{true, 40, 10, false, false, true},
-	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t), checking %d times.", tc.oscHertz, tc.initState, tc.checkTimes), func(t *testing.T) {
-
-			var results string
-
-			o := newOscillator(tc.initState)
-			o.Oscillate(tc.oscHertz)
-
-			for i := 0; i < tc.checkTimes; i++ {
-				if o.Emitting() {
-					results += "T"
-				} else {
-					results += "F"
-				}
-				time.Sleep(time.Millisecond * 500)
-			}
-			o.Stop()
-
-			gotAllTrues := !strings.Contains(results, "F")
-			gotAllFalses := !strings.Contains(results, "T")
-
-			if (gotAllTrues != tc.wantAllTrues) || (gotAllFalses != tc.wantAllFalses) {
-				t.Errorf(fmt.Sprintf("Wanted all trues (%t), all falses (%t), and mixed (%t), but got results of %s.", tc.wantAllTrues, tc.wantAllFalses, tc.wantTrueFalse, results))
-			}
-		})
-	}
-}
-
+/*
 func TestRSFlipFlop_Construction(t *testing.T) {
 	testCases := []struct {
 		rPin      emitter
@@ -777,7 +736,7 @@ func TestRSFlipFlop_Construction(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Creating as rIn (%T) and sIn (%T)", tc.rPin, tc.sPin), func(t *testing.T) {
-			_, err := newRSFlipFLop(tc.rPin, tc.sPin)
+			_, err := NewRSFlipFLop(tc.rPin, tc.sPin)
 
 			if err != nil && err.Error() != tc.wantError {
 				t.Errorf(fmt.Sprintf("Wanted error %s but got %s.", tc.wantError, err.Error()))
@@ -799,7 +758,7 @@ func TestRSFlipFlop_ValidateInputs(t *testing.T) {
 	}
 
 	// starting with no input signals
-	f, err := newRSFlipFLop(nil, nil)
+	f, err := NewRSFlipFLop(nil, nil)
 
 	if err != nil {
 		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
@@ -835,7 +794,7 @@ func TestRSFlipFlop_qEmitting_InputValidation(t *testing.T) {
 			var sPin emitter = nil
 
 			// starting with no input signals
-			f, err := newRSFlipFLop(rPin, sPin)
+			f, err := NewRSFlipFLop(rPin, sPin)
 
 			if err != nil {
 				t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
@@ -890,7 +849,7 @@ func TestRSFlipFlop(t *testing.T) {
 	}
 
 	// starting with no input signals
-	f, err := newRSFlipFLop(nil, nil)
+	f, err := NewRSFlipFLop(nil, nil)
 
 	if err != nil {
 		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
@@ -969,3 +928,4 @@ func TestLevTrigDLatch(t *testing.T) {
 		})
 	}
 }
+*/
