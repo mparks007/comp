@@ -6,28 +6,30 @@ import (
 	"regexp"
 )
 
+// Switch is a basic On/Off
 type Switch struct {
 	relay       *Relay2
 	pin2Battery *Battery
 	bitPublication
 }
 
+// NewSwitch creates a new Switch struct with its initial state based on the passed in initialization value
 func NewSwitch(init bool) *Switch {
 	s := &Switch{}
 
+	// setup the battery-based relay pin that will be used to toggle on/off of the switch
 	s.pin2Battery = NewBattery()
 	if !init {
 		s.pin2Battery.Discharge()
 	}
 
 	s.relay = NewRelay2(NewBattery(), s.pin2Battery)
-	s.isPowered = init
-
 	s.relay.ClosedOut.Register(s.Publish)
 
 	return s
 }
 
+// Set on a Switch will toggle the state of the underlying battery to activate/deactivate the internal relay
 func (s *Switch) Set(newState bool) {
 	if newState {
 		s.pin2Battery.Charge()
@@ -36,10 +38,12 @@ func (s *Switch) Set(newState bool) {
 	}
 }
 
+// EightSwitchBank is a convenient way to get 8 bit providers from a string of 8 0/1s
 type EightSwitchBank struct {
 	Switches [8]*Switch
 }
 
+// NewEightSwitchBank takes a string of 0/1s and creates 8 Switch structs initialized based on their off/on-ness
 func NewEightSwitchBank(bits string) (*EightSwitchBank, error) {
 
 	match, err := regexp.MatchString("^[01]{8}$", bits)
@@ -60,6 +64,7 @@ func NewEightSwitchBank(bits string) (*EightSwitchBank, error) {
 	return sb, nil
 }
 
+// AsBitPublishers will return bitPublisher versions of the internal Switches
 func (s *EightSwitchBank) AsBitPublishers() [8]bitPublisher {
 	bitPubs := [8]bitPublisher{}
 
@@ -70,11 +75,12 @@ func (s *EightSwitchBank) AsBitPublishers() [8]bitPublisher {
 	return bitPubs
 }
 
-
+// SixteenSwitchBank is a convenient way to get 16 bit providers from a string of 16 0/1s
 type SixteenSwitchBank struct {
 	Switches [16]*Switch
 }
 
+// NewEightSwitchBank takes a string of 0/1s and creates 16 Switch structs initialized based on their off/on-ness
 func NewSixteenSwitchBank(bits string) (*SixteenSwitchBank, error) {
 
 	match, err := regexp.MatchString("^[01]{16}$", bits)
@@ -95,6 +101,7 @@ func NewSixteenSwitchBank(bits string) (*SixteenSwitchBank, error) {
 	return sb, nil
 }
 
+// AsBitPublishers will return bitPublisher versions of the internal Switches
 func (s *SixteenSwitchBank) AsBitPublishers() [16]bitPublisher {
 	bitPubs := [16]bitPublisher{}
 

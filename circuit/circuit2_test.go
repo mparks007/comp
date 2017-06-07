@@ -842,7 +842,7 @@ func TestFullAdder2(t *testing.T) {
 	}
 }
 
-func TestEightBitAdder2_PostRunAnswer(t *testing.T) {
+func TestEightBitAdder2_AsAnswerString(t *testing.T) {
 	testCases := []struct {
 		byte1          string
 		byte2          string
@@ -891,7 +891,7 @@ func TestEightBitAdder2_PostRunAnswer(t *testing.T) {
 			updateSwitches(addend2Switches, tc.byte2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			if got := a.AnswerAsString(); got != tc.wantAnswer {
+			if got := a.AsAnswerString(); got != tc.wantAnswer {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
 			}
 
@@ -902,7 +902,7 @@ func TestEightBitAdder2_PostRunAnswer(t *testing.T) {
 	}
 }
 
-func TestEightBitAdder2_RegistrationAnswer(t *testing.T) {
+func TestEightBitAdder2_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -951,7 +951,7 @@ func TestEightBitAdder2_RegistrationAnswer(t *testing.T) {
 	}
 }
 
-func TestSixteenBitAdder_PostRunAnswer(t *testing.T) {
+func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
 	testCases := []struct {
 		bytes1         string
 		bytes2         string
@@ -1001,7 +1001,7 @@ func TestSixteenBitAdder_PostRunAnswer(t *testing.T) {
 			updateSwitches(addend2Switches, tc.bytes2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			if got := a.AnswerAsString(); got != tc.wantAnswer {
+			if got := a.AsAnswerString(); got != tc.wantAnswer {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
 			}
 
@@ -1012,7 +1012,7 @@ func TestSixteenBitAdder_PostRunAnswer(t *testing.T) {
 	}
 }
 
-func TestSixteenBitAdder2_RegistrationAnswer(t *testing.T) {
+func TestSixteenBitAdder2_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -1103,7 +1103,7 @@ func BenchmarkNewSixteenBitAdder(b *testing.B) {
 	}
 }
 
-func BenchmarkSixteenBitAdder_AnswerAsString(b *testing.B) {
+func BenchmarkSixteenBitAdder_AsAnswerString(b *testing.B) {
 	benchmarks := []struct {
 		name           string
 		bytes1         string
@@ -1122,13 +1122,13 @@ func BenchmarkSixteenBitAdder_AnswerAsString(b *testing.B) {
 		a := NewSixteenBitAdder2(addend1BitPubs, addend2BitPubs, carryInSwitch)
 		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", bm.bytes1, bm.bytes2, bm.carryInPowered), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				a.AnswerAsString()
+				a.AsAnswerString()
 			}
 		})
 	}
 }
 
-func TestOnesCompliment2_AnswerAsString(t *testing.T) {
+func TestOnesCompliment2_AsComplimentString(t *testing.T) {
 
 	testCases := []struct {
 		bits            string
@@ -1166,14 +1166,14 @@ func TestOnesCompliment2_AnswerAsString(t *testing.T) {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
 
-			if got := c.AsAnswerString(); got != tc.want {
+			if got := c.AsComplimentString(); got != tc.want {
 				t.Errorf(fmt.Sprintf("Wanted %s, but got %s", tc.want, got))
 			}
 		})
 	}
 }
 
-func TestOnesCompliment2_AsBitPublishers(t *testing.T) {
+func TestOnesCompliment2_Compliments(t *testing.T) {
 
 	testCases := []struct {
 		bits            string
@@ -1211,7 +1211,7 @@ func TestOnesCompliment2_AsBitPublishers(t *testing.T) {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
 
-			for i, pub := range c.AsBitPublishers() {
+			for i, pub := range c.Compliments {
 				got := pub.(*XORGate2).isPowered
 				want := tc.want[i]
 
@@ -1220,5 +1220,110 @@ func TestOnesCompliment2_AsBitPublishers(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEightBitSubtracter_AsAnswerString(t *testing.T) {
+	testCases := []struct {
+		minuend      string
+		subtrahend   string
+		wantAnswer   string
+		wantCarryOut bool
+	}{
+		{"00000000", "00000000", "00000000", true},  // 0 - 0 = 0
+		{"00000001", "00000000", "00000001", true},  // 1 - 0 = 1
+		{"00000001", "00000001", "00000000", true},  // 1 - 1 = 0
+		{"00000011", "00000001", "00000010", true},  // 3 - 1 = 2
+		{"10000000", "00000001", "01111111", true},  // -128 - 1 = 127 signed (or 128 - 1 = 127 unsigned)
+		{"11111111", "11111111", "00000000", true},  // -1 - -1 = 0 signed (or 255 - 255 = 0 unsigned)
+		{"11111111", "00000001", "11111110", true},  // -1 - 1 = -2 signed (or 255 - 1 = 254 unsigned)
+		{"10000001", "00000001", "10000000", true},  // -127 - 1 = -128 signed (or 129 - 1 = 128 unsigned)
+		{"11111110", "11111011", "00000011", true},  // -2 - -5 = 3 (or 254 - 251 = 3 unsigned)
+		{"00000000", "00000001", "11111111", false}, // 0 - 1 = -1 signed (or 255 unsigned)
+		{"00000010", "00000011", "11111111", false}, // 2 - 3 = -1 signed (or 255 unsigned)
+		{"11111110", "11111111", "11111111", false}, // -2 - -1 = -1 signed or (254 - 255 = 255 unsigned)
+		{"10000001", "01111110", "00000011", true},  // -127 - 126 = 3 signed or (129 - 126 = 3 unsigned)
+	}
+
+	// flip switches to match bit pattern
+	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
+		for i, b := range bits {
+			switchBank.Switches[i].Set(b == '1')
+		}
+	}
+
+	// start with off switches
+	minuendwitches, _ := NewEightSwitchBank("00000000")
+	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
+
+	s := NewEightBitSubtractor2(minuendwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
+
+			updateSwitches(minuendwitches, tc.minuend)
+			updateSwitches(subtrahendSwitches, tc.subtrahend)
+
+			if s == nil {
+				t.Error("Expected an subtractor to return due to good inputs, but gotAnswer c nil one.")
+				return // cannot continue tests if no subtractor to test
+			}
+
+			if gotAnswer := s.AsAnswerString(); gotAnswer != tc.wantAnswer {
+				t.Errorf("Wanted answer %s, but gotAnswer %s", tc.wantAnswer, gotAnswer)
+			}
+
+			if gotCarryOut := s.SignBitAsBool(); gotCarryOut != tc.wantCarryOut {
+				t.Errorf("Wanted carry out %t, but gotAnswer %t", tc.wantCarryOut, gotCarryOut)
+			}
+		})
+	}
+}
+
+func TestEightBitSubtracter_AnswerViaRegistration(t *testing.T) {
+	wantCarryOut := true
+	var gotCarryOut bool
+
+	wantAnswer := [8]bool{false, false, false, false, false, false, true, true}
+	var gotAnswer [8]bool
+
+	var f [8]func(state bool)
+	f[0] = func(state bool) { gotAnswer[0] = state }
+	f[1] = func(state bool) { gotAnswer[1] = state }
+	f[2] = func(state bool) { gotAnswer[2] = state }
+	f[3] = func(state bool) { gotAnswer[3] = state }
+	f[4] = func(state bool) { gotAnswer[4] = state }
+	f[5] = func(state bool) { gotAnswer[5] = state }
+	f[6] = func(state bool) { gotAnswer[6] = state }
+	f[7] = func(state bool) { gotAnswer[7] = state }
+
+	// flip switches to match bit pattern
+	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
+		for i, b := range bits {
+			switchBank.Switches[i].Set(b == '1')
+		}
+	}
+
+	// start with off switches
+	minuendSwitches, _ := NewEightSwitchBank("00000000")
+	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
+
+	s := NewEightBitSubtractor2(minuendSwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
+
+	for i, s := range s.Differences {
+		s.Register(f[i])
+	}
+
+	s.SignBit.Register(func(state bool) { gotCarryOut = state })
+
+	updateSwitches(minuendSwitches, "10000001")
+	updateSwitches(subtrahendSwitches, "01111110")
+
+	if gotAnswer != wantAnswer {
+		t.Errorf("Wanted answer %v, but got %v", wantAnswer, gotAnswer)
+	}
+
+	if gotCarryOut != wantCarryOut {
+		t.Errorf("Wanted carry out %t, but got %t", wantCarryOut, gotCarryOut)
 	}
 }

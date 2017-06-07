@@ -4,14 +4,15 @@ import "sync"
 
 type bitPublisher interface {
 	Register(func(bool))
-	//DeRegister(func(bool))
 }
 
+// bitPublication is the basic means for which an object can store a single state and publish it to subscribers
 type bitPublication struct {
 	isPowered           bool
 	subscriberCallbacks []func(bool)
 }
 
+// Register allows an object subscribe to the publication via callback
 func (p *bitPublication) Register(callback func(bool)) {
 	p.subscriberCallbacks = append(p.subscriberCallbacks, callback)
 
@@ -19,18 +20,7 @@ func (p *bitPublication) Register(callback func(bool)) {
 	callback(p.isPowered)
 }
 
-/*
-func (p *bitPublication) DeRegister(callback func(bool)) {
-
-	for i := 0; i < len(p.subscriberCallbacks); i++ {
-		if &p.subscriberCallbacks[i] == &callback {
-			p.subscriberCallbacks[i](false)
-			p.subscriberCallbacks = append(p.subscriberCallbacks[:i], p.subscriberCallbacks[i+1:]...)
-			i -= 1 // -1 as the slice just got shorter
-		}
-	}
-}
-*/
+// Publish will call all the registered callbacks, passing in the current state
 func (p *bitPublication) Publish(newState bool) {
 	if p.isPowered != newState {
 		p.isPowered = newState

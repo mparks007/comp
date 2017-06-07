@@ -82,7 +82,7 @@ func NewEightBitAdder2(addend1Pins, addend2Pins [8]bitPublisher, carryIn bitPubl
 	return a
 }
 
-func (a *EightBitAdder2) AnswerAsString() string {
+func (a *EightBitAdder2) AsAnswerString() string {
 	answer := ""
 
 	for _, v := range a.fullAdders {
@@ -143,7 +143,7 @@ func NewSixteenBitAdder2(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitP
 	return a
 }
 
-func (a *SixteenBitAdder2) AnswerAsString() string {
+func (a *SixteenBitAdder2) AsAnswerString() string {
 	answerLeft := ""
 	answerRight := ""
 

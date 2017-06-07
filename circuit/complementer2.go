@@ -1,7 +1,7 @@
 package circuit
 
 type OnesComplementer struct {
-	xorGates []bitPublisher
+	Compliments []bitPublisher
 }
 
 func NewOnesComplementer2(bits []bitPublisher, signal bitPublisher) *OnesComplementer {
@@ -9,16 +9,16 @@ func NewOnesComplementer2(bits []bitPublisher, signal bitPublisher) *OnesComplem
 	c := &OnesComplementer{}
 
 	for _, b := range bits {
-		c.xorGates = append(c.xorGates, NewXORGate2(signal, b))
+		c.Compliments = append(c.Compliments, NewXORGate2(signal, b))
 	}
 
 	return c
 }
 
-func (c *OnesComplementer) AsAnswerString() string {
+func (c *OnesComplementer) AsComplimentString() string {
 	s := ""
 
-	for _, x := range c.xorGates {
+	for _, x := range c.Compliments {
 		if x.(*XORGate2).isPowered {
 			s += "1"
 		} else {
@@ -27,8 +27,4 @@ func (c *OnesComplementer) AsAnswerString() string {
 	}
 
 	return s
-}
-
-func (c *OnesComplementer) AsBitPublishers() []bitPublisher {
-	return c.xorGates
 }
