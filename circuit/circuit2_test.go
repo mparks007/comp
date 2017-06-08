@@ -1373,9 +1373,9 @@ func TestRSFlipFlop(t *testing.T) {
 	testCases := []struct {
 		rPinPowered bool
 		sPinPowered bool
-		wantQ     bool
-		wantQBar  bool
-		wantError string
+		wantQ       bool
+		wantQBar    bool
+		wantError   string
 	}{
 		{false, false, false, true, ""},
 		{false, true, true, false, ""},
@@ -1434,4 +1434,3 @@ func TestRSFlipFlop(t *testing.T) {
 		})
 	}
 }
-

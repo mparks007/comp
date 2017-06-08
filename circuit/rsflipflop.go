@@ -19,16 +19,16 @@ func NewRSFlipFLop(rPin, sPin bitPublisher) *RSFlipFlop {
 	var t bitPublisher
 	f.QBar = NewNORGate(sPin, t)
 	f.Q = NewNORGate(rPin, f.QBar)
-	t = f.Q
+	f.QBar = NewNORGate(sPin, f.Q)
 
-	f.Q.Register(f.ValidateOutputRule)
-	f.QBar.Register(f.ValidateOutputRule)
+//	f.Q.Register(f.ValidateOutputRule)
+//	f.QBar.Register(f.ValidateOutputRule)
 
 	return f
 }
 
 func (f *RSFlipFlop) ValidateOutputRule(newState bool) {
-	if f.Q.GetIsPowered() == f.QBar.GetIsPowered() {
+	if f.Q.isPowered == f.QBar.isPowered {
 		panic("A Flip-Flop cannot be powered simultaneously at both Q and QBar")
 	}
 }

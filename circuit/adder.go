@@ -72,11 +72,13 @@ func NewEightBitAdder(addend1Pins, addend2Pins [8]bitPublisher, carryIn bitPubli
 			f = NewFullAdder(addend1Pins[i], addend2Pins[i], a.fullAdders[i+1].Carry) // carry-in is the neighboring adders carry-out
 		}
 
-		a.Sums[i] = f.Sum
-
 		a.fullAdders[i] = f
+
+		// make Sums refer to each for easier, external access
+		a.Sums[i] = f.Sum
 	}
 
+	// make CarryOut refer to the appropriate adder for easier, external access
 	a.CarryOut = a.fullAdders[0].Carry
 
 	return a
@@ -118,6 +120,7 @@ func NewSixteenBitAdder(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitPu
 
 	a := &SixteenBitAdder{}
 
+	// convert incoming 16-bit array to two 8-bit arrays
 	var addend1Right [8]bitPublisher
 	var addend2Right [8]bitPublisher
 	copy(addend1Right[:], addend1Pins[8:])
@@ -131,6 +134,7 @@ func NewSixteenBitAdder(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitPu
 	a.rightAdder = NewEightBitAdder(addend1Right, addend2Right, carryIn)
 	a.leftAdder = NewEightBitAdder(addend1Left, addend2Left, a.rightAdder.CarryOut)
 
+	// make Sums refer to each for easier, external access
 	for i, la := range a.leftAdder.Sums {
 		a.Sums[i] = la
 	}
@@ -138,6 +142,7 @@ func NewSixteenBitAdder(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitPu
 		a.Sums[i+8] = ra
 	}
 
+	// make CarryOut refer to the appropriate adder for easier, external access
 	a.CarryOut = a.leftAdder.CarryOut
 
 	return a
