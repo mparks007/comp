@@ -2,7 +2,6 @@ package circuit
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 )
@@ -12,7 +11,7 @@ import (
 // go test -race -cpu=1,2,4 (go max prox)
 // go test -v
 
-func TestBitPublication(t *testing.T) {
+func TestPwrSource(t *testing.T) {
 	var want, got1, got2 bool
 
 	p := &pwrSource{}
@@ -166,7 +165,7 @@ func TestNewEightSwitchBank_GoodInputs(t *testing.T) {
 	}
 }
 
-func TestEightSwitchBank_AsBitPublishers(t *testing.T) {
+func TestEightSwitchBank_AsPwrEmitters(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  [8]bool
@@ -185,7 +184,7 @@ func TestEightSwitchBank_AsBitPublishers(t *testing.T) {
 				t.Error("Unexpected error: " + err.Error())
 			}
 
-			for i, pub := range sb.AsBitPublishers() {
+			for i, pub := range sb.AsPwrEmitters() {
 				got := pub.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
@@ -257,7 +256,7 @@ func TestNewSixteenSwitchBank_GoodInputs(t *testing.T) {
 	}
 }
 
-func TestSixteenSwitchBank_AsBitPublishers(t *testing.T) {
+func TestSixteenSwitchBank_AsPwrEmitters(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  [16]bool
@@ -276,7 +275,7 @@ func TestSixteenSwitchBank_AsBitPublishers(t *testing.T) {
 				t.Error("Unexpected error: " + err.Error())
 			}
 
-			for i, pub := range sb.AsBitPublishers() {
+			for i, pub := range sb.AsPwrEmitters() {
 				got := pub.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
@@ -747,10 +746,10 @@ func TestInverter(t *testing.T) {
 				pin1Battery.Discharge()
 			}
 
-			i := NewInverter(pin1Battery)
+			inv := NewInverter(pin1Battery)
 
 			var got bool
-			i.WireUp(func(state bool) { got = state })
+			inv.WireUp(func(state bool) { got = state })
 
 			if got != tc.wantOut {
 				t.Errorf("Input power was %t so wanted it inverted to %t but got %t", tc.inPowered, tc.wantOut, got)
@@ -880,7 +879,7 @@ func TestEightBitAdder_AsAnswerString(t *testing.T) {
 	addend2Switches, _ := NewEightSwitchBank("00000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewEightBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewEightBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
 	if a == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
@@ -933,7 +932,7 @@ func TestEightBitAdder_AnswerViaRegistration(t *testing.T) {
 	addend2Switches, _ := NewEightSwitchBank("00000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewEightBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewEightBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
 	for i, s := range a.Sums {
 		s.WireUp(f[i])
@@ -990,7 +989,7 @@ func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
 	addend2Switches, _ := NewSixteenSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewSixteenBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewSixteenBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
 	if a == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
@@ -1051,7 +1050,7 @@ func TestSixteenBitAdder_AnswerViaRegistration(t *testing.T) {
 	addend2Switches, _ := NewSixteenSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewSixteenBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
+	a := NewSixteenBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
 	for i, s := range a.Sums {
 		s.WireUp(f[i])
@@ -1096,8 +1095,8 @@ func BenchmarkNewSixteenBitAdder(b *testing.B) {
 			carryInSwitch := NewSwitch(bm.carryInPowered)
 			addend1Switches, _ := NewSixteenSwitchBank(bm.bytes1)
 			addend2Switches, _ := NewSixteenSwitchBank(bm.bytes2)
-			addend1BitPubs := addend1Switches.AsBitPublishers()
-			addend2BitPubs := addend2Switches.AsBitPublishers()
+			addend1BitPubs := addend1Switches.AsPwrEmitters()
+			addend2BitPubs := addend2Switches.AsPwrEmitters()
 			for i := 0; i < b.N; i++ {
 				NewSixteenBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
 			}
@@ -1119,8 +1118,8 @@ func BenchmarkSixteenBitAdder_AsAnswerString(b *testing.B) {
 		carryInSwitch := NewSwitch(bm.carryInPowered)
 		addend1Switches, _ := NewSixteenSwitchBank(bm.bytes1)
 		addend2Switches, _ := NewSixteenSwitchBank(bm.bytes2)
-		addend1BitPubs := addend1Switches.AsBitPublishers()
-		addend2BitPubs := addend2Switches.AsBitPublishers()
+		addend1BitPubs := addend1Switches.AsPwrEmitters()
+		addend2BitPubs := addend2Switches.AsPwrEmitters()
 		a := NewSixteenBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
 		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", bm.bytes1, bm.bytes2, bm.carryInPowered), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
@@ -1258,7 +1257,7 @@ func TestEightBitSubtracter_AsAnswerString(t *testing.T) {
 	minuendwitches, _ := NewEightSwitchBank("00000000")
 	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
 
-	s := NewEightBitSubtracter(minuendwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
+	s := NewEightBitSubtracter(minuendwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
@@ -1310,7 +1309,7 @@ func TestEightBitSubtracter_AnswerViaRegistration(t *testing.T) {
 	minuendSwitches, _ := NewEightSwitchBank("00000000")
 	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
 
-	s := NewEightBitSubtracter(minuendSwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
+	s := NewEightBitSubtracter(minuendSwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
 
 	for i, s := range s.Differences {
 		s.WireUp(f[i])
@@ -1346,20 +1345,17 @@ func TestOscillator(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t)", tc.oscHertz, tc.initState), func(t *testing.T) {
 
-			mu := sync.Mutex{}
 			var gotResults string
 
 			o := NewOscillator(tc.initState)
 			o.Oscillate(tc.oscHertz)
 
 			o.WireUp(func(state bool) {
-				mu.Lock()
 				if state {
 					gotResults += "T"
 				} else {
 					gotResults += "F"
 				}
-				mu.Unlock()
 			})
 
 			time.Sleep(time.Second * 2)
@@ -1381,7 +1377,6 @@ func TestRSFlipFlop(t *testing.T) {
 		wantQBar    bool
 		wantError   string
 	}{
-		{false, false, false, true, ""},
 		{false, true, true, false, ""},
 		{false, false, true, false, ""},
 		{true, false, false, true, ""},

@@ -64,15 +64,15 @@ func NewEightSwitchBank(bits string) (*EightSwitchBank, error) {
 	return sb, nil
 }
 
-// AsBitPublishers will return pwrEmitter versions of the internal Switches
-func (s *EightSwitchBank) AsBitPublishers() [8]pwrEmitter {
-	bitPubs := [8]pwrEmitter{}
+// AsPwrEmitters will return pwrEmitter versions of the internal Switches
+func (s *EightSwitchBank) AsPwrEmitters() [8]pwrEmitter {
+	pwrEmits := [8]pwrEmitter{}
 
 	for i, sw := range s.Switches {
-		bitPubs[i] = sw
+		pwrEmits[i] = sw
 	}
 
-	return bitPubs
+	return pwrEmits
 }
 
 // SixteenSwitchBank is a convenient way to get 16 bit providers from a string of 16 0/1s
@@ -101,13 +101,13 @@ func NewSixteenSwitchBank(bits string) (*SixteenSwitchBank, error) {
 	return sb, nil
 }
 
-// AsBitPublishers will return pwrEmitter versions of the internal Switches
-func (s *SixteenSwitchBank) AsBitPublishers() [16]pwrEmitter {
-	bitPubs := [16]pwrEmitter{}
+// AsPwrEmitters will return pwrEmitter versions of the internal Switches
+func (s *SixteenSwitchBank) AsPwrEmitters() [16]pwrEmitter {
+	pwrEmits := [16]pwrEmitter{}
 
 	for i, sw := range s.Switches {
-		bitPubs[i] = sw
+		pwrEmits[i] = sw
 	}
 
-	return bitPubs
+	return pwrEmits
 }

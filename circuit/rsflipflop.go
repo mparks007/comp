@@ -16,10 +16,12 @@ type RSFlipFlop struct {
 func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	f := &RSFlipFlop{}
 
-	var t pwrEmitter
-	f.QBar = NewNORGate(sPin, t)
+	//var t pwrEmitter
+	//t = NewSwitch(false)
+	f.QBar = NewNORGate(sPin, nil)
 	f.Q = NewNORGate(rPin, f.QBar)
-	t = f.Q
+	f.QBar.relays[1].UpdatePins(sPin, f.Q)
+	//t = f.Q
 
 	f.Q.WireUp(f.validateOutputRule)
 	f.QBar.WireUp(f.validateOutputRule)

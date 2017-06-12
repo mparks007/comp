@@ -13,14 +13,18 @@ type Relay struct {
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	r := &Relay{}
 
+	r.UpdatePins(pin1, pin2)
+
+	return r
+}
+
+func (r *Relay) UpdatePins(pin1, pin2 pwrEmitter) {
 	if pin1 != nil {
 		pin1.WireUp(r.aInPowerUpdate)
 	}
 	if pin2 != nil {
 		pin2.WireUp(r.bInPowerUpdate)
 	}
-
-	return r
 }
 
 func (r *Relay) aInPowerUpdate(newState bool) {
