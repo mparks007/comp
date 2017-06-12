@@ -8,10 +8,10 @@ package circuit
 
 type ANDGate struct {
 	relays []*Relay
-	bitPublication
+	pwrSource
 }
 
-func NewANDGate(pins ...bitPublisher) *ANDGate {
+func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	g := &ANDGate{}
 
 	for i, pin := range pins {
@@ -23,7 +23,7 @@ func NewANDGate(pins ...bitPublisher) *ANDGate {
 	}
 
 	// the last gate in the chain is the final answer for an AND
-	g.relays[len(pins)-1].ClosedOut.Register(g.Publish)
+	g.relays[len(pins)-1].ClosedOut.WireUp(g.Transmit)
 
 	return g
 }
@@ -36,17 +36,17 @@ func NewANDGate(pins ...bitPublisher) *ANDGate {
 
 type ORGate struct {
 	relays []*Relay
-	bitPublication
+	pwrSource
 }
 
-func NewORGate(pins ...bitPublisher) *ORGate {
+func NewORGate(pins ...pwrEmitter) *ORGate {
 	g := &ORGate{}
 
 	for i, pin := range pins {
 		g.relays = append(g.relays, NewRelay(NewBattery(), pin))
 
 		// every relay can trigger state in a chain of ORs
-		g.relays[i].ClosedOut.Register(g.powerUpdate)
+		g.relays[i].ClosedOut.WireUp(g.powerUpdate)
 	}
 
 	return g
@@ -57,13 +57,13 @@ func (g *ORGate) powerUpdate(newState bool) {
 
 	// check to see if ANY of the relays are closed
 	for _, r := range g.relays {
-		if r.ClosedOut.isPowered {
+		if r.ClosedOut.GetIsPowered() {
 			newState = true
 			break
 		}
 	}
 
-	g.Publish(newState)
+	g.Transmit(newState)
 }
 
 // NAND
@@ -74,17 +74,17 @@ func (g *ORGate) powerUpdate(newState bool) {
 
 type NANDGate struct {
 	relays []*Relay
-	bitPublication
+	pwrSource
 }
 
-func NewNANDGate(pins ...bitPublisher) *NANDGate {
+func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	g := &NANDGate{}
 
 	for i, pin := range pins {
 		g.relays = append(g.relays, NewRelay(NewBattery(), pin))
 
 		// every relay can trigger state in a chain of NANDs
-		g.relays[i].OpenOut.Register(g.powerUpdate)
+		g.relays[i].OpenOut.WireUp(g.powerUpdate)
 	}
 
 	return g
@@ -95,13 +95,13 @@ func (g *NANDGate) powerUpdate(newState bool) {
 
 	// check to see if ANY of the relays are open
 	for _, r := range g.relays {
-		if r.OpenOut.isPowered {
+		if r.OpenOut.GetIsPowered() {
 			newState = true
 			break
 		}
 	}
 
-	g.Publish(newState)
+	g.Transmit(newState)
 
 }
 
@@ -113,10 +113,10 @@ func (g *NANDGate) powerUpdate(newState bool) {
 
 type NORGate struct {
 	relays []*Relay
-	bitPublication
+	pwrSource
 }
 
-func NewNORGate(pins ...bitPublisher) *NORGate {
+func NewNORGate(pins ...pwrEmitter) *NORGate {
 	g := &NORGate{}
 
 	for i, pin := range pins {
@@ -128,7 +128,7 @@ func NewNORGate(pins ...bitPublisher) *NORGate {
 	}
 
 	// the last gate in the chain is the final answer for a NOR
-	g.relays[len(pins)-1].OpenOut.Register(g.Publish)
+	g.relays[len(pins)-1].OpenOut.WireUp(g.Transmit)
 
 	return g
 }
@@ -140,13 +140,13 @@ func NewNORGate(pins ...bitPublisher) *NORGate {
 // 1 1 0
 
 type XORGate struct {
-	orGate   bitPublisher
-	nandGate bitPublisher
-	andGate  bitPublisher
-	bitPublication
+	orGate   pwrEmitter
+	nandGate pwrEmitter
+	andGate  pwrEmitter
+	pwrSource
 }
 
-func NewXORGate(pin1, pin2 bitPublisher) *XORGate {
+func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 	g := &XORGate{}
 
 	g.orGate = NewORGate(pin1, pin2)
@@ -154,7 +154,7 @@ func NewXORGate(pin1, pin2 bitPublisher) *XORGate {
 	g.andGate = NewANDGate(g.orGate, g.nandGate)
 
 	// the state of the shared AND is the answer for an XOR
-	g.andGate.Register(g.Publish)
+	g.andGate.WireUp(g.Transmit)
 
 	return g
 }
@@ -166,17 +166,17 @@ func NewXORGate(pin1, pin2 bitPublisher) *XORGate {
 // 1 1 1
 
 type XNORGate struct {
-	inverter bitPublisher
-	bitPublication
+	inverter pwrEmitter
+	pwrSource
 }
 
-func NewXNORGate(pin1, pin2 bitPublisher) *XNORGate {
+func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 	g := &XNORGate{}
 
 	g.inverter = NewInverter(NewXORGate(pin1, pin2))
 
 	// the inverter owns the final answer in this approach to an XNOR
-	g.inverter.Register(g.Publish)
+	g.inverter.WireUp(g.Transmit)
 
 	return g
 }

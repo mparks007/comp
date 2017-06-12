@@ -1,7 +1,7 @@
 package circuit
 
 type Battery struct {
-	bitPublication
+	pwrSource
 }
 
 func NewBattery() *Battery {
@@ -10,9 +10,9 @@ func NewBattery() *Battery {
 	return b
 }
 func (b *Battery) Charge() {
-	b.Publish(true)
+	b.Transmit(true)
 }
 
 func (b *Battery) Discharge() {
-	b.Publish(false)
+	b.Transmit(false)
 }

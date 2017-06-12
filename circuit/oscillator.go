@@ -4,7 +4,7 @@ import "time"
 
 type Oscillator struct {
 	stopCh chan bool
-	bitPublication
+	pwrSource
 }
 
 func NewOscillator(init bool) *Oscillator {
@@ -23,7 +23,7 @@ func (o *Oscillator) Oscillate(hertz int) {
 		for {
 			select {
 			case <-t.C:
-				o.Publish(!o.GetIsPowered())
+				o.Transmit(!o.GetIsPowered())
 			case <-o.stopCh:
 				t.Stop()
 				break

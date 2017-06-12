@@ -2,49 +2,36 @@ package circuit
 
 import "sync"
 
-type bitPublisher interface {
-	Register(func(bool))
+type pwrEmitter interface {
+	WireUp(func(bool))
 }
 
-// bitPublication is the basic means for which an object can store a single state and publish it to subscribers
-type bitPublication struct {
-	mu                  sync.Mutex
-	isPowered           bool
-	subscriberCallbacks []func(bool)
+// pwrSource is the basic means for which an object can store a single state and transmit it to subscribers
+type pwrSource struct {
+	mu             sync.Mutex
+	isPowered      bool
+	wiredCallbacks []func(bool)
 }
 
-// Register allows an object subscribe to the publication via callback
-func (p *bitPublication) Register(callback func(bool)) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+// WireUp allows an object subscribe to the publication via callback
+func (p *pwrSource) WireUp(callback func(bool)) {
+	p.wiredCallbacks = append(p.wiredCallbacks, callback)
 
-	p.subscriberCallbacks = append(p.subscriberCallbacks, callback)
-
-	// ensure newly registered callback immediately gets current state
 	callback(p.isPowered)
 }
 
-// Publish will call all the registered callbacks, passing in the current state
-func (p *bitPublication) Publish(newState bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
+// Transmit will call all the registered callbacks, passing in the current state
+func (p *pwrSource) Transmit(newState bool) {
 	if p.isPowered != newState {
 		p.isPowered = newState
 
-		wg := &sync.WaitGroup{}
-		for _, subscriber := range p.subscriberCallbacks {
-			wg.Add(1)
-			go func(state bool, subFunc func(bool)) {
-				subFunc(state)
-				wg.Done()
-			}(p.isPowered, subscriber)
+		for _, subscriber := range p.wiredCallbacks {
+			subscriber(p.isPowered)
 		}
-		wg.Wait()
 	}
 }
 
-func (p *bitPublication) GetIsPowered() bool {
+func (p *pwrSource) GetIsPowered() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

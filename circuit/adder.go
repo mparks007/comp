@@ -13,11 +13,11 @@ import (
 // 1 1		0		1
 
 type HalfAdder struct {
-	Sum   bitPublisher
-	Carry bitPublisher
+	Sum   pwrEmitter
+	Carry pwrEmitter
 }
 
-func NewHalfAdder(pin1, pin2 bitPublisher) *HalfAdder {
+func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
 	h := &HalfAdder{}
 
 	h.Sum = NewXORGate(pin1, pin2)
@@ -32,11 +32,11 @@ func NewHalfAdder(pin1, pin2 bitPublisher) *HalfAdder {
 type FullAdder struct {
 	halfAdder1 *HalfAdder
 	halfAdder2 *HalfAdder
-	Sum        bitPublisher
-	Carry      bitPublisher
+	Sum        pwrEmitter
+	Carry      pwrEmitter
 }
 
-func NewFullAdder(pin1, pin2, carryIn bitPublisher) *FullAdder {
+func NewFullAdder(pin1, pin2, carryIn pwrEmitter) *FullAdder {
 	f := &FullAdder{}
 
 	f.halfAdder1 = NewHalfAdder(pin1, pin2)
@@ -55,11 +55,11 @@ func NewFullAdder(pin1, pin2, carryIn bitPublisher) *FullAdder {
 
 type EightBitAdder struct {
 	fullAdders [8]*FullAdder
-	Sums       [8]bitPublisher
-	CarryOut   bitPublisher
+	Sums       [8]pwrEmitter
+	CarryOut   pwrEmitter
 }
 
-func NewEightBitAdder(addend1Pins, addend2Pins [8]bitPublisher, carryIn bitPublisher) *EightBitAdder {
+func NewEightBitAdder(addend1Pins, addend2Pins [8]pwrEmitter, carryIn pwrEmitter) *EightBitAdder {
 
 	a := &EightBitAdder{}
 
@@ -112,22 +112,22 @@ func (a *EightBitAdder) CarryOutAsBool() bool {
 type SixteenBitAdder struct {
 	rightAdder *EightBitAdder
 	leftAdder  *EightBitAdder
-	Sums       [16]bitPublisher
-	CarryOut   bitPublisher
+	Sums       [16]pwrEmitter
+	CarryOut   pwrEmitter
 }
 
-func NewSixteenBitAdder(addend1Pins, addend2Pins [16]bitPublisher, carryIn bitPublisher) *SixteenBitAdder {
+func NewSixteenBitAdder(addend1Pins, addend2Pins [16]pwrEmitter, carryIn pwrEmitter) *SixteenBitAdder {
 
 	a := &SixteenBitAdder{}
 
 	// convert incoming 16-bit array to two 8-bit arrays
-	var addend1Right [8]bitPublisher
-	var addend2Right [8]bitPublisher
+	var addend1Right [8]pwrEmitter
+	var addend2Right [8]pwrEmitter
 	copy(addend1Right[:], addend1Pins[8:])
 	copy(addend2Right[:], addend2Pins[8:])
 
-	var addend1Left [8]bitPublisher
-	var addend2Left [8]bitPublisher
+	var addend1Left [8]pwrEmitter
+	var addend2Left [8]pwrEmitter
 	copy(addend1Left[:], addend1Pins[:8])
 	copy(addend2Left[:], addend2Pins[:8])
 

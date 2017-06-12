@@ -6,16 +6,16 @@ package circuit
 
 type Inverter struct {
 	relay *Relay
-	bitPublication
+	pwrSource
 }
 
-func NewInverter(pin bitPublisher) *Inverter {
+func NewInverter(pin pwrEmitter) *Inverter {
 	inv := &Inverter{}
 
 	inv.relay = NewRelay(NewBattery(), pin)
 
 	// the Open Out is what gets the flipped state in an Inverter
-	inv.relay.OpenOut.Register(inv.Publish)
+	inv.relay.OpenOut.WireUp(inv.Transmit)
 
 	return inv
 }

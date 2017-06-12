@@ -10,7 +10,7 @@ import (
 type Switch struct {
 	relay       *Relay
 	pin2Battery *Battery
-	bitPublication
+	pwrSource
 }
 
 // NewSwitch creates a new Switch struct with its initial state based on the passed in initialization value
@@ -24,7 +24,7 @@ func NewSwitch(init bool) *Switch {
 	}
 
 	s.relay = NewRelay(NewBattery(), s.pin2Battery)
-	s.relay.ClosedOut.Register(s.Publish)
+	s.relay.ClosedOut.WireUp(s.Transmit)
 
 	return s
 }
@@ -64,9 +64,9 @@ func NewEightSwitchBank(bits string) (*EightSwitchBank, error) {
 	return sb, nil
 }
 
-// AsBitPublishers will return bitPublisher versions of the internal Switches
-func (s *EightSwitchBank) AsBitPublishers() [8]bitPublisher {
-	bitPubs := [8]bitPublisher{}
+// AsBitPublishers will return pwrEmitter versions of the internal Switches
+func (s *EightSwitchBank) AsBitPublishers() [8]pwrEmitter {
+	bitPubs := [8]pwrEmitter{}
 
 	for i, sw := range s.Switches {
 		bitPubs[i] = sw
@@ -101,9 +101,9 @@ func NewSixteenSwitchBank(bits string) (*SixteenSwitchBank, error) {
 	return sb, nil
 }
 
-// AsBitPublishers will return bitPublisher versions of the internal Switches
-func (s *SixteenSwitchBank) AsBitPublishers() [16]bitPublisher {
-	bitPubs := [16]bitPublisher{}
+// AsBitPublishers will return pwrEmitter versions of the internal Switches
+func (s *SixteenSwitchBank) AsBitPublishers() [16]pwrEmitter {
+	bitPubs := [16]pwrEmitter{}
 
 	for i, sw := range s.Switches {
 		bitPubs[i] = sw

@@ -2,6 +2,7 @@ package circuit
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -14,12 +15,12 @@ import (
 func TestBitPublication(t *testing.T) {
 	var want, got1, got2 bool
 
-	p := &bitPublication{}
+	p := &pwrSource{}
 
-	p.Register(func(state bool) { got1 = state })
-	p.Register(func(state bool) { got2 = state })
+	p.WireUp(func(state bool) { got1 = state })
+	p.WireUp(func(state bool) { got2 = state })
 
-	p.Publish(true)
+	p.Transmit(true)
 	want = true
 
 	if got1 != want {
@@ -30,7 +31,7 @@ func TestBitPublication(t *testing.T) {
 		t.Errorf(fmt.Sprintf("Expected subscription 2 to be %t but got %t", want, got2))
 	}
 
-	p.Publish(false)
+	p.Transmit(false)
 	want = false
 
 	if got1 != want {
@@ -47,7 +48,7 @@ func TestBattery(t *testing.T) {
 
 	b := NewBattery()
 
-	b.Register(func(state bool) { got = state })
+	b.WireUp(func(state bool) { got = state })
 
 	want = true
 
@@ -78,7 +79,7 @@ func TestSwitch(t *testing.T) {
 	s := NewSwitch(false)
 
 	// register callback (will trigger immediate call to push isPowered at time of registration)
-	s.Register(func(state bool) {
+	s.WireUp(func(state bool) {
 		gotState = state
 		gotCount += 1
 	})
@@ -306,8 +307,8 @@ func TestRelay_WithSwitches(t *testing.T) {
 	r := NewRelay(aSwitch, bSwitch)
 
 	var gotOpenOut, gotClosedOut bool
-	r.OpenOut.Register(func(state bool) { gotOpenOut = state })
-	r.ClosedOut.Register(func(state bool) { gotClosedOut = state })
+	r.OpenOut.WireUp(func(state bool) { gotOpenOut = state })
+	r.ClosedOut.WireUp(func(state bool) { gotClosedOut = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip [%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -356,8 +357,8 @@ func TestRelay_WithBatteries(t *testing.T) {
 
 			r := NewRelay(pin1Battery, pin2Battery)
 
-			r.OpenOut.Register(func(state bool) { gotOpenOut = state })
-			r.ClosedOut.Register(func(state bool) { gotClosedOut = state })
+			r.OpenOut.WireUp(func(state bool) { gotOpenOut = state })
+			r.ClosedOut.WireUp(func(state bool) { gotClosedOut = state })
 
 			if gotOpenOut != tc.wantAtOpen {
 				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut)
@@ -388,7 +389,7 @@ func TestANDGate_TwoPin(t *testing.T) {
 	g := NewANDGate(aSwitch, bSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -427,7 +428,7 @@ func TestANDGate_ThreePin(t *testing.T) {
 	g := NewANDGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -461,7 +462,7 @@ func TestORGate_TwoPin(t *testing.T) {
 	g := NewORGate(aSwitch, bSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -500,7 +501,7 @@ func TestORGate_ThreePin(t *testing.T) {
 	g := NewORGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -534,7 +535,7 @@ func TestNANDGate_TwoPin(t *testing.T) {
 	g := NewNANDGate(aSwitch, bSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -573,7 +574,7 @@ func TestNANDGate_ThreePin(t *testing.T) {
 	g := NewNANDGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -607,7 +608,7 @@ func TestNORGate_TwoPin(t *testing.T) {
 	g := NewNORGate(aSwitch, bSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -646,7 +647,7 @@ func TestNORGate_ThreePin(t *testing.T) {
 	g := NewNORGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -680,7 +681,7 @@ func TestXORGate(t *testing.T) {
 	g := NewXORGate(aSwitch, bSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -713,7 +714,7 @@ func TestXNORGate(t *testing.T) {
 	g := NewXNORGate(aSwitch, bSwitch)
 
 	var got bool
-	g.Register(func(state bool) { got = state })
+	g.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -749,7 +750,7 @@ func TestInverter(t *testing.T) {
 			i := NewInverter(pin1Battery)
 
 			var got bool
-			i.Register(func(state bool) { got = state })
+			i.WireUp(func(state bool) { got = state })
 
 			if got != tc.wantOut {
 				t.Errorf("Input power was %t so wanted it inverted to %t but got %t", tc.inPowered, tc.wantOut, got)
@@ -777,8 +778,8 @@ func TestHalfAdder(t *testing.T) {
 	h := NewHalfAdder(aSwitch, bSwitch)
 
 	var gotSum, gotCarry bool
-	h.Sum.Register(func(state bool) { gotSum = state })
-	h.Carry.Register(func(state bool) { gotCarry = state })
+	h.Sum.WireUp(func(state bool) { gotSum = state })
+	h.Carry.WireUp(func(state bool) { gotCarry = state })
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input source A to %t and source B to %t", tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -822,8 +823,8 @@ func TestFullAdder(t *testing.T) {
 	h := NewFullAdder(aSwitch, bSwitch, cSwitch)
 
 	var gotSum, gotCarry bool
-	h.Sum.Register(func(state bool) { gotSum = state })
-	h.Carry.Register(func(state bool) { gotCarry = state })
+	h.Sum.WireUp(func(state bool) { gotSum = state })
+	h.Carry.WireUp(func(state bool) { gotCarry = state })
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input source A to %t and source B to %t with carry in of %t", tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
@@ -935,9 +936,9 @@ func TestEightBitAdder_AnswerViaRegistration(t *testing.T) {
 	a := NewEightBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
 
 	for i, s := range a.Sums {
-		s.Register(f[i])
+		s.WireUp(f[i])
 	}
-	a.CarryOut.Register(func(state bool) { gotCarryOut = state })
+	a.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(addend1Switches, "11000001")
 	updateSwitches(addend2Switches, "11000000")
@@ -1053,9 +1054,9 @@ func TestSixteenBitAdder_AnswerViaRegistration(t *testing.T) {
 	a := NewSixteenBitAdder(addend1Switches.AsBitPublishers(), addend2Switches.AsBitPublishers(), carryInSwitch)
 
 	for i, s := range a.Sums {
-		s.Register(f[i])
+		s.WireUp(f[i])
 	}
-	a.CarryOut.Register(func(state bool) { gotCarryOut = state })
+	a.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(addend1Switches, "1100000000000001")
 	updateSwitches(addend2Switches, "1100000000000000")
@@ -1149,8 +1150,8 @@ func TestOnesCompliment_AsComplimentString(t *testing.T) {
 		{"1010101010101010101010101010101010101010", true, "0101010101010101010101010101010101010101"},
 	}
 
-	getInputs := func(bits string) []bitPublisher {
-		pubs := []bitPublisher{}
+	getInputs := func(bits string) []pwrEmitter {
+		pubs := []pwrEmitter{}
 
 		for _, b := range bits {
 			pubs = append(pubs, NewSwitch(b == '1'))
@@ -1194,8 +1195,8 @@ func TestOnesCompliment_Compliments(t *testing.T) {
 		{"101010101010", true, []bool{false, true, false, true, false, true, false, true, false, true, false, true}},
 	}
 
-	getInputs := func(bits string) []bitPublisher {
-		pubs := []bitPublisher{}
+	getInputs := func(bits string) []pwrEmitter {
+		pubs := []pwrEmitter{}
 
 		for _, b := range bits {
 			pubs = append(pubs, NewSwitch(b == '1'))
@@ -1312,10 +1313,10 @@ func TestEightBitSubtracter_AnswerViaRegistration(t *testing.T) {
 	s := NewEightBitSubtracter(minuendSwitches.AsBitPublishers(), subtrahendSwitches.AsBitPublishers())
 
 	for i, s := range s.Differences {
-		s.Register(f[i])
+		s.WireUp(f[i])
 	}
 
-	s.CarryOut.Register(func(state bool) { gotCarryOut = state })
+	s.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(minuendSwitches, "10000001")
 	updateSwitches(subtrahendSwitches, "01111110")
@@ -1345,17 +1346,20 @@ func TestOscillator(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t)", tc.oscHertz, tc.initState), func(t *testing.T) {
 
+			mu := sync.Mutex{}
 			var gotResults string
 
 			o := NewOscillator(tc.initState)
 			o.Oscillate(tc.oscHertz)
 
-			o.Register(func(state bool) {
+			o.WireUp(func(state bool) {
+				mu.Lock()
 				if state {
 					gotResults += "T"
 				} else {
 					gotResults += "F"
 				}
+				mu.Unlock()
 			})
 
 			time.Sleep(time.Second * 2)
@@ -1383,7 +1387,7 @@ func TestRSFlipFlop(t *testing.T) {
 		{true, false, false, true, ""},
 		{false, false, false, true, ""},
 		{false, true, true, false, ""},
-		//{true, true, true, false, "A Flip-Flop cannot be powered simultaneously at both Q and QBar"},
+		//{true, true, true, false, "A Flip-Flop cannot have equivalent power status at both Q and QBar"},
 	}
 
 	testName := func(i int) string {
@@ -1413,6 +1417,7 @@ func TestRSFlipFlop(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
+			// must discharge both first since power at R and S is disallowed
 			rPinBattery.Discharge()
 			sPinBattery.Discharge()
 
@@ -1434,3 +1439,60 @@ func TestRSFlipFlop(t *testing.T) {
 		})
 	}
 }
+
+/*
+func TestLevTrigDLatch(t *testing.T) {
+	testCases := []struct {
+		dataPin   emitter
+		clkPin    emitter
+		wantQ     bool
+		wantQBar  bool
+		wantError string
+	}{
+		{nil, nil, false, true, ""},
+		{&Battery{}, nil, false, true, ""},
+		{&Battery{}, &Battery{}, true, false, ""},
+		{&Battery{}, nil, true, false, ""},
+		{nil, nil, true, false, ""},
+		{nil, &Battery{}, false, true, ""},
+		{nil, nil, false, true, ""},
+		{&Battery{}, &Battery{}, true, false, ""},
+	}
+
+	testName := func(i int) string {
+		var priorD emitter
+		var priorC emitter
+
+		if i == 0 {
+			priorD = nil
+			priorC = nil
+		} else {
+			priorD = testCases[i-1].dataPin
+			priorC = testCases[i-1].clkPin
+		}
+
+		return fmt.Sprintf("Stage %d: Switching from [dataIn (%T) clkIn (%T)] to [dataIn (%T) clkIn (%T)]", i+1, priorD, priorC, testCases[i].dataPin, testCases[i].clkPin)
+	}
+
+	// starting with no input signals
+	l, err := newLtDLatch(nil, nil)
+
+	if err != nil {
+		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
+	}
+
+	for i, tc := range testCases {
+		t.Run(testName(i), func(t *testing.T) {
+			l.updateInputs(tc.dataPin, tc.clkPin)
+
+			if gotQ, _ := l.qEmitting(); gotQ != tc.wantQ {
+				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn Q, but got %t.", tc.wantQ, gotQ))
+			}
+
+			if gotQBar, _ := l.qBarEmitting(); gotQBar != tc.wantQBar {
+				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn QBar, but got %t.", tc.wantQBar, gotQBar))
+			}
+		})
+	}
+}
+*/

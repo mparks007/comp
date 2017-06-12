@@ -1,10 +1,10 @@
 package circuit
 
 type OnesComplementer struct {
-	Complements []bitPublisher
+	Complements []pwrEmitter
 }
 
-func NewOnesComplementer(bits []bitPublisher, signal bitPublisher) *OnesComplementer {
+func NewOnesComplementer(bits []pwrEmitter, signal pwrEmitter) *OnesComplementer {
 
 	c := &OnesComplementer{}
 

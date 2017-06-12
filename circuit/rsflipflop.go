@@ -13,22 +13,22 @@ type RSFlipFlop struct {
 	QBar *NORGate
 }
 
-func NewRSFlipFLop(rPin, sPin bitPublisher) *RSFlipFlop {
+func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	f := &RSFlipFlop{}
 
-	var t bitPublisher
+	var t pwrEmitter
 	f.QBar = NewNORGate(sPin, t)
 	f.Q = NewNORGate(rPin, f.QBar)
-	f.QBar = NewNORGate(sPin, f.Q)
+	t = f.Q
 
-//	f.Q.Register(f.ValidateOutputRule)
-//	f.QBar.Register(f.ValidateOutputRule)
+	f.Q.WireUp(f.validateOutputRule)
+	f.QBar.WireUp(f.validateOutputRule)
 
 	return f
 }
 
-func (f *RSFlipFlop) ValidateOutputRule(newState bool) {
+func (f *RSFlipFlop) validateOutputRule(newState bool) {
 	if f.Q.isPowered == f.QBar.isPowered {
-		panic("A Flip-Flop cannot be powered simultaneously at both Q and QBar")
+		panic("A Flip-Flop cannot have equivalent power status at both Q and QBar")
 	}
 }
