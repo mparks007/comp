@@ -1406,6 +1406,7 @@ func TestRSFlipFlop(t *testing.T) {
 		wantQBar    bool
 		wantError   string
 	}{
+		{false, false, false, true, ""},
 		{false, true, true, false, ""},
 		{false, false, true, false, ""},
 		{true, false, false, true, ""},
@@ -1435,7 +1436,7 @@ func TestRSFlipFlop(t *testing.T) {
 	sPinBattery.Discharge()
 
 	// starting with no input signals
-	f := NewRSFlipFLop(rPinBattery, sPinBattery)
+	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
@@ -1452,11 +1453,11 @@ func TestRSFlipFlop(t *testing.T) {
 				sPinBattery.Charge()
 			}
 
-			if gotQ := f.Q.GetIsPowered(); gotQ != tc.wantQ {
+			if gotQ := ff.Q.GetIsPowered(); gotQ != tc.wantQ {
 				t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ))
 			}
 
-			if gotQBar := f.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
+			if gotQBar := ff.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
 				t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar))
 			}
 		})
@@ -1476,59 +1477,64 @@ func TestRSFlipFlop_Panic(t *testing.T) {
 	NewRSFlipFLop(NewBattery(), NewBattery())
 }
 
-/*
 func TestLevTrigDLatch(t *testing.T) {
 	testCases := []struct {
-		dataPin   emitter
-		clkPin    emitter
-		wantQ     bool
-		wantQBar  bool
-		wantError string
+		hold     bool
+		data     bool
+		wantQ    bool
+		wantQBar bool
 	}{
-		{nil, nil, false, true, ""},
-		{&Battery{}, nil, false, true, ""},
-		{&Battery{}, &Battery{}, true, false, ""},
-		{&Battery{}, nil, true, false, ""},
-		{nil, nil, true, false, ""},
-		{nil, &Battery{}, false, true, ""},
-		{nil, nil, false, true, ""},
-		{&Battery{}, &Battery{}, true, false, ""},
+		{false, false, true, false},
+		{false, true, true, false},
+		{true, true, true, false},
+		{false, false, true, false},
+		{true, false, false, true},
+		{false, false, false, true},
+		{true, false, false, true},
+		{true, true, true, false},
+		{false, false, true, false},
 	}
 
 	testName := func(i int) string {
-		var priorD emitter
-		var priorC emitter
+		var priorHold bool
+		var priorData bool
 
 		if i == 0 {
-			priorD = nil
-			priorC = nil
+			// trues since starting with charged batteries when Newing thew Latch initially
+			priorHold = true
+			priorData = true
 		} else {
-			priorD = testCases[i-1].dataPin
-			priorC = testCases[i-1].clkPin
+			priorHold = testCases[i-1].hold
+			priorData = testCases[i-1].data
 		}
 
-		return fmt.Sprintf("Stage %d: Switching from [dataIn (%T) clkIn (%T)] to [dataIn (%T) clkIn (%T)]", i+1, priorD, priorC, testCases[i].dataPin, testCases[i].clkPin)
+		return fmt.Sprintf("Stage %d: Switching from [hold (%t) data (%t)] to [hold (%t) data (%t)]", i+1, priorHold, priorData, testCases[i].hold, testCases[i].data)
 	}
 
-	// starting with no input signals
-	l, err := newLtDLatch(nil, nil)
+	var holdBattery, dataBattery *Battery
+	holdBattery = NewBattery()
+	dataBattery = NewBattery()
 
-	if err != nil {
-		t.Error(fmt.Sprintf("Expecting no errors switchOn initial creation but got %s.", err))
-	}
+	latch := NewLtDLatch(holdBattery, dataBattery)
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
-			l.updateInputs(tc.dataPin, tc.clkPin)
 
-			if gotQ, _ := l.qEmitting(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn Q, but got %t.", tc.wantQ, gotQ))
+			if tc.hold {
+				holdBattery.Charge()
 			}
 
-			if gotQBar, _ := l.qBarEmitting(); gotQBar != tc.wantQBar {
-				t.Errorf(fmt.Sprintf("Wanted power of %t switchOn QBar, but got %t.", tc.wantQBar, gotQBar))
+			if tc.data {
+				dataBattery.Charge()
+			}
+
+			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
+				t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ))
+			}
+
+			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
+				t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar))
 			}
 		})
 	}
 }
-*/

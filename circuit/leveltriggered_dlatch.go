@@ -6,68 +6,26 @@ package circuit
 // 0 1     0  1
 // 1 1     1  0
 // X 0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
-/*
-type levTrigDLatch struct {
-	//dataIn emitter
-	//clkIn  emitter
-	rs     *RSFlipFlop
-	rAnd   *ANDGate
-	sAnd   *ANDGate
+
+type LevTrigDLatch struct {
+	rs   *RSFlipFlop
+	rAnd *ANDGate
+	sAnd *ANDGate
+	Q    *NORGate
+	QBar *NORGate
 }
 
-func newLtDLatch(dataIn, clkIn pwrEmitter) (*levTrigDLatch, error) {
-	l := &levTrigDLatch{}
+func NewLtDLatch(clkIn, dataIn pwrEmitter) *LevTrigDLatch {
+	l := &LevTrigDLatch{}
 
-	l.updateInputs(dataIn, clkIn)
+	l.rAnd = NewANDGate(clkIn, NewInverter(dataIn))
+	l.sAnd = NewANDGate(clkIn, dataIn)
 
-	l.rs, _ = NewRSFlipFLop(nil, nil) // make defaulted inner flipflop. setupComponents will set it up fully
+	l.rs = NewRSFlipFLop(l.rAnd, l.sAnd)
 
-	err := l.setupComponents()
-	if err != nil {
-		return nil, err
-	}
+	// refer to the inner-flipflop's outputs for easier, external access
+	l.Q = l.rs.Q
+	l.QBar = l.rs.QBar
 
-	return l, nil
+	return l
 }
-
-func (l *levTrigDLatch) updateInputs(dataIn, clkIn emitter) {
-	l.dataIn = dataIn
-	l.clkIn = clkIn
-}
-
-func (l *levTrigDLatch) setupComponents() error {
-	l.rAnd = newANDGate(newInverter(l.dataIn), l.clkIn)
-	l.sAnd = newANDGate(l.dataIn, l.clkIn)
-
-	// pass along the new input states to the inner flipflop
-	err := l.rs.updateInputs(l.rAnd, l.sAnd)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (l *levTrigDLatch) qEmitting() (bool, error) {
-
-	err := l.setupComponents()
-	if err != nil {
-		return false, err
-	}
-
-	if qEmitting, err := l.rs.qEmitting(); err != nil {
-		return qEmitting, err
-	} else {
-		return qEmitting, nil
-	}
-}
-
-func (l *levTrigDLatch) qBarEmitting() (bool, error) {
-	if qBarEmitting, err := l.rs.qBarEmitting(); err != nil {
-		return qBarEmitting, err
-	} else {
-		return qBarEmitting, nil
-	}
-}
-
-*/
