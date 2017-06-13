@@ -16,12 +16,10 @@ type RSFlipFlop struct {
 func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	f := &RSFlipFlop{}
 
-	//var t pwrEmitter
-	//t = NewSwitch(false)
-	f.QBar = NewNORGate(sPin, nil)
+	f.QBar = NewNORGate(sPin, nil) // f.Q doesn't exist yet so cannot setup feedback loop yet
 	f.Q = NewNORGate(rPin, f.QBar)
-	f.QBar.relays[1].UpdatePins(sPin, f.Q)
-	//t = f.Q
+
+	f.QBar.UpdatePin(2, 2, f.Q) // now f.Q exists so wire up the feedback loop
 
 	f.Q.WireUp(f.validateOutputRule)
 	f.QBar.WireUp(f.validateOutputRule)

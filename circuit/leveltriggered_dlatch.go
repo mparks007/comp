@@ -1,22 +1,21 @@
 package circuit
 
-/*
 // Level-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
 // d clk   q  !q
 // 0 1     0  1
 // 1 1     1  0
 // X 0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
-
+/*
 type levTrigDLatch struct {
-	dataIn emitter
-	clkIn  emitter
+	//dataIn emitter
+	//clkIn  emitter
 	rs     *RSFlipFlop
-	rAnd   *andGate
-	sAnd   *andGate
+	rAnd   *ANDGate
+	sAnd   *ANDGate
 }
 
-func newLtDLatch(dataIn, clkIn emitter) (*levTrigDLatch, error) {
+func newLtDLatch(dataIn, clkIn pwrEmitter) (*levTrigDLatch, error) {
 	l := &levTrigDLatch{}
 
 	l.updateInputs(dataIn, clkIn)
@@ -70,4 +69,5 @@ func (l *levTrigDLatch) qBarEmitting() (bool, error) {
 		return qBarEmitting, nil
 	}
 }
+
 */

@@ -1,23 +1,17 @@
 package circuit
 
-import "sync"
-
 type pwrEmitter interface {
 	WireUp(func(bool))
 }
 
 // pwrSource is the basic means for which an object can store a single state and transmit it to subscribers
 type pwrSource struct {
-	mu             sync.Mutex
 	isPowered      bool
 	wiredCallbacks []func(bool)
 }
 
 // WireUp allows an object subscribe to the publication via callback
 func (p *pwrSource) WireUp(callback func(bool)) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	p.wiredCallbacks = append(p.wiredCallbacks, callback)
 
 	callback(p.isPowered)
@@ -25,9 +19,6 @@ func (p *pwrSource) WireUp(callback func(bool)) {
 
 // Transmit will call all the registered callbacks, passing in the current state
 func (p *pwrSource) Transmit(newState bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if p.isPowered != newState {
 		p.isPowered = newState
 
@@ -38,13 +29,5 @@ func (p *pwrSource) Transmit(newState bool) {
 }
 
 func (p *pwrSource) GetIsPowered() bool {
-	//	p.mu.Lock()
-	//	defer p.mu.Unlock()
-	var x bool
-	p.mu.Lock()
-	x = p.isPowered
-	defer p.mu.Unlock()
-
-	//return p.isPowered
-	return x
+	return p.isPowered
 }

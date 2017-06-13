@@ -1,5 +1,7 @@
 package circuit
 
+import "fmt"
+
 // AND
 // 0 0 0
 // 1 0 0
@@ -131,6 +133,14 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 	g.relays[len(pins)-1].OpenOut.WireUp(g.Transmit)
 
 	return g
+}
+
+func (g *NORGate) UpdatePin(norPinNum, relayPinNum int, pin pwrEmitter) {
+	if norPinNum > len(g.relays) {
+		panic(fmt.Sprintf("Invalid gate pin number.  Input pin count (%d), requested pin (%d)", len(g.relays), norPinNum))
+	}
+
+	g.relays[norPinNum-1].UpdatePin(relayPinNum, pin)
 }
 
 // XOR

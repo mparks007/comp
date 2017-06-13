@@ -2,6 +2,7 @@ package circuit
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -370,6 +371,20 @@ func TestRelay_WithBatteries(t *testing.T) {
 	}
 }
 
+func TestRelay_UpdatePinPanic(t *testing.T) {
+	want := "Invalid relay pin number.  Relays have two pins and the requested pin was (3)"
+
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+		}
+	}()
+
+	r := NewRelay(NewBattery(), NewBattery())
+
+	r.UpdatePin(3, NewBattery())
+}
+
 func TestANDGate_TwoPin(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
@@ -660,6 +675,20 @@ func TestNORGate_ThreePin(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNORGate_UpdatePinPanic(t *testing.T) {
+	want := "Invalid gate pin number.  Input pin count (2), requested pin (3)"
+
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+		}
+	}()
+
+	g := NewNORGate(NewBattery(), NewBattery())
+
+	g.UpdatePin(3, 1, NewBattery())
 }
 
 func TestXORGate(t *testing.T) {
@@ -1382,7 +1411,6 @@ func TestRSFlipFlop(t *testing.T) {
 		{true, false, false, true, ""},
 		{false, false, false, true, ""},
 		{false, true, true, false, ""},
-		//{true, true, true, false, "A Flip-Flop cannot have equivalent power status at both Q and QBar"},
 	}
 
 	testName := func(i int) string {
@@ -1433,6 +1461,19 @@ func TestRSFlipFlop(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRSFlipFlop_Panic(t *testing.T) {
+	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
+
+	defer func() {
+		if got := recover(); !strings.HasPrefix(got.(string), want) {
+			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+		}
+	}()
+
+	// use two ON batteries to trigger invalid state
+	NewRSFlipFLop(NewBattery(), NewBattery())
 }
 
 /*
