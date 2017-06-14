@@ -383,6 +383,7 @@ func TestRelay_UpdatePinPanic(t *testing.T) {
 	r := NewRelay(NewBattery(), NewBattery())
 
 	r.UpdatePin(3, NewBattery())
+	r.UpdatePin(0, NewBattery())
 }
 
 func TestANDGate_TwoPin(t *testing.T) {
@@ -689,6 +690,7 @@ func TestNORGate_UpdatePinPanic(t *testing.T) {
 	g := NewNORGate(NewBattery(), NewBattery())
 
 	g.UpdatePin(3, 1, NewBattery())
+	g.UpdatePin(0, 1, NewBattery())
 }
 
 func TestXORGate(t *testing.T) {
@@ -1437,6 +1439,14 @@ func TestRSFlipFlop(t *testing.T) {
 
 	// starting with no input signals
 	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
+
+	if gotQ := ff.Q.GetIsPowered(); gotQ != false {
+		t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", false, gotQ))
+	}
+
+	if gotQBar := ff.QBar.GetIsPowered(); gotQBar != true {
+		t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", true, gotQBar))
+	}
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {

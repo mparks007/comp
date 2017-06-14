@@ -24,7 +24,7 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 		}
 	}
 
-	// the last gate in the chain is the final answer for an AND
+	// the last relay in the chain is the final answer for an AND
 	g.relays[len(pins)-1].ClosedOut.WireUp(g.Transmit)
 
 	return g
@@ -129,14 +129,14 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 		}
 	}
 
-	// the last gate in the chain is the final answer for a NOR
-	g.relays[len(pins)-1].OpenOut.WireUp(g.Transmit)
+	// the last relay in the chain is the final answer for a NOR
+	g.relays[len(g.relays)-1].OpenOut.WireUp(g.Transmit)
 
 	return g
 }
 
 func (g *NORGate) UpdatePin(norPinNum, relayPinNum int, pin pwrEmitter) {
-	if norPinNum > len(g.relays) {
+	if norPinNum < 1 || norPinNum > len(g.relays) {
 		panic(fmt.Sprintf("Invalid gate pin number.  Input pin count (%d), requested pin (%d)", len(g.relays), norPinNum))
 	}
 

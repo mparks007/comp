@@ -23,7 +23,7 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 }
 
 func (r *Relay) UpdatePin(pinNum int, pin pwrEmitter) {
-	if pinNum > 2 {
+	if pinNum < 1 || pinNum > 2 {
 		panic(fmt.Sprintf("Invalid relay pin number.  Relays have two pins and the requested pin was (%d)", pinNum))
 	}
 
