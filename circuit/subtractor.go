@@ -15,7 +15,7 @@ func NewEightBitSubtracter(minuendPins, subtrahendPins [8]pwrEmitter) *EightBitS
 	var complimentBits [8]pwrEmitter
 	copy(complimentBits[:], s.comp.Complements)
 
-	s.adder = NewEightBitAdder(minuendPins, complimentBits, NewBattery()) // the added Battery is the "+1" to make the "two's compliment"
+	s.adder = NewEightBitAdder(minuendPins, complimentBits, NewBattery()) // the added Battery is the "+1" to make the "two'l compliment"
 
 	// use some better fields for easier, external access
 	s.Differences = s.adder.Sums

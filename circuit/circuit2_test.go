@@ -60,14 +60,14 @@ func TestBattery(t *testing.T) {
 	want = false
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a discharged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got))
+		t.Errorf(fmt.Sprintf("With a discharged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got))
 	}
 
 	b.Charge()
 	want = true
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got))
+		t.Errorf(fmt.Sprintf("With a charged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got))
 	}
 }
 
@@ -165,8 +165,8 @@ func TestNewEightSwitchBank_GoodInputs(t *testing.T) {
 			}
 
 			// now try AsPwrEmitters
-			for i, pub := range sb.AsPwrEmitters() {
-				got := pub.(*Switch).GetIsPowered()
+			for i, pwr := range sb.AsPwrEmitters() {
+				got := pwr.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -236,8 +236,8 @@ func TestNewSixteenSwitchBank_GoodInputs(t *testing.T) {
 			}
 
 			// now try AsPwrEmitters
-			for i, pub := range sb.AsPwrEmitters() {
-				got := pub.(*Switch).GetIsPowered()
+			for i, pwr := range sb.AsPwrEmitters() {
+				got := pwr.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -306,8 +306,8 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 			}
 
 			// now try AsPwrEmitters
-			for i, pub := range sb.AsPwrEmitters() {
-				got := pub.(*Switch).GetIsPowered()
+			for i, pwr := range sb.AsPwrEmitters() {
+				got := pwr.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -1436,19 +1436,19 @@ func TestRSFlipFlop(t *testing.T) {
 		sPinPowered bool
 		wantQ       bool
 		wantQBar    bool
-	}{ // contsruction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Q off)
+	}{ // contsruction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Qs off)
 		{false, false, false, true}, // Un-Set should remember prior
-		{false, true, true, false},  // Set causes Q on (QBar off)
+		{false, true, true, false},  // Set causes Qs on (QBar off)
 		{false, true, true, false},  // Set again should change nothing
 		{false, false, true, false}, // Un-Set should remember prior
 		{false, false, true, false}, // Un-Set again should change nothing
-		{true, false, false, true},  // Reset causes Q off (QBar on)
+		{true, false, false, true},  // Reset causes Qs off (QBar on)
 		{true, false, false, true},  // Reset again should change nothing
 		{false, false, false, true}, // Un-Reset should remember prior
 		{true, false, false, true},  // Un-Reset again should change nothing
-		{false, true, true, false},  // Set causes Q on (QBar off)
-		{true, false, false, true},  // Reset causes Q off (QBar on)
-		{false, true, true, false},  // Set causes Q on (QBar off)
+		{false, true, true, false},  // Set causes Qs on (QBar off)
+		{true, false, false, true},  // Reset causes Qs off (QBar on)
+		{false, true, true, false},  // Set causes Qs on (QBar off)
 	}
 
 	testName := func(i int) string {
@@ -1476,7 +1476,7 @@ func TestRSFlipFlop(t *testing.T) {
 	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
 
 	if gotQ := ff.Q.GetIsPowered(); gotQ != false {
-		t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", false, gotQ))
+		t.Errorf(fmt.Sprintf("Wanted power of %t at Qs, but got %t.", false, gotQ))
 	}
 
 	if gotQBar := ff.QBar.GetIsPowered(); gotQBar != true {
@@ -1499,7 +1499,7 @@ func TestRSFlipFlop(t *testing.T) {
 			}
 
 			if gotQ := ff.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ))
+				t.Errorf(fmt.Sprintf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ))
 			}
 
 			if gotQBar := ff.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
@@ -1510,7 +1510,7 @@ func TestRSFlipFlop(t *testing.T) {
 }
 
 func TestRSFlipFlop_Panic(t *testing.T) {
-	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
+	want := "A Flip-Flop cannot have equivalent power status at both Qs and QBar"
 
 	defer func() {
 		if got := recover(); !strings.HasPrefix(got.(string), want) {
@@ -1522,67 +1522,151 @@ func TestRSFlipFlop_Panic(t *testing.T) {
 	NewRSFlipFLop(NewBattery(), NewBattery())
 }
 
-func TestLevTrigDLatch(t *testing.T) {
+func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
-		hold     bool
-		data     bool
+		clkIn    bool
+		dataIn   bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latch will start with a default of hold:true, data:true, which causes Q on (QBar off)
-		{false, false, true, false}, // hold off should cause no change
-		{false, true, true, false},  // hold off should cause no change
-		{true, true, true, false},   // hold with data causes Q on (QBar off)
-		{false, false, true, false}, // hold off should cause no change
-		{true, false, false, true},  // hold with no data causes Q off (QBar on)
-		{false, false, false, true}, // hold off should cause no change
-		{true, false, false, true},  // hold again with same data should cause no change
-		{true, true, true, false},   // hold with data should cause Q on (QBar off)
-		{false, false, true, false}, // hold off should cause no change
+	}{ // construction of the latch will start with a default of clkIn:true, dataIn:true, which causes Qs on (QBar off)
+		{false, false, true, false}, // clkIn off should cause no change
+		{false, true, true, false},  // clkIn off should cause no change
+		{true, true, true, false},   // clkIn with dataIn causes Qs on (QBar off)
+		{false, false, true, false}, // clkIn off should cause no change
+		{true, false, false, true},  // clkIn with no dataIn causes Qs off (QBar on)
+		{false, false, false, true}, // clkIn off should cause no change
+		{true, false, false, true},  // clkIn again with same dataIn should cause no change
+		{true, true, true, false},   // clkIn with dataIn should cause Qs on (QBar off)
+		{false, false, true, false}, // clkIn off should cause no change
 	}
 
 	testName := func(i int) string {
-		var priorHold bool
-		var priorData bool
+		var priorClkIn bool
+		var priorDataIn bool
 
 		if i == 0 {
 			// trues since starting with charged batteries when Newing thew Latch initially
-			priorHold = true
-			priorData = true
+			priorClkIn = true
+			priorDataIn = true
 		} else {
-			priorHold = testCases[i-1].hold
-			priorData = testCases[i-1].data
+			priorClkIn = testCases[i-1].clkIn
+			priorDataIn = testCases[i-1].dataIn
 		}
 
-		return fmt.Sprintf("Stage %d: Switching from [hold (%t) data (%t)] to [hold (%t) data (%t)]", i+1, priorHold, priorData, testCases[i].hold, testCases[i].data)
+		return fmt.Sprintf("Stage %d: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i+1, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
 	}
 
 	var holdBattery, dataBattery *Battery
 	holdBattery = NewBattery()
 	dataBattery = NewBattery()
 
-	latch := NewLtDLatch(holdBattery, dataBattery)
+	latch := NewLevelTriggeredDTypeLatch(holdBattery, dataBattery)
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
-			if tc.hold {
+			if tc.clkIn {
 				holdBattery.Charge()
 			} else {
 				holdBattery.Discharge()
 			}
 
-			if tc.data {
+			if tc.dataIn {
 				dataBattery.Charge()
 			} else {
 				dataBattery.Discharge()
 			}
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ))
+				t.Errorf(fmt.Sprintf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ))
 			}
 
 			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
 				t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar))
+			}
+		})
+	}
+}
+
+func TestEightBitLatch(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  [8]bool
+	}{
+		{"00000001", [8]bool{false, false, false, false, false, false, false, true}},
+		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
+		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
+		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
+	}
+
+	// flip switches to match bit pattern
+	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
+		for i, b := range bits {
+			switchBank.Switches[i].Set(b == '1')
+		}
+	}
+
+	latchSwitches, _ := NewEightSwitchBank("00000000")
+	clkSwitch := NewSwitch(false)
+	latch := NewEightBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
+
+	priorWant := [8]bool{false, false, false, false, false, false, false, false}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Stage %d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
+
+			// set to OFF to test that nothing will change in the latch store
+
+			clkSwitch.Set(false)
+			updateSwitches(latchSwitches, tc.input)
+
+			// try as actual Qs
+			for i, q := range latch.Qs {
+				got := q.GetIsPowered()
+				want := priorWant[i]
+
+				if got != want {
+					t.Errorf(fmt.Sprintf("[As Q] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got))
+				}
+			}
+
+			// now try AsPwrEmitters
+			for i, pwr := range latch.AsPwrEmitters() {
+				got := pwr.(*NORGate).GetIsPowered()
+				want := priorWant[i]
+
+				if got != want {
+					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got))
+				}
+			}
+
+			// Now set to ON to test that requested changes did occur in the latch store
+
+			clkSwitch.Set(true)
+
+			// try as actual Qs
+			for i, q := range latch.Qs {
+				got := q.GetIsPowered()
+				want := tc.want[i]
+
+				if got != want {
+					t.Errorf(fmt.Sprintf("[As Q] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got))
+				}
+			}
+
+			// now try AsPwrEmitters
+			for i, pwr := range latch.AsPwrEmitters() {
+				got := pwr.(*NORGate).GetIsPowered()
+				want := tc.want[i]
+
+				if got != want {
+					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got))
+				}
+			}
+
+			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (so matches prior)
+			for i, q := range latch.Qs {
+				priorWant[i] = q.GetIsPowered()
 			}
 		})
 	}
