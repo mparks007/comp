@@ -111,3 +111,40 @@ func (s *SixteenSwitchBank) AsPwrEmitters() [16]pwrEmitter {
 
 	return pwrEmits
 }
+
+// NSwitchBank is a convenient way to get any number of providers from a string of 0/1s
+type NSwitchBank struct {
+	Switches []*Switch
+}
+
+// NewNSwitchBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
+func NewNSwitchBank(bits string) (*NSwitchBank, error) {
+
+	match, err := regexp.MatchString("^[01]+$", bits)
+	if err != nil {
+		return nil, err
+	}
+	if !match {
+		err = errors.New(fmt.Sprint("Input not in binary format: " + bits))
+		return nil, err
+	}
+
+	sb := &NSwitchBank{}
+
+	for _, bit := range bits {
+		sb.Switches = append(sb.Switches, NewSwitch(bit == '1'))
+	}
+
+	return sb, nil
+}
+
+// AsPwrEmitters will return pwrEmitter versions of the internal Switches
+func (s *NSwitchBank) AsPwrEmitters() []pwrEmitter {
+	pwrEmits := []pwrEmitter{}
+
+	for _, sw := range s.Switches {
+		pwrEmits = append(pwrEmits, sw)
+	}
+
+	return pwrEmits
+}

@@ -154,43 +154,23 @@ func TestNewEightSwitchBank_GoodInputs(t *testing.T) {
 				t.Error("Unexpected error: " + err.Error())
 			}
 
+			// try as actual switches
 			for i, s := range sb.Switches {
 				got := s.GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf(fmt.Sprintf("[As Switch] At index %d, wanted %v but got %v", i, want, got))
 				}
 			}
-		})
-	}
-}
 
-func TestEightSwitchBank_AsPwrEmitters(t *testing.T) {
-	testCases := []struct {
-		input string
-		want  [8]bool
-	}{
-		{"00000000", [8]bool{false, false, false, false, false, false, false, false}},
-		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
-		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
-		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
-	}
-
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			sb, err := NewEightSwitchBank(tc.input)
-
-			if err != nil {
-				t.Error("Unexpected error: " + err.Error())
-			}
-
+			// now try AsPwrEmitters
 			for i, pub := range sb.AsPwrEmitters() {
 				got := pub.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got))
 				}
 			}
 		})
@@ -245,43 +225,93 @@ func TestNewSixteenSwitchBank_GoodInputs(t *testing.T) {
 				t.Error("Unexpected error: " + err.Error())
 			}
 
+			// try as actual switches
 			for i, s := range sb.Switches {
 				got := s.GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf(fmt.Sprintf("[As Switch] At index %d, wanted %v but got %v", i, want, got))
+				}
+			}
+
+			// now try AsPwrEmitters
+			for i, pub := range sb.AsPwrEmitters() {
+				got := pub.(*Switch).GetIsPowered()
+				want := tc.want[i]
+
+				if got != want {
+					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got))
 				}
 			}
 		})
 	}
 }
 
-func TestSixteenSwitchBank_AsPwrEmitters(t *testing.T) {
+func TestNewNSwitchBank_BadInputs(t *testing.T) {
 	testCases := []struct {
-		input string
-		want  [16]bool
+		input     string
+		wantError string
 	}{
-		{"0000000000000000", [16]bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
-		{"1111111111111111", [16]bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
-		{"1010101010101010", [16]bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
-		{"1000000000000001", [16]bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
+		{"000X", "Input not in binary format: "},
+		{"X000", "Input not in binary format: "},
+		{"bad", "Input not in binary format: "},
+		{"", "Input not in binary format: "},
 	}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			sb, err := NewSixteenSwitchBank(tc.input)
+			sb, err := NewNSwitchBank(tc.input)
+
+			if sb != nil {
+				t.Error("Didn't expected a Switch Bank back but got one.")
+			}
+
+			tc.wantError += tc.input
+
+			if err == nil || (err != nil && err.Error() != tc.wantError) {
+				t.Error(fmt.Sprintf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err))
+			}
+		})
+	}
+}
+
+func TestNewNSwitchBank_GoodInputs(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  []bool
+	}{
+		{"0", []bool{false}},
+		{"1", []bool{true}},
+		{"101", []bool{true, false, true}},
+		{"10000001", []bool{true, false, false, false, false, false, false, true}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
+			sb, err := NewNSwitchBank(tc.input)
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
 			}
 
+			// try as actual switches
+			for i, s := range sb.Switches {
+				got := s.GetIsPowered()
+				want := tc.want[i]
+
+				if got != want {
+					t.Errorf(fmt.Sprintf("[As Switch] At index %d, wanted %v but got %v", i, want, got))
+				}
+			}
+
+			// now try AsPwrEmitters
 			for i, pub := range sb.AsPwrEmitters() {
 				got := pub.(*Switch).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got))
 				}
 			}
 		})
@@ -1406,14 +1436,19 @@ func TestRSFlipFlop(t *testing.T) {
 		sPinPowered bool
 		wantQ       bool
 		wantQBar    bool
-		wantError   string
-	}{
-		{false, false, false, true, ""},
-		{false, true, true, false, ""},
-		{false, false, true, false, ""},
-		{true, false, false, true, ""},
-		{false, false, false, true, ""},
-		{false, true, true, false, ""},
+	}{ // contsruction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Q off)
+		{false, false, false, true}, // Un-Set should remember prior
+		{false, true, true, false},  // Set causes Q on (QBar off)
+		{false, true, true, false},  // Set again should change nothing
+		{false, false, true, false}, // Un-Set should remember prior
+		{false, false, true, false}, // Un-Set again should change nothing
+		{true, false, false, true},  // Reset causes Q off (QBar on)
+		{true, false, false, true},  // Reset again should change nothing
+		{false, false, false, true}, // Un-Reset should remember prior
+		{true, false, false, true},  // Un-Reset again should change nothing
+		{false, true, true, false},  // Set causes Q on (QBar off)
+		{true, false, false, true},  // Reset causes Q off (QBar on)
+		{false, true, true, false},  // Set causes Q on (QBar off)
 	}
 
 	testName := func(i int) string {
@@ -1493,16 +1528,16 @@ func TestLevTrigDLatch(t *testing.T) {
 		data     bool
 		wantQ    bool
 		wantQBar bool
-	}{
-		{false, false, true, false},
-		{false, true, true, false},
-		{true, true, true, false},
-		{false, false, true, false},
-		{true, false, false, true},
-		{false, false, false, true},
-		{true, false, false, true},
-		{true, true, true, false},
-		{false, false, true, false},
+	}{ // construction of the latch will start with a default of hold:true, data:true, which causes Q on (QBar off)
+		{false, false, true, false}, // hold off should cause no change
+		{false, true, true, false},  // hold off should cause no change
+		{true, true, true, false},   // hold with data causes Q on (QBar off)
+		{false, false, true, false}, // hold off should cause no change
+		{true, false, false, true},  // hold with no data causes Q off (QBar on)
+		{false, false, false, true}, // hold off should cause no change
+		{true, false, false, true},  // hold again with same data should cause no change
+		{true, true, true, false},   // hold with data should cause Q on (QBar off)
+		{false, false, true, false}, // hold off should cause no change
 	}
 
 	testName := func(i int) string {
@@ -1532,10 +1567,14 @@ func TestLevTrigDLatch(t *testing.T) {
 
 			if tc.hold {
 				holdBattery.Charge()
+			} else {
+				holdBattery.Discharge()
 			}
 
 			if tc.data {
 				dataBattery.Charge()
+			} else {
+				dataBattery.Discharge()
 			}
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {

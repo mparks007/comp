@@ -59,7 +59,7 @@ func (g *ORGate) powerUpdate(newState bool) {
 
 	// check to see if ANY of the relays are closed
 	for _, r := range g.relays {
-		if r.ClosedOut.isPowered {
+		if r.ClosedOut.GetIsPowered() {
 			newState = true
 			break
 		}
@@ -97,7 +97,7 @@ func (g *NANDGate) powerUpdate(newState bool) {
 
 	// check to see if ANY of the relays are open
 	for _, r := range g.relays {
-		if r.OpenOut.isPowered {
+		if r.OpenOut.GetIsPowered() {
 			newState = true
 			break
 		}
