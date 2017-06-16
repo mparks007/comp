@@ -6,20 +6,20 @@ type OnesComplementer struct {
 
 func NewOnesComplementer(bits []pwrEmitter, signal pwrEmitter) *OnesComplementer {
 
-	c := &OnesComplementer{}
+	comp := &OnesComplementer{}
 
 	for _, b := range bits {
-		c.Complements = append(c.Complements, NewXORGate(signal, b))
+		comp.Complements = append(comp.Complements, NewXORGate(signal, b))
 	}
 
-	return c
+	return comp
 }
 
 func (c *OnesComplementer) AsComplementString() string {
 	s := ""
 
-	for _, x := range c.Complements {
-		if x.(*XORGate).GetIsPowered() {
+	for _, compOr := range c.Complements {
+		if compOr.(*XORGate).GetIsPowered() {
 			s += "1"
 		} else {
 			s += "0"

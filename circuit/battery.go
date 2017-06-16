@@ -5,9 +5,9 @@ type Battery struct {
 }
 
 func NewBattery() *Battery {
-	b := &Battery{}
-	b.isPowered = true
-	return b
+	bat := &Battery{}
+	bat.isPowered = true
+	return bat
 }
 func (b *Battery) Charge() {
 	b.Transmit(true)

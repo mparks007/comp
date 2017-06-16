@@ -14,7 +14,7 @@ func NewInverter(pin pwrEmitter) *Inverter {
 
 	inv.relay = NewRelay(NewBattery(), pin)
 
-	// the Open Out is what gets the flipped state in an Inverter
+	// the Open Outs is what gets the flipped state in an Inverter
 	inv.relay.OpenOut.WireUp(inv.Transmit)
 
 	return inv

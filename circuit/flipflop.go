@@ -14,20 +14,20 @@ type RSFlipFlop struct {
 }
 
 func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
-	f := &RSFlipFlop{}
+	ff := &RSFlipFlop{}
 
-	// must ensure QBar gets built first to ensure a case of double false on inputs ends up with QBar true
+	// WARNING: must ensure QBar gets built first to ensure a case of double false on inputs ends up with QBar true
 
-	f.QBar = NewNORGate(sPin, nil) // f.Qs doesn't exist yet so cannot setup feedback loop (pin2) yet
-	f.Q = NewNORGate(rPin, f.QBar)
+	ff.QBar = NewNORGate(sPin, nil) // ff.Qs doesn't exist yet so cannot setup feedback loop (pin2) yet
+	ff.Q = NewNORGate(rPin, ff.QBar)
 
-	f.QBar.UpdatePin(2, 2, f.Q) // now f.Qs exists so wire up the feedback loop
+	ff.QBar.UpdatePin(2, 2, ff.Q) // now ff.Qs exists so wire up the feedback loop
 
 	// perform sanity check on any input changes
-	f.Q.WireUp(f.validateOutputRule)
-	f.QBar.WireUp(f.validateOutputRule)
+	ff.Q.WireUp(ff.validateOutputRule)
+	ff.QBar.WireUp(ff.validateOutputRule)
 
-	return f
+	return ff
 }
 
 func (f *RSFlipFlop) validateOutputRule(newState bool) {

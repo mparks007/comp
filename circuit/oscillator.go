@@ -8,24 +8,24 @@ type Oscillator struct {
 }
 
 func NewOscillator(init bool) *Oscillator {
-	o := &Oscillator{}
+	osc := &Oscillator{}
 
-	o.stopCh = make(chan bool)
-	o.isPowered = init
+	osc.stopCh = make(chan bool)
+	osc.isPowered = init
 
-	return o
+	return osc
 }
 
 func (o *Oscillator) Oscillate(hertz int) {
 
 	go func() {
-		t := time.NewTicker(time.Second / time.Duration(hertz))
+		tick := time.NewTicker(time.Second / time.Duration(hertz))
 		for {
 			select {
-			case <-t.C:
+			case <-tick.C:
 				o.Transmit(!o.GetIsPowered())
 			case <-o.stopCh:
-				t.Stop()
+				tick.Stop()
 				break
 			}
 		}

@@ -5,7 +5,7 @@ package circuit
 // d clk   q  !q
 // 0 1     0  1
 // 1 1     1  0
-// X 0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
+// X 0     q  !q  (data doesn't matter, no clock high to trigger s store-it action)
 
 type LevelTriggeredDTypeLatch struct {
 	rs   *RSFlipFlop
@@ -16,44 +16,44 @@ type LevelTriggeredDTypeLatch struct {
 }
 
 func NewLevelTriggeredDTypeLatch(clkIn, dataIn pwrEmitter) *LevelTriggeredDTypeLatch {
-	l := &LevelTriggeredDTypeLatch{}
+	latch := &LevelTriggeredDTypeLatch{}
 
-	l.rAnd = NewANDGate(clkIn, NewInverter(dataIn))
-	l.sAnd = NewANDGate(clkIn, dataIn)
+	latch.rAnd = NewANDGate(clkIn, NewInverter(dataIn))
+	latch.sAnd = NewANDGate(clkIn, dataIn)
 
-	l.rs = NewRSFlipFLop(l.rAnd, l.sAnd)
+	latch.rs = NewRSFlipFLop(latch.rAnd, latch.sAnd)
 
-	// refer to the inner-flipflop's outputs for easier, external access
-	l.Q = l.rs.Q
-	l.QBar = l.rs.QBar
+	// refer to the inner-flipflop's outputs for easier external access
+	latch.Q = latch.rs.Q
+	latch.QBar = latch.rs.QBar
 
-	return l
+	return latch
 }
 
-type EightBitLatch struct {
-	latches [8]*LevelTriggeredDTypeLatch
-	Qs      [8]*NORGate
+type NBitLatch struct {
+	latches []*LevelTriggeredDTypeLatch
+	Qs      []*NORGate
 }
 
-func NewEightBitLatch(clkIn pwrEmitter, dataIn [8]pwrEmitter) *EightBitLatch {
-	l := &EightBitLatch{}
+func NewNBitLatch(clkIn pwrEmitter, dataIn []pwrEmitter) *NBitLatch {
+	latch := &NBitLatch{}
 
-	for i, d := range dataIn {
-		l.latches[i] = NewLevelTriggeredDTypeLatch(clkIn, d)
+	for _, data := range dataIn {
+		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkIn, data))
 
-		// refer to the inner-latch's Qs output for easier, external access
-		l.Qs[i] = l.latches[i].Q
+		// refer to the inner-latch's Qs output for easier external access
+		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
 	}
 
-	return l
+	return latch
 }
 
 // AsPwrEmitters will return pwrEmitter versions of the internal latch's Qs out
-func (l *EightBitLatch) AsPwrEmitters() [8]pwrEmitter {
-	pwrEmits := [8]pwrEmitter{}
+func (l *NBitLatch) AsPwrEmitters() []pwrEmitter {
+	pwrEmits := []pwrEmitter{}
 
-	for i, latch := range l.latches {
-		pwrEmits[i] = latch.Q
+	for _, latch := range l.latches {
+		pwrEmits = append(pwrEmits, latch.Q)
 	}
 
 	return pwrEmits

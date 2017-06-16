@@ -2,11 +2,9 @@ package circuit
 
 import (
 	"fmt"
-	"sync"
 )
 
 type Relay struct {
-	mu         sync.Mutex
 	aInPowered bool
 	bInPowered bool
 	OpenOut    pwrSource
@@ -14,12 +12,12 @@ type Relay struct {
 }
 
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
-	r := &Relay{}
+	rel := &Relay{}
 
-	r.UpdatePin(1, pin1)
-	r.UpdatePin(2, pin2)
+	rel.UpdatePin(1, pin1)
+	rel.UpdatePin(2, pin2)
 
-	return r
+	return rel
 }
 
 func (r *Relay) UpdatePin(pinNum int, pin pwrEmitter) {

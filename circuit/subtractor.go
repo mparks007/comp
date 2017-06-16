@@ -1,33 +1,38 @@
 package circuit
 
-type EightBitSubtracter struct {
-	adder       *EightBitAdder
+import (
+	"errors"
+	"fmt"
+)
+
+type NBitSubtractor struct {
+	adder       *NBitAdder
 	comp        *OnesComplementer
-	Differences [8]pwrEmitter
+	Differences []pwrEmitter
 	CarryOut    pwrEmitter
 }
 
-func NewEightBitSubtracter(minuendPins, subtrahendPins [8]pwrEmitter) *EightBitSubtracter {
-	s := &EightBitSubtracter{}
+func NewNBitSubtractor(minuendPins, subtrahendPins []pwrEmitter) (*NBitSubtractor, error) {
 
-	s.comp = NewOnesComplementer(subtrahendPins[:], NewBattery()) // the Battery ensures the compliment occurs since the complementer can conditional compliment based that parameter
+	if len(minuendPins) != len(subtrahendPins) {
+		return nil, errors.New(fmt.Sprintf("Mismatched input lengths.  Minuend len: %d, Subtrahend len: %d", len(minuendPins), len(subtrahendPins)))
+	}
 
-	var complimentBits [8]pwrEmitter
-	copy(complimentBits[:], s.comp.Complements)
+	sub := &NBitSubtractor{}
+	sub.comp = NewOnesComplementer(subtrahendPins, NewBattery())                 // the Battery ensures the compliment occurs since the complementer can conditional compliment based that parameter
+	sub.adder, _ = NewNBitAdder(minuendPins, sub.comp.Complements, NewBattery()) // the added Battery is the "+1" to make the "two'l compliment"
 
-	s.adder = NewEightBitAdder(minuendPins, complimentBits, NewBattery()) // the added Battery is the "+1" to make the "two'l compliment"
+	// use some better fields for easier external access
+	sub.Differences = sub.adder.Sums
+	sub.CarryOut = sub.adder.CarryOut
 
-	// use some better fields for easier, external access
-	s.Differences = s.adder.Sums
-	s.CarryOut = s.adder.CarryOut
-
-	return s
+	return sub, nil
 }
 
-func (s *EightBitSubtracter) AsAnswerString() string {
+func (s *NBitSubtractor) AsAnswerString() string {
 	return s.adder.AsAnswerString()
 }
 
-func (a *EightBitSubtracter) CarryOutAsBool() bool {
-	return a.CarryOut.(*ORGate).GetIsPowered()
+func (s *NBitSubtractor) CarryOutAsBool() bool {
+	return s.CarryOut.(*ORGate).GetIsPowered()
 }

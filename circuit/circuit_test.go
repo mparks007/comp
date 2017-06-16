@@ -9,18 +9,20 @@ import (
 
 // go test
 // go test -race -v (verbose)
-// go test -race -cpu=1,2,4 (go max prox)
+// go test -race -cpu=1,2,4 (go max procs)
 // go test -v
+// go test -run TestOscillator (specific test)
 
 func TestPwrSource(t *testing.T) {
 	var want, got1, got2 bool
 
-	p := &pwrSource{}
+	pwr := &pwrSource{}
 
-	p.WireUp(func(state bool) { got1 = state })
-	p.WireUp(func(state bool) { got2 = state })
+	// wire up two callbacks to prove both will get called
+	pwr.WireUp(func(state bool) { got1 = state })
+	pwr.WireUp(func(state bool) { got2 = state })
 
-	p.Transmit(true)
+	pwr.Transmit(true)
 	want = true
 
 	if got1 != want {
@@ -31,7 +33,7 @@ func TestPwrSource(t *testing.T) {
 		t.Errorf(fmt.Sprintf("Expected subscription 2 to be %t but got %t", want, got2))
 	}
 
-	p.Transmit(false)
+	pwr.Transmit(false)
 	want = false
 
 	if got1 != want {
@@ -46,24 +48,25 @@ func TestPwrSource(t *testing.T) {
 func TestBattery(t *testing.T) {
 	var want, got bool
 
-	b := NewBattery()
+	bat := NewBattery()
 
-	b.WireUp(func(state bool) { got = state })
+	bat.WireUp(func(state bool) { got = state })
 
+	// by default, a battery will be charged (on/true)
 	want = true
 
 	if got != want {
 		t.Errorf(fmt.Sprintf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got))
 	}
 
-	b.Discharge()
+	bat.Discharge()
 	want = false
 
 	if got != want {
 		t.Errorf(fmt.Sprintf("With a discharged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got))
 	}
 
-	b.Charge()
+	bat.Charge()
 	want = true
 
 	if got != want {
@@ -75,17 +78,16 @@ func TestSwitch(t *testing.T) {
 	var wantState, gotState bool
 	var wantCount, gotCount int
 
-	// start with switch being off
-	s := NewSwitch(false)
+	sw := NewSwitch(false)
 
 	// register callback (will trigger immediate call to push isPowered at time of registration)
-	s.WireUp(func(state bool) {
+	sw.WireUp(func(state bool) {
 		gotState = state
 		gotCount += 1
 	})
 
 	// initial turn on
-	s.Set(true)
+	sw.Set(true)
 	wantState = true
 	wantCount = 2
 
@@ -94,157 +96,28 @@ func TestSwitch(t *testing.T) {
 	}
 
 	if gotCount != wantCount {
-		t.Errorf(fmt.Sprintf("With an off switch turned on, wanted the subscriber to see power as %d but got %d", wantCount, gotCount))
+		t.Errorf(fmt.Sprintf("With an off switch turned on, wanted the subscriber call count to be %d but got %d", wantCount, gotCount))
 	}
 
 	// turn on again though already on
-	s.Set(true)
+	sw.Set(true)
 	wantCount = 2
 
 	if gotCount != wantCount {
-		t.Errorf(fmt.Sprintf("With an attempt to turn on an already on switch, wanted the subscriber'c call count to remain %d but got %d", wantCount, gotCount))
-	}
-}
-
-func TestNewEightSwitchBank_BadInputs(t *testing.T) {
-	testCases := []struct {
-		input     string
-		wantError string
-	}{
-		{"0000000", "Input not in 8-bit binary format: "},
-		{"00000000X", "Input not in 8-bit binary format: "},
-		{"X00000000", "Input not in 8-bit binary format: "},
-		{"bad", "Input not in 8-bit binary format: "},
-		{"", "Input not in 8-bit binary format: "},
+		t.Errorf(fmt.Sprintf("With an attempt to turn on an already on switch, wanted the subscriber'sw call count to remain %d but got %d", wantCount, gotCount))
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			sb, err := NewEightSwitchBank(tc.input)
+	// now off again
+	sw.Set(false)
+	wantState = false
+	wantCount = 3
 
-			if sb != nil {
-				t.Error("Didn't expected a Switch Bank back but got one.")
-			}
-
-			tc.wantError += tc.input
-
-			if err == nil || (err != nil && err.Error() != tc.wantError) {
-				t.Error(fmt.Sprintf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err))
-			}
-		})
-	}
-}
-
-func TestNewEightSwitchBank_GoodInputs(t *testing.T) {
-	testCases := []struct {
-		input string
-		want  [8]bool
-	}{
-		{"00000000", [8]bool{false, false, false, false, false, false, false, false}},
-		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
-		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
-		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
+	if gotState != wantState {
+		t.Errorf(fmt.Sprintf("With an on switch turned off, wanted the subscriber to see power as %t but got %t", wantState, gotState))
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			sb, err := NewEightSwitchBank(tc.input)
-
-			if err != nil {
-				t.Error("Unexpected error: " + err.Error())
-			}
-
-			// try as actual switches
-			for i, s := range sb.Switches {
-				got := s.GetIsPowered()
-				want := tc.want[i]
-
-				if got != want {
-					t.Errorf(fmt.Sprintf("[As Switch] At index %d, wanted %v but got %v", i, want, got))
-				}
-			}
-
-			// now try AsPwrEmitters
-			for i, pwr := range sb.AsPwrEmitters() {
-				got := pwr.(*Switch).GetIsPowered()
-				want := tc.want[i]
-
-				if got != want {
-					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got))
-				}
-			}
-		})
-	}
-}
-
-func TestNewSixteenSwitchBank_BadInputs(t *testing.T) {
-	testCases := []struct {
-		input     string
-		wantError string
-	}{
-		{"000000000000000", "Input not in 16-bit binary format: "},
-		{"0000000000000000X", "Input not in 16-bit binary format: "},
-		{"X0000000000000000", "Input not in 16-bit binary format: "},
-		{"bad", "Input not in 16-bit binary format: "},
-		{"", "Input not in 16-bit binary format: "},
-	}
-
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			sb, err := NewSixteenSwitchBank(tc.input)
-
-			if sb != nil {
-				t.Error("Didn't expected a Switch Bank back but got one.")
-			}
-
-			tc.wantError += tc.input
-
-			if err == nil || (err != nil && err.Error() != tc.wantError) {
-				t.Error(fmt.Sprintf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err))
-			}
-		})
-	}
-}
-
-func TestNewSixteenSwitchBank_GoodInputs(t *testing.T) {
-	testCases := []struct {
-		input string
-		want  [16]bool
-	}{
-		{"0000000000000000", [16]bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
-		{"1111111111111111", [16]bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
-		{"1010101010101010", [16]bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
-		{"1000000000000001", [16]bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
-	}
-
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			sb, err := NewSixteenSwitchBank(tc.input)
-
-			if err != nil {
-				t.Error("Unexpected error: " + err.Error())
-			}
-
-			// try as actual switches
-			for i, s := range sb.Switches {
-				got := s.GetIsPowered()
-				want := tc.want[i]
-
-				if got != want {
-					t.Errorf(fmt.Sprintf("[As Switch] At index %d, wanted %v but got %v", i, want, got))
-				}
-			}
-
-			// now try AsPwrEmitters
-			for i, pwr := range sb.AsPwrEmitters() {
-				got := pwr.(*Switch).GetIsPowered()
-				want := tc.want[i]
-
-				if got != want {
-					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got))
-				}
-			}
-		})
+	if gotCount != wantCount {
+		t.Errorf(fmt.Sprintf("With an on switch turned off, wanted the subscriber call count to be %d but got %d", wantCount, gotCount))
 	}
 }
 
@@ -253,8 +126,11 @@ func TestNewNSwitchBank_BadInputs(t *testing.T) {
 		input     string
 		wantError string
 	}{
+		{"12345", "Input not in binary format: "},
 		{"000X", "Input not in binary format: "},
 		{"X000", "Input not in binary format: "},
+		{"111X", "Input not in binary format: "},
+		{"X111", "Input not in binary format: "},
 		{"bad", "Input not in binary format: "},
 		{"", "Input not in binary format: "},
 	}
@@ -284,7 +160,14 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		{"0", []bool{false}},
 		{"1", []bool{true}},
 		{"101", []bool{true, false, true}},
+		{"00000000", []bool{false, false, false, false, false, false, false, false}},
+		{"11111111", []bool{true, true, true, true, true, true, true, true}},
+		{"10101010", []bool{true, false, true, false, true, false, true, false}},
 		{"10000001", []bool{true, false, false, false, false, false, false, true}},
+		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
+		{"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
+		{"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
+		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
 	}
 
 	for _, tc := range testCases {
@@ -296,8 +179,8 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 			}
 
 			// try as actual switches
-			for i, s := range sb.Switches {
-				got := s.GetIsPowered()
+			for i, sw := range sb.Switches {
+				got := sw.GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
@@ -370,25 +253,30 @@ func TestRelay_WithBatteries(t *testing.T) {
 		{true, true, false, true},
 	}
 
+	var gotOpenOut, gotClosedOut bool
+	var pin1Battery, pin2Battery *Battery
+
+	pin1Battery = NewBattery()
+	pin2Battery = NewBattery()
+
+	rel := NewRelay(pin1Battery, pin2Battery)
+
+	rel.OpenOut.WireUp(func(state bool) { gotOpenOut = state })
+	rel.ClosedOut.WireUp(func(state bool) { gotClosedOut = state })
+
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input A to %t and B to %t", tc.aInPowered, tc.bInPowered), func(t *testing.T) {
-			var gotOpenOut, gotClosedOut bool
-			var pin1Battery, pin2Battery *Battery
 
-			pin1Battery = NewBattery()
-			pin2Battery = NewBattery()
-
-			if !tc.aInPowered {
+			if tc.aInPowered {
+				pin1Battery.Charge()
+			} else {
 				pin1Battery.Discharge()
 			}
-			if !tc.bInPowered {
+			if tc.bInPowered {
+				pin2Battery.Charge()
+			} else {
 				pin2Battery.Discharge()
 			}
-
-			r := NewRelay(pin1Battery, pin2Battery)
-
-			r.OpenOut.WireUp(func(state bool) { gotOpenOut = state })
-			r.ClosedOut.WireUp(func(state bool) { gotClosedOut = state })
 
 			if gotOpenOut != tc.wantAtOpen {
 				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut)
@@ -401,7 +289,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 	}
 }
 
-func TestRelay_UpdatePinPanic(t *testing.T) {
+func TestRelay_UpdatePinPanic_High(t *testing.T) {
 	want := "Invalid relay pin number.  Relays have two pins and the requested pin was (3)"
 
 	defer func() {
@@ -410,46 +298,26 @@ func TestRelay_UpdatePinPanic(t *testing.T) {
 		}
 	}()
 
-	r := NewRelay(NewBattery(), NewBattery())
+	rel := NewRelay(NewBattery(), NewBattery())
 
-	r.UpdatePin(3, NewBattery())
-	r.UpdatePin(0, NewBattery())
+	rel.UpdatePin(3, NewBattery())
 }
 
-func TestANDGate_TwoPin(t *testing.T) {
-	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		want       bool
-	}{
-		{false, false, false},
-		{true, false, false},
-		{false, true, false},
-		{true, true, true},
-	}
+func TestRelay_UpdatePinPanic_Low(t *testing.T) {
+	want := "Invalid relay pin number.  Relays have two pins and the requested pin was (0)"
 
-	aSwitch := NewSwitch(false)
-	bSwitch := NewSwitch(false)
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+		}
+	}()
 
-	g := NewANDGate(aSwitch, bSwitch)
+	rel := NewRelay(NewBattery(), NewBattery())
 
-	var got bool
-	g.WireUp(func(state bool) { got = state })
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
-
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-
-			if got != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got)
-			}
-		})
-	}
+	rel.UpdatePin(0, NewBattery())
 }
 
-func TestANDGate_ThreePin(t *testing.T) {
+func TestANDGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -470,10 +338,10 @@ func TestANDGate_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewANDGate(aSwitch, bSwitch, cSwitch)
+	gate := NewANDGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.WireUp(func(state bool) { got = state })
+	gate.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -489,40 +357,7 @@ func TestANDGate_ThreePin(t *testing.T) {
 	}
 }
 
-func TestORGate_TwoPin(t *testing.T) {
-	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		want       bool
-	}{
-		{false, false, false},
-		{true, false, true},
-		{false, true, true},
-		{true, true, true},
-	}
-
-	aSwitch := NewSwitch(false)
-	bSwitch := NewSwitch(false)
-
-	g := NewORGate(aSwitch, bSwitch)
-
-	var got bool
-	g.WireUp(func(state bool) { got = state })
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
-
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-
-			if got != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got)
-			}
-		})
-	}
-}
-
-func TestORGate_ThreePin(t *testing.T) {
+func TestORGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -543,10 +378,10 @@ func TestORGate_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewORGate(aSwitch, bSwitch, cSwitch)
+	gate := NewORGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.WireUp(func(state bool) { got = state })
+	gate.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -562,40 +397,7 @@ func TestORGate_ThreePin(t *testing.T) {
 	}
 }
 
-func TestNANDGate_TwoPin(t *testing.T) {
-	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		want       bool
-	}{
-		{false, false, true},
-		{true, false, true},
-		{false, true, true},
-		{true, true, false},
-	}
-
-	aSwitch := NewSwitch(false)
-	bSwitch := NewSwitch(false)
-
-	g := NewNANDGate(aSwitch, bSwitch)
-
-	var got bool
-	g.WireUp(func(state bool) { got = state })
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
-
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-
-			if got != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got)
-			}
-		})
-	}
-}
-
-func TestNANDGate_ThreePin(t *testing.T) {
+func TestNANDGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -616,10 +418,10 @@ func TestNANDGate_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewNANDGate(aSwitch, bSwitch, cSwitch)
+	gate := NewNANDGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.WireUp(func(state bool) { got = state })
+	gate.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -635,40 +437,7 @@ func TestNANDGate_ThreePin(t *testing.T) {
 	}
 }
 
-func TestNORGate_TwoPin(t *testing.T) {
-	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		want       bool
-	}{
-		{false, false, true},
-		{true, false, false},
-		{false, true, false},
-		{true, true, false},
-	}
-
-	aSwitch := NewSwitch(false)
-	bSwitch := NewSwitch(false)
-
-	g := NewNORGate(aSwitch, bSwitch)
-
-	var got bool
-	g.WireUp(func(state bool) { got = state })
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
-
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-
-			if got != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got)
-			}
-		})
-	}
-}
-
-func TestNORGate_ThreePin(t *testing.T) {
+func TestNORGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
 		bInPowered bool
@@ -689,10 +458,10 @@ func TestNORGate_ThreePin(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	g := NewNORGate(aSwitch, bSwitch, cSwitch)
+	gate := NewNORGate(aSwitch, bSwitch, cSwitch)
 
 	var got bool
-	g.WireUp(func(state bool) { got = state })
+	gate.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -708,7 +477,7 @@ func TestNORGate_ThreePin(t *testing.T) {
 	}
 }
 
-func TestNORGate_UpdatePinPanic(t *testing.T) {
+func TestNORGate_UpdatePinPanic_TooHigh(t *testing.T) {
 	want := "Invalid gate pin number.  Input pin count (2), requested pin (3)"
 
 	defer func() {
@@ -717,10 +486,23 @@ func TestNORGate_UpdatePinPanic(t *testing.T) {
 		}
 	}()
 
-	g := NewNORGate(NewBattery(), NewBattery())
+	gate := NewNORGate(NewBattery(), NewBattery())
 
-	g.UpdatePin(3, 1, NewBattery())
-	g.UpdatePin(0, 1, NewBattery())
+	gate.UpdatePin(3, 1, NewBattery())
+}
+
+func TestNORGate_UpdatePinPanic_Low(t *testing.T) {
+	want := "Invalid gate pin number.  Input pin count (2), requested pin (0)"
+
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+		}
+	}()
+
+	gate := NewNORGate(NewBattery(), NewBattery())
+
+	gate.UpdatePin(0, 1, NewBattery())
 }
 
 func TestXORGate(t *testing.T) {
@@ -738,10 +520,10 @@ func TestXORGate(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewXORGate(aSwitch, bSwitch)
+	gate := NewXORGate(aSwitch, bSwitch)
 
 	var got bool
-	g.WireUp(func(state bool) { got = state })
+	gate.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -771,10 +553,10 @@ func TestXNORGate(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	g := NewXNORGate(aSwitch, bSwitch)
+	gate := NewXNORGate(aSwitch, bSwitch)
 
 	var got bool
-	g.WireUp(func(state bool) { got = state })
+	gate.WireUp(func(state bool) { got = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -835,11 +617,11 @@ func TestHalfAdder(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	h := NewHalfAdder(aSwitch, bSwitch)
+	half := NewHalfAdder(aSwitch, bSwitch)
 
 	var gotSum, gotCarry bool
-	h.Sum.WireUp(func(state bool) { gotSum = state })
-	h.Carry.WireUp(func(state bool) { gotCarry = state })
+	half.Sum.WireUp(func(state bool) { gotSum = state })
+	half.Carry.WireUp(func(state bool) { gotCarry = state })
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input source A to %t and source B to %t", tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -880,11 +662,11 @@ func TestFullAdder(t *testing.T) {
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	h := NewFullAdder(aSwitch, bSwitch, cSwitch)
+	full := NewFullAdder(aSwitch, bSwitch, cSwitch)
 
 	var gotSum, gotCarry bool
-	h.Sum.WireUp(func(state bool) { gotSum = state })
-	h.Carry.WireUp(func(state bool) { gotCarry = state })
+	full.Sum.WireUp(func(state bool) { gotSum = state })
+	full.Carry.WireUp(func(state bool) { gotCarry = state })
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input source A to %t and source B to %t with carry in of %t", tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
@@ -904,7 +686,41 @@ func TestFullAdder(t *testing.T) {
 	}
 }
 
-func TestEightBitAdder_AsAnswerString(t *testing.T) {
+func TestNBitAdder_BadInputLengths(t *testing.T) {
+	testCases := []struct {
+		byte1     string
+		byte2     string
+		wantError string
+	}{
+		{"0", "00", "Mismatched addend lengths.  Addend1 len: 1, Addend2 len: 2"},
+		{"00", "0", "Mismatched addend lengths.  Addend1 len: 2, Addend2 len: 1"},
+		{"11111111", "111111111", "Mismatched addend lengths.  Addend1 len: 8, Addend2 len: 9"},
+		{"111111111", "11111111", "Mismatched addend lengths.  Addend1 len: 9, Addend2 len: 8"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
+			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+
+			addr, err := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), nil)
+
+			if addr != nil {
+				t.Error("Did not expect an adder to be created, but got one")
+			}
+
+			if err == nil {
+				t.Error("Expected an error on length mismatch but didn't get one")
+			}
+
+			if err.Error() != tc.wantError {
+				t.Errorf("Wanted error %s, but got %s", tc.wantError, err.Error())
+			}
+		})
+	}
+}
+
+func TestNBitAdder_EightBit_AsAnswerString(t *testing.T) {
 	testCases := []struct {
 		byte1          string
 		byte2          string
@@ -929,21 +745,21 @@ func TestEightBitAdder_AsAnswerString(t *testing.T) {
 	}
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
 		}
 	}
 
 	// start with off switches
-	addend1Switches, _ := NewEightSwitchBank("00000000")
-	addend2Switches, _ := NewEightSwitchBank("00000000")
+	addend1Switches, _ := NewNSwitchBank("00000000")
+	addend2Switches, _ := NewNSwitchBank("00000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewEightBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
+	addr, _ := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
-	if a == nil {
-		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+	if addr == nil {
+		t.Error("Expected an adder to return due to good inputs, but got addr nil one.")
 	}
 
 	for _, tc := range testCases {
@@ -953,52 +769,52 @@ func TestEightBitAdder_AsAnswerString(t *testing.T) {
 			updateSwitches(addend2Switches, tc.byte2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			if got := a.AsAnswerString(); got != tc.wantAnswer {
+			if got := addr.AsAnswerString(); got != tc.wantAnswer {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
 			}
 
-			if got := a.CarryOutAsBool(); got != tc.wantCarryOut {
+			if got := addr.CarryOutAsBool(); got != tc.wantCarryOut {
 				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, got)
 			}
 		})
 	}
 }
 
-func TestEightBitAdder_AnswerViaRegistration(t *testing.T) {
+func TestNBitAdder_EightBit_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
 	wantAnswer := [8]bool{true, false, false, false, false, false, true, false}
 	var gotAnswer [8]bool
 
-	var f [8]func(state bool)
-	f[0] = func(state bool) { gotAnswer[0] = state }
-	f[1] = func(state bool) { gotAnswer[1] = state }
-	f[2] = func(state bool) { gotAnswer[2] = state }
-	f[3] = func(state bool) { gotAnswer[3] = state }
-	f[4] = func(state bool) { gotAnswer[4] = state }
-	f[5] = func(state bool) { gotAnswer[5] = state }
-	f[6] = func(state bool) { gotAnswer[6] = state }
-	f[7] = func(state bool) { gotAnswer[7] = state }
+	var callbackFuncs [8]func(state bool)
+	callbackFuncs[0] = func(state bool) { gotAnswer[0] = state }
+	callbackFuncs[1] = func(state bool) { gotAnswer[1] = state }
+	callbackFuncs[2] = func(state bool) { gotAnswer[2] = state }
+	callbackFuncs[3] = func(state bool) { gotAnswer[3] = state }
+	callbackFuncs[4] = func(state bool) { gotAnswer[4] = state }
+	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
+	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
+	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
 		for i, b := range bits {
 			switchBank.Switches[i].Set(b == '1')
 		}
 	}
 
 	// start with off switches
-	addend1Switches, _ := NewEightSwitchBank("00000000")
-	addend2Switches, _ := NewEightSwitchBank("00000000")
+	addend1Switches, _ := NewNSwitchBank("00000000")
+	addend2Switches, _ := NewNSwitchBank("00000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewEightBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
+	addr, _ := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
-	for i, s := range a.Sums {
-		s.WireUp(f[i])
+	for i, sum := range addr.Sums {
+		sum.WireUp(callbackFuncs[i])
 	}
-	a.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
+	addr.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(addend1Switches, "11000001")
 	updateSwitches(addend2Switches, "11000000")
@@ -1013,7 +829,7 @@ func TestEightBitAdder_AnswerViaRegistration(t *testing.T) {
 	}
 }
 
-func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
+func TestNBitAdder_SixteenBit_AsAnswerString(t *testing.T) {
 	testCases := []struct {
 		bytes1         string
 		bytes2         string
@@ -1039,21 +855,21 @@ func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
 	}
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *SixteenSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
 		}
 	}
 
 	// start with off switches
-	addend1Switches, _ := NewSixteenSwitchBank("0000000000000000")
-	addend2Switches, _ := NewSixteenSwitchBank("0000000000000000")
+	addend1Switches, _ := NewNSwitchBank("0000000000000000")
+	addend2Switches, _ := NewNSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewSixteenBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
+	addr, _ := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
-	if a == nil {
-		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+	if addr == nil {
+		t.Error("Expected an adder to return due to good inputs, but got addr nil one.")
 	}
 
 	for _, tc := range testCases {
@@ -1063,60 +879,60 @@ func TestSixteenBitAdder_AsAnswerString(t *testing.T) {
 			updateSwitches(addend2Switches, tc.bytes2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			if got := a.AsAnswerString(); got != tc.wantAnswer {
+			if got := addr.AsAnswerString(); got != tc.wantAnswer {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, got)
 			}
 
-			if got := a.CarryOutAsBool(); got != tc.wantCarryOut {
+			if got := addr.CarryOutAsBool(); got != tc.wantCarryOut {
 				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, got)
 			}
 		})
 	}
 }
 
-func TestSixteenBitAdder_AnswerViaRegistration(t *testing.T) {
+func TestNBitAdder_SixteenBit_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
 	wantAnswer := [16]bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false}
 	var gotAnswer [16]bool
 
-	var f [16]func(state bool)
-	f[0] = func(state bool) { gotAnswer[0] = state }
-	f[1] = func(state bool) { gotAnswer[1] = state }
-	f[2] = func(state bool) { gotAnswer[2] = state }
-	f[3] = func(state bool) { gotAnswer[3] = state }
-	f[4] = func(state bool) { gotAnswer[4] = state }
-	f[5] = func(state bool) { gotAnswer[5] = state }
-	f[6] = func(state bool) { gotAnswer[6] = state }
-	f[7] = func(state bool) { gotAnswer[7] = state }
-	f[8] = func(state bool) { gotAnswer[8] = state }
-	f[9] = func(state bool) { gotAnswer[9] = state }
-	f[10] = func(state bool) { gotAnswer[10] = state }
-	f[11] = func(state bool) { gotAnswer[11] = state }
-	f[12] = func(state bool) { gotAnswer[12] = state }
-	f[13] = func(state bool) { gotAnswer[13] = state }
-	f[14] = func(state bool) { gotAnswer[14] = state }
-	f[15] = func(state bool) { gotAnswer[15] = state }
+	var callbackFuncs [16]func(state bool)
+	callbackFuncs[0] = func(state bool) { gotAnswer[0] = state }
+	callbackFuncs[1] = func(state bool) { gotAnswer[1] = state }
+	callbackFuncs[2] = func(state bool) { gotAnswer[2] = state }
+	callbackFuncs[3] = func(state bool) { gotAnswer[3] = state }
+	callbackFuncs[4] = func(state bool) { gotAnswer[4] = state }
+	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
+	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
+	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
+	callbackFuncs[8] = func(state bool) { gotAnswer[8] = state }
+	callbackFuncs[9] = func(state bool) { gotAnswer[9] = state }
+	callbackFuncs[10] = func(state bool) { gotAnswer[10] = state }
+	callbackFuncs[11] = func(state bool) { gotAnswer[11] = state }
+	callbackFuncs[12] = func(state bool) { gotAnswer[12] = state }
+	callbackFuncs[13] = func(state bool) { gotAnswer[13] = state }
+	callbackFuncs[14] = func(state bool) { gotAnswer[14] = state }
+	callbackFuncs[15] = func(state bool) { gotAnswer[15] = state }
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *SixteenSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
 		}
 	}
 
 	// start with off switches
-	addend1Switches, _ := NewSixteenSwitchBank("0000000000000000")
-	addend2Switches, _ := NewSixteenSwitchBank("0000000000000000")
+	addend1Switches, _ := NewNSwitchBank("0000000000000000")
+	addend2Switches, _ := NewNSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	a := NewSixteenBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
+	addr, _ := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
-	for i, s := range a.Sums {
-		s.WireUp(f[i])
+	for i, sum := range addr.Sums {
+		sum.WireUp(callbackFuncs[i])
 	}
-	a.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
+	addr.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(addend1Switches, "1100000000000001")
 	updateSwitches(addend2Switches, "1100000000000000")
@@ -1139,33 +955,7 @@ func TestSixteenBitAdder_AnswerViaRegistration(t *testing.T) {
 // go get golang.org/x/perf/cmd/benchstat
 // benchstat old.txt new.txt
 
-func BenchmarkNewSixteenBitAdder(b *testing.B) {
-	benchmarks := []struct {
-		bytes1         string
-		bytes2         string
-		carryInPowered bool
-	}{
-		{"0000000000000000", "0000000000000000", false},
-		{"1111111111111111", "1111111111111111", false},
-		{"0000000000000000", "0000000000000000", true},
-		{"1111111111111111", "1111111111111111", true},
-	}
-
-	for _, bm := range benchmarks {
-		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", bm.bytes1, bm.bytes2, bm.carryInPowered), func(b *testing.B) {
-			carryInSwitch := NewSwitch(bm.carryInPowered)
-			addend1Switches, _ := NewSixteenSwitchBank(bm.bytes1)
-			addend2Switches, _ := NewSixteenSwitchBank(bm.bytes2)
-			addend1BitPubs := addend1Switches.AsPwrEmitters()
-			addend2BitPubs := addend2Switches.AsPwrEmitters()
-			for i := 0; i < b.N; i++ {
-				NewSixteenBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
-			}
-		})
-	}
-}
-
-func BenchmarkSixteenBitAdder_AsAnswerString(b *testing.B) {
+func BenchmarkNBitAdder_SixteenBit_AsAnswerString(b *testing.B) {
 	benchmarks := []struct {
 		name           string
 		bytes1         string
@@ -1177,11 +967,11 @@ func BenchmarkSixteenBitAdder_AsAnswerString(b *testing.B) {
 	}
 	for _, bm := range benchmarks {
 		carryInSwitch := NewSwitch(bm.carryInPowered)
-		addend1Switches, _ := NewSixteenSwitchBank(bm.bytes1)
-		addend2Switches, _ := NewSixteenSwitchBank(bm.bytes2)
+		addend1Switches, _ := NewNSwitchBank(bm.bytes1)
+		addend2Switches, _ := NewNSwitchBank(bm.bytes2)
 		addend1BitPubs := addend1Switches.AsPwrEmitters()
 		addend2BitPubs := addend2Switches.AsPwrEmitters()
-		a := NewSixteenBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
+		a, _ := NewNBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
 		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", bm.bytes1, bm.bytes2, bm.carryInPowered), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				a.AsAnswerString()
@@ -1213,22 +1003,22 @@ func TestOnesCompliment_AsComplimentString(t *testing.T) {
 	getInputs := func(bits string) []pwrEmitter {
 		pubs := []pwrEmitter{}
 
-		for _, b := range bits {
-			pubs = append(pubs, NewSwitch(b == '1'))
+		for _, bit := range bits {
+			pubs = append(pubs, NewSwitch(bit == '1'))
 		}
 
 		return pubs
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Executing complementer against %s with signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
-			c := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
+		t.Run(fmt.Sprintf("Executing complementer against %s with selectB of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
+			comp := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
 
-			if c == nil {
+			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
 
-			if got := c.AsComplementString(); got != tc.want {
+			if got := comp.AsComplementString(); got != tc.want {
 				t.Errorf(fmt.Sprintf("Wanted %s, but got %s", tc.want, got))
 			}
 		})
@@ -1258,22 +1048,22 @@ func TestOnesCompliment_Compliments(t *testing.T) {
 	getInputs := func(bits string) []pwrEmitter {
 		pubs := []pwrEmitter{}
 
-		for _, b := range bits {
-			pubs = append(pubs, NewSwitch(b == '1'))
+		for _, bit := range bits {
+			pubs = append(pubs, NewSwitch(bit == '1'))
 		}
 
 		return pubs
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Executing complementer against %s with signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
-			c := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
+		t.Run(fmt.Sprintf("Executing complementer against %s with selectB of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
+			comp := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
 
-			if c == nil {
+			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
 
-			for i, pub := range c.Complements {
+			for i, pub := range comp.Complements {
 				got := pub.(*XORGate).GetIsPowered()
 				want := tc.want[i]
 
@@ -1285,7 +1075,41 @@ func TestOnesCompliment_Compliments(t *testing.T) {
 	}
 }
 
-func TestEightBitSubtracter_AsAnswerString(t *testing.T) {
+func TestNBitSubtractor_BadInputLengths(t *testing.T) {
+	testCases := []struct {
+		byte1     string
+		byte2     string
+		wantError string
+	}{
+		{"0", "00", "Mismatched input lengths.  Minuend len: 1, Subtrahend len: 2"},
+		{"00", "0", "Mismatched input lengths.  Minuend len: 2, Subtrahend len: 1"},
+		{"11111111", "111111111", "Mismatched input lengths.  Minuend len: 8, Subtrahend len: 9"},
+		{"111111111", "11111111", "Mismatched input lengths.  Minuend len: 9, Subtrahend len: 8"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
+			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+
+			sub, err := NewNBitSubtractor(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters())
+
+			if sub != nil {
+				t.Error("Did not expect a Subtractor to be created, but got one")
+			}
+
+			if err == nil {
+				t.Error("Expected an error on length mismatch but didn't get one")
+			}
+
+			if err.Error() != tc.wantError {
+				t.Errorf("Wanted error %sub, but got %s", tc.wantError, err.Error())
+			}
+		})
+	}
+}
+
+func TestNBitSubtractor_EightBit_AsAnswerString(t *testing.T) {
 	testCases := []struct {
 		minuend      string
 		subtrahend   string
@@ -1308,75 +1132,75 @@ func TestEightBitSubtracter_AsAnswerString(t *testing.T) {
 	}
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
 		}
 	}
 
 	// start with off switches
-	minuendwitches, _ := NewEightSwitchBank("00000000")
-	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
+	minuendwitches, _ := NewNSwitchBank("00000000")
+	subtrahendSwitches, _ := NewNSwitchBank("00000000")
 
-	s := NewEightBitSubtracter(minuendwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
+	sub, _ := NewNBitSubtractor(minuendwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
+
+	if sub == nil {
+		t.Error("Expected an subtractor to return due to good inputs, but gotAnswer c nil one.")
+		return // cannot continue tests if no subtractor to test
+	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Subtracting %sub from %sub", tc.subtrahend, tc.minuend), func(t *testing.T) {
 
 			updateSwitches(minuendwitches, tc.minuend)
 			updateSwitches(subtrahendSwitches, tc.subtrahend)
 
-			if s == nil {
-				t.Error("Expected an subtractor to return due to good inputs, but gotAnswer c nil one.")
-				return // cannot continue tests if no subtractor to test
+			if gotAnswer := sub.AsAnswerString(); gotAnswer != tc.wantAnswer {
+				t.Errorf("Wanted answer %sub, but gotAnswer %sub", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotAnswer := s.AsAnswerString(); gotAnswer != tc.wantAnswer {
-				t.Errorf("Wanted answer %s, but gotAnswer %s", tc.wantAnswer, gotAnswer)
-			}
-
-			if gotCarryOut := s.CarryOutAsBool(); gotCarryOut != tc.wantCarryOut {
+			if gotCarryOut := sub.CarryOutAsBool(); gotCarryOut != tc.wantCarryOut {
 				t.Errorf("Wanted carry out %t, but gotAnswer %t", tc.wantCarryOut, gotCarryOut)
 			}
 		})
 	}
 }
 
-func TestEightBitSubtracter_AnswerViaRegistration(t *testing.T) {
+func TestNBitSubtractor_EightBit_AnswerViaRegistration(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
 	wantAnswer := [8]bool{false, false, false, false, false, false, true, true}
 	var gotAnswer [8]bool
 
-	var f [8]func(state bool)
-	f[0] = func(state bool) { gotAnswer[0] = state }
-	f[1] = func(state bool) { gotAnswer[1] = state }
-	f[2] = func(state bool) { gotAnswer[2] = state }
-	f[3] = func(state bool) { gotAnswer[3] = state }
-	f[4] = func(state bool) { gotAnswer[4] = state }
-	f[5] = func(state bool) { gotAnswer[5] = state }
-	f[6] = func(state bool) { gotAnswer[6] = state }
-	f[7] = func(state bool) { gotAnswer[7] = state }
+	var callbackFuncs [8]func(state bool)
+	callbackFuncs[0] = func(state bool) { gotAnswer[0] = state }
+	callbackFuncs[1] = func(state bool) { gotAnswer[1] = state }
+	callbackFuncs[2] = func(state bool) { gotAnswer[2] = state }
+	callbackFuncs[3] = func(state bool) { gotAnswer[3] = state }
+	callbackFuncs[4] = func(state bool) { gotAnswer[4] = state }
+	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
+	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
+	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
 		for i, b := range bits {
 			switchBank.Switches[i].Set(b == '1')
 		}
 	}
 
 	// start with off switches
-	minuendSwitches, _ := NewEightSwitchBank("00000000")
-	subtrahendSwitches, _ := NewEightSwitchBank("00000000")
+	minuendSwitches, _ := NewNSwitchBank("00000000")
+	subtrahendSwitches, _ := NewNSwitchBank("00000000")
 
-	s := NewEightBitSubtracter(minuendSwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
+	sub, _ := NewNBitSubtractor(minuendSwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
 
-	for i, s := range s.Differences {
-		s.WireUp(f[i])
+	for i, dif := range sub.Differences {
+		dif.WireUp(callbackFuncs[i])
 	}
 
-	s.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
+	sub.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
 	updateSwitches(minuendSwitches, "10000001")
 	updateSwitches(subtrahendSwitches, "01111110")
@@ -1408,10 +1232,10 @@ func TestOscillator(t *testing.T) {
 
 			var gotResults string
 
-			o := NewOscillator(tc.initState)
-			o.Oscillate(tc.oscHertz)
+			osc := NewOscillator(tc.initState)
+			osc.Oscillate(tc.oscHertz)
 
-			o.WireUp(func(state bool) {
+			osc.WireUp(func(state bool) {
 				if state {
 					gotResults += "T"
 				} else {
@@ -1421,7 +1245,7 @@ func TestOscillator(t *testing.T) {
 
 			time.Sleep(time.Second * 2)
 
-			o.Stop()
+			osc.Stop()
 
 			if gotResults != tc.wantResults {
 				t.Errorf(fmt.Sprintf("Wanted results %s but got %s.", tc.wantResults, gotResults))
@@ -1588,7 +1412,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	}
 }
 
-func TestEightBitLatch(t *testing.T) {
+func TestNBitLatch(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  [8]bool
@@ -1600,15 +1424,15 @@ func TestEightBitLatch(t *testing.T) {
 	}
 
 	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *EightSwitchBank, bits string) {
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
 		for i, b := range bits {
 			switchBank.Switches[i].Set(b == '1')
 		}
 	}
 
-	latchSwitches, _ := NewEightSwitchBank("00000000")
+	latchSwitches, _ := NewNSwitchBank("00000000")
 	clkSwitch := NewSwitch(false)
-	latch := NewEightBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
+	latch := NewNBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
 
 	priorWant := [8]bool{false, false, false, false, false, false, false, false}
 
@@ -1667,6 +1491,84 @@ func TestEightBitLatch(t *testing.T) {
 			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (so matches prior)
 			for i, q := range latch.Qs {
 				priorWant[i] = q.GetIsPowered()
+			}
+		})
+	}
+}
+
+func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
+	testCases := []struct {
+		byte1     string
+		byte2     string
+		wantError string
+	}{
+		{"1111", "000", "Mismatched input lengths. aPins len: 4, bPins len: 3"},
+		{"000", "1111", "Mismatched input lengths. aPins len: 3, bPins len: 4"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
+			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+
+			sel, err := NewTwoToOneSelector(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), nil)
+
+			if sel != nil {
+				t.Error("Did not expect a Selector to be created, but got one")
+			}
+
+			if err == nil {
+				t.Error("Expected an error on length mismatch but didn't get one")
+			}
+
+			if err.Error() != tc.wantError {
+				t.Errorf("Wanted error %s, but got %s", tc.wantError, err.Error())
+			}
+		})
+	}
+}
+
+func TestTwoToOneSelector(t *testing.T) {
+	testCases := []struct {
+		aIn     string
+		bIn     string
+		selectB bool
+		want    []bool
+	}{
+		{"000", "111", false, []bool{false, false, false}},
+		{"000", "111", true, []bool{true, true, true}},
+		{"111", "000", true, []bool{false, false, false}},
+		{"111", "000", false, []bool{true, true, true}},
+	}
+
+	// flip switches to match bit pattern
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
+		}
+	}
+
+	// start with off switches
+	aInSwitches, _ := NewNSwitchBank("000")
+	bInSwitches, _ := NewNSwitchBank("000")
+	selectBSwitch := NewSwitch(false)
+
+	sel, _ := NewTwoToOneSelector(aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters(), selectBSwitch)
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("With aIn as %s and bIn as %s, selecting bIn (%t)", tc.aIn, tc.bIn, tc.selectB), func(t *testing.T) {
+
+			updateSwitches(aInSwitches, tc.aIn)
+			updateSwitches(bInSwitches, tc.bIn)
+			selectBSwitch.Set(tc.selectB)
+
+			// try as actual Qs
+			for i, out := range sel.Outs {
+				got := out.GetIsPowered()
+
+				if got != tc.want[i] {
+					t.Errorf(fmt.Sprintf("At index %d, with signal %t, wanted %t but got %t", i, tc.selectB, tc.want[i], got))
+				}
 			}
 		})
 	}
