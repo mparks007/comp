@@ -109,3 +109,32 @@ func (a *NBitAdder) AsAnswerString() string {
 func (a *NBitAdder) CarryOutAsBool() bool {
 	return a.CarryOut.(*ORGate).GetIsPowered()
 }
+
+type ClunkyAdder struct {
+	aInSwitchBank *NSwitchBank
+	bInSwitchBank *NSwitchBank
+	latch         *NBitLatch
+	selector      *TwoToOneSelector
+	adder         *NBitAdder
+	Sums          []pwrEmitter
+	CarryOut      pwrEmitter
+}
+
+func (a *ClunkyAdder) NewClunkyAdder(bits ...string) (*ClunkyAdder, error) {
+	addr := &ClunkyAdder{}
+
+	var err error
+	addr.aInSwitchBank, err = NewNSwitchBank(bits[0])
+	if err != nil {
+		return nil, err
+	}
+
+	addr.bInSwitchBank, err = NewNSwitchBank(bits[1])
+	if err != nil {
+		return nil, err
+	}
+
+	//bah, feedback loop to set all this up (make a ton of UpdateInputs on all the circuits??)
+
+	return addr, nil
+}
