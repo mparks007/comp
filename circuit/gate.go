@@ -30,6 +30,14 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	return g
 }
 
+func (g *ANDGate) UpdatePin(andPinNum, relayPinNum int, pin pwrEmitter) {
+	if andPinNum < 1 || andPinNum > len(g.relays) {
+		panic(fmt.Sprintf("Invalid gate pin number.  Input pin count (%d), requested pin (%d)", len(g.relays), andPinNum))
+	}
+
+	g.relays[andPinNum-1].UpdatePin(relayPinNum, pin)
+}
+
 // OR
 // 0 0 0
 // 1 0 1

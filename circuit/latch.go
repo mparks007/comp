@@ -15,11 +15,11 @@ type LevelTriggeredDTypeLatch struct {
 	QBar *NORGate
 }
 
-func NewLevelTriggeredDTypeLatch(clkIn, dataIn pwrEmitter) *LevelTriggeredDTypeLatch {
+func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatch {
 	latch := &LevelTriggeredDTypeLatch{}
 
-	latch.rAnd = NewANDGate(clkIn, NewInverter(dataIn))
-	latch.sAnd = NewANDGate(clkIn, dataIn)
+	latch.rAnd = NewANDGate(clkInPin, NewInverter(dataInPin))
+	latch.sAnd = NewANDGate(clkInPin, dataInPin)
 
 	latch.rs = NewRSFlipFLop(latch.rAnd, latch.sAnd)
 
@@ -32,23 +32,23 @@ func NewLevelTriggeredDTypeLatch(clkIn, dataIn pwrEmitter) *LevelTriggeredDTypeL
 
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
-	Qs      []*NORGate
+	Qs      []pwrEmitter
 }
 
-func NewNBitLatch(clkIn pwrEmitter, dataIn []pwrEmitter) *NBitLatch {
+func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 	latch := &NBitLatch{}
 
-	for _, data := range dataIn {
-		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkIn, data))
+	for _, dataInPin := range dataInPins {
+		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkInPin, dataInPin))
 
-		// refer to the inner-latch's Qs output for easier external access
+		// refer to the inner-latchStore's Qs output for easier external access
 		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
 	}
 
 	return latch
 }
 
-// AsPwrEmitters will return pwrEmitter versions of the internal latch's Qs out
+// AsPwrEmitters will return pwrEmitter versions of the internal latchStore's Qs out
 func (l *NBitLatch) AsPwrEmitters() []pwrEmitter {
 	pwrEmits := []pwrEmitter{}
 

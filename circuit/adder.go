@@ -37,11 +37,11 @@ type FullAdder struct {
 	Carry      pwrEmitter
 }
 
-func NewFullAdder(pin1, pin2, carryIn pwrEmitter) *FullAdder {
+func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 	f := &FullAdder{}
 
 	f.halfAdder1 = NewHalfAdder(pin1, pin2)
-	f.halfAdder2 = NewHalfAdder(f.halfAdder1.Sum, carryIn)
+	f.halfAdder2 = NewHalfAdder(f.halfAdder1.Sum, carryInPin)
 	f.Sum = f.halfAdder2.Sum
 	f.Carry = NewORGate(f.halfAdder1.Carry, f.halfAdder2.Carry)
 
@@ -60,7 +60,7 @@ type NBitAdder struct {
 	CarryOut   pwrEmitter
 }
 
-func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryIn pwrEmitter) (*NBitAdder, error) {
+func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) (*NBitAdder, error) {
 
 	if len(addend1Pins) != len(addend2Pins) {
 		return nil, errors.New(fmt.Sprintf("Mismatched addend lengths.  Addend1 len: %d, Addend2 len: %d", len(addend1Pins), len(addend2Pins)))
@@ -72,7 +72,7 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryIn pwrEmitter) (*N
 		var full *FullAdder
 
 		if i == len(addend1Pins)-1 {
-			full = NewFullAdder(addend1Pins[i], addend2Pins[i], carryIn) // carry-in is the actual (potential) carry from an adjoining circuit
+			full = NewFullAdder(addend1Pins[i], addend2Pins[i], carryInPin) // carry-in is the actual (potential) carry from an adjoining circuit
 		} else {
 			// [carry-in is the neighboring adders carry-out]
 			// since insert at the front of the slice, the neigher is always the one at the front per the prior insert
@@ -111,30 +111,58 @@ func (a *NBitAdder) CarryOutAsBool() bool {
 }
 
 type ClunkyAdder struct {
-	aInSwitchBank *NSwitchBank
-	bInSwitchBank *NSwitchBank
-	latch         *NBitLatch
+	latchStore    *NBitLatch
 	selector      *TwoToOneSelector
 	adder         *NBitAdder
+	SaveToLatch   *Switch
+	ReadFromLatch *Switch
 	Sums          []pwrEmitter
 	CarryOut      pwrEmitter
 }
 
-func (a *ClunkyAdder) NewClunkyAdder(bits ...string) (*ClunkyAdder, error) {
+func NewClunkyAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ClunkyAdder, error) {
+	var err error
+
+	if len(aSwitchBank.Switches) != len(bSwitchBank.Switches) {
+		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. Switchbank 1 switch count: %d, Switchbank 2 switch count: %d", len(aSwitchBank.Switches), len(bSwitchBank.Switches)))
+	}
+
 	addr := &ClunkyAdder{}
 
-	var err error
-	addr.aInSwitchBank, err = NewNSwitchBank(bits[0])
+	addr.ReadFromLatch = NewSwitch(false)
+	addr.selector, err = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.AsPwrEmitters(), nil) // we don't have a latch store yet so cannot set bPins
 	if err != nil {
 		return nil, err
 	}
 
-	addr.bInSwitchBank, err = NewNSwitchBank(bits[1])
+	addr.adder, err = NewNBitAdder(aSwitchBank.AsPwrEmitters(), addr.selector.Outs, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	//bah, feedback loop to set all this up (make a ton of UpdateInputs on all the circuits??)
+	addr.SaveToLatch = NewSwitch(false)
+	addr.latchStore = NewNBitLatch(addr.SaveToLatch, addr.adder.Sums)
+
+	// now refresh the selectors b inputs with the latch store's output
+	addr.selector.UpdateBPins(addr.latchStore.Qs)
+
+	// refer to the appropriate adder innards for easier external access
+	addr.Sums = addr.adder.Sums
+	addr.CarryOut = addr.adder.CarryOut
 
 	return addr, nil
+}
+
+func (a *ClunkyAdder) Add() {
+
+	a.SaveToLatch.Set(true)
+	a.SaveToLatch.Set(false)
+}
+
+func (a *ClunkyAdder) AsAnswerString() string {
+	return a.adder.AsAnswerString()
+}
+
+func (a *ClunkyAdder) CarryOutAsBool() bool {
+	return a.adder.CarryOutAsBool()
 }

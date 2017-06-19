@@ -8,22 +8,36 @@ import (
 type TwoToOneSelector struct {
 	aANDs []*ANDGate
 	bANDs []*ANDGate
-	Outs  []*ORGate
+	Outs  []pwrEmitter
 }
 
-func NewTwoToOneSelector(aPins, bPins []pwrEmitter, signal pwrEmitter) (*TwoToOneSelector, error) {
+func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
 
-	if len(aPins) != len(bPins) {
+	// allowing bPins to be nil since we might want to plug in those pins later
+	if (len(aPins) != len(bPins)) && (len(bPins) != 0) {
 		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins)))
 	}
 
 	sel := &TwoToOneSelector{}
 
 	for i := range aPins {
-		sel.aANDs = append(sel.aANDs, NewANDGate(aPins[i], NewInverter(signal)))
-		sel.bANDs = append(sel.bANDs, NewANDGate(bPins[i], signal))
+		sel.aANDs = append(sel.aANDs, NewANDGate(NewInverter(signal), aPins[i]))
+
+		// if wanting to plug in bPins later, just set to nil for now (but at least make the AND gate!)
+		if len(bPins) == 0 {
+			sel.bANDs = append(sel.bANDs, NewANDGate(signal, nil))
+		} else {
+			sel.bANDs = append(sel.bANDs, NewANDGate(signal, bPins[i]))
+		}
+
 		sel.Outs = append(sel.Outs, NewORGate(sel.aANDs[i], sel.bANDs[i]))
 	}
 
 	return sel, nil
+}
+
+func (s *TwoToOneSelector) UpdateBPins(bPins []pwrEmitter) {
+	for i, bPin := range bPins {
+		s.bANDs[i].UpdatePin(2, 2, bPin)
+	}
 }

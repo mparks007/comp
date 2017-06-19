@@ -4,12 +4,12 @@ type OnesComplementer struct {
 	Complements []pwrEmitter
 }
 
-func NewOnesComplementer(bits []pwrEmitter, signal pwrEmitter) *OnesComplementer {
+func NewOnesComplementer(pins []pwrEmitter, signal pwrEmitter) *OnesComplementer {
 
 	comp := &OnesComplementer{}
 
-	for _, b := range bits {
-		comp.Complements = append(comp.Complements, NewXORGate(signal, b))
+	for _, pin := range pins {
+		comp.Complements = append(comp.Complements, NewXORGate(signal, pin))
 	}
 
 	return comp
@@ -18,8 +18,8 @@ func NewOnesComplementer(bits []pwrEmitter, signal pwrEmitter) *OnesComplementer
 func (c *OnesComplementer) AsComplementString() string {
 	s := ""
 
-	for _, compOr := range c.Complements {
-		if compOr.(*XORGate).GetIsPowered() {
+	for _, compOR := range c.Complements {
+		if compOR.(*XORGate).GetIsPowered() {
 			s += "1"
 		} else {
 			s += "0"

@@ -26,22 +26,22 @@ func TestPwrSource(t *testing.T) {
 	want = true
 
 	if got1 != want {
-		t.Errorf(fmt.Sprintf("Expected subscription 1 to be %t but got %t", want, got1))
+		t.Errorf("Expected subscription 1 to be %t but got %t", want, got1)
 	}
 
 	if got2 != want {
-		t.Errorf(fmt.Sprintf("Expected subscription 2 to be %t but got %t", want, got2))
+		t.Errorf("Expected subscription 2 to be %t but got %t", want, got2)
 	}
 
 	pwr.Transmit(false)
 	want = false
 
 	if got1 != want {
-		t.Errorf(fmt.Sprintf("Expected subscription 1 to be %t but got %t", want, got1))
+		t.Errorf("Expected subscription 1 to be %t but got %t", want, got1)
 	}
 
 	if got2 != want {
-		t.Errorf(fmt.Sprintf("Expected subscription 2 to be %t but got %t", want, got2))
+		t.Errorf("Expected subscription 2 to be %t but got %t", want, got2)
 	}
 }
 
@@ -56,21 +56,21 @@ func TestBattery(t *testing.T) {
 	want = true
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got))
+		t.Errorf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got)
 	}
 
 	bat.Discharge()
 	want = false
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a discharged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got))
+		t.Errorf("With a discharged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got)
 	}
 
 	bat.Charge()
 	want = true
 
 	if got != want {
-		t.Errorf(fmt.Sprintf("With a charged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got))
+		t.Errorf("With a charged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got)
 	}
 }
 
@@ -92,11 +92,11 @@ func TestSwitch(t *testing.T) {
 	wantCount = 2
 
 	if gotState != wantState {
-		t.Errorf(fmt.Sprintf("With an off switch turned on, wanted the subscriber to see power as %t but got %t", wantState, gotState))
+		t.Errorf("With an off switch turned on, wanted the subscriber to see power as %t but got %t", wantState, gotState)
 	}
 
 	if gotCount != wantCount {
-		t.Errorf(fmt.Sprintf("With an off switch turned on, wanted the subscriber call count to be %d but got %d", wantCount, gotCount))
+		t.Errorf("With an off switch turned on, wanted the subscriber call count to be %d but got %d", wantCount, gotCount)
 	}
 
 	// turn on again though already on
@@ -104,7 +104,7 @@ func TestSwitch(t *testing.T) {
 	wantCount = 2
 
 	if gotCount != wantCount {
-		t.Errorf(fmt.Sprintf("With an attempt to turn on an already on switch, wanted the subscriber'sw call count to remain %d but got %d", wantCount, gotCount))
+		t.Errorf("With an attempt to turn on an already on switch, wanted the subscriber'sw call count to remain %d but got %d", wantCount, gotCount)
 	}
 
 	// now off again
@@ -113,11 +113,11 @@ func TestSwitch(t *testing.T) {
 	wantCount = 3
 
 	if gotState != wantState {
-		t.Errorf(fmt.Sprintf("With an on switch turned off, wanted the subscriber to see power as %t but got %t", wantState, gotState))
+		t.Errorf("With an on switch turned off, wanted the subscriber to see power as %t but got %t", wantState, gotState)
 	}
 
 	if gotCount != wantCount {
-		t.Errorf(fmt.Sprintf("With an on switch turned off, wanted the subscriber call count to be %d but got %d", wantCount, gotCount))
+		t.Errorf("With an on switch turned off, wanted the subscriber call count to be %d but got %d", wantCount, gotCount)
 	}
 }
 
@@ -146,7 +146,7 @@ func TestNewNSwitchBank_BadInputs(t *testing.T) {
 			tc.wantError += tc.input
 
 			if err == nil || (err != nil && err.Error() != tc.wantError) {
-				t.Error(fmt.Sprintf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err))
+				t.Errorf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err)
 			}
 		})
 	}
@@ -184,7 +184,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("[As Switch] At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf("[As Switch] At index %d, wanted %v but got %v", i, want, got)
 				}
 			}
 
@@ -194,7 +194,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got)
 				}
 			}
 		})
@@ -294,7 +294,7 @@ func TestRelay_UpdatePinPanic_High(t *testing.T) {
 
 	defer func() {
 		if got := recover(); got != want {
-			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
 		}
 	}()
 
@@ -308,7 +308,7 @@ func TestRelay_UpdatePinPanic_Low(t *testing.T) {
 
 	defer func() {
 		if got := recover(); got != want {
-			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
 		}
 	}()
 
@@ -355,6 +355,34 @@ func TestANDGate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestANDGate_UpdatePinPanic_TooHigh(t *testing.T) {
+	want := "Invalid gate pin number.  Input pin count (2), requested pin (3)"
+
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
+		}
+	}()
+
+	gate := NewANDGate(NewBattery(), NewBattery())
+
+	gate.UpdatePin(3, 1, NewBattery())
+}
+
+func TestANDGate_UpdatePinPanic_Low(t *testing.T) {
+	want := "Invalid gate pin number.  Input pin count (2), requested pin (0)"
+
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
+		}
+	}()
+
+	gate := NewANDGate(NewBattery(), NewBattery())
+
+	gate.UpdatePin(0, 1, NewBattery())
 }
 
 func TestORGate(t *testing.T) {
@@ -482,7 +510,7 @@ func TestNORGate_UpdatePinPanic_TooHigh(t *testing.T) {
 
 	defer func() {
 		if got := recover(); got != want {
-			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
 		}
 	}()
 
@@ -496,7 +524,7 @@ func TestNORGate_UpdatePinPanic_Low(t *testing.T) {
 
 	defer func() {
 		if got := recover(); got != want {
-			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
 		}
 	}()
 
@@ -1011,7 +1039,7 @@ func TestOnesCompliment_AsComplimentString(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Executing complementer against %s with selectB of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Executing complementer against %s with readFromLatch of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
 			comp := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
 
 			if comp == nil {
@@ -1019,7 +1047,7 @@ func TestOnesCompliment_AsComplimentString(t *testing.T) {
 			}
 
 			if got := comp.AsComplementString(); got != tc.want {
-				t.Errorf(fmt.Sprintf("Wanted %s, but got %s", tc.want, got))
+				t.Errorf("Wanted %s, but got %s", tc.want, got)
 			}
 		})
 	}
@@ -1056,7 +1084,7 @@ func TestOnesCompliment_Compliments(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Executing complementer against %s with selectB of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Executing complementer against %s with readFromLatch of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
 			comp := NewOnesComplementer(getInputs(tc.bits), NewSwitch(tc.signalIsPowered))
 
 			if comp == nil {
@@ -1068,7 +1096,7 @@ func TestOnesCompliment_Compliments(t *testing.T) {
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("At index %d, wanted %v but got %v", i, want, got))
+					t.Errorf("At index %d, wanted %v but got %v", i, want, got)
 				}
 			}
 		})
@@ -1248,7 +1276,7 @@ func TestOscillator(t *testing.T) {
 			osc.Stop()
 
 			if gotResults != tc.wantResults {
-				t.Errorf(fmt.Sprintf("Wanted results %s but got %s.", tc.wantResults, gotResults))
+				t.Errorf("Wanted results %s but got %s.", tc.wantResults, gotResults)
 			}
 		})
 	}
@@ -1300,11 +1328,11 @@ func TestRSFlipFlop(t *testing.T) {
 	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
 
 	if gotQ := ff.Q.GetIsPowered(); gotQ != false {
-		t.Errorf(fmt.Sprintf("Wanted power of %t at Qs, but got %t.", false, gotQ))
+		t.Errorf("Wanted power of %t at Qs, but got %t.", false, gotQ)
 	}
 
 	if gotQBar := ff.QBar.GetIsPowered(); gotQBar != true {
-		t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", true, gotQBar))
+		t.Errorf("Wanted power of %t at QBar, but got %t.", true, gotQBar)
 	}
 
 	for i, tc := range testCases {
@@ -1323,11 +1351,11 @@ func TestRSFlipFlop(t *testing.T) {
 			}
 
 			if gotQ := ff.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ))
+				t.Errorf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ)
 			}
 
 			if gotQBar := ff.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
-				t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar))
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
 			}
 		})
 	}
@@ -1338,7 +1366,7 @@ func TestRSFlipFlop_Panic(t *testing.T) {
 
 	defer func() {
 		if got := recover(); !strings.HasPrefix(got.(string), want) {
-			t.Errorf(fmt.Sprintf("Expected a panic of \"%s\" but got \"%s\"", want, got))
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
 		}
 	}()
 
@@ -1352,7 +1380,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		dataIn   bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latch will start with a default of clkIn:true, dataIn:true, which causes Qs on (QBar off)
+	}{ // construction of the latchStore will start with a default of clkIn:true, dataIn:true, which causes Qs on (QBar off)
 		{false, false, true, false}, // clkIn off should cause no change
 		{false, true, true, false},  // clkIn off should cause no change
 		{true, true, true, false},   // clkIn with dataIn causes Qs on (QBar off)
@@ -1402,11 +1430,11 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			}
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf(fmt.Sprintf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ))
+				t.Errorf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ)
 			}
 
 			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
-				t.Errorf(fmt.Sprintf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar))
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
 			}
 		})
 	}
@@ -1439,58 +1467,36 @@ func TestNBitLatch(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Stage %d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
 
-			// set to OFF to test that nothing will change in the latch store
+			// set to OFF to test that nothing will change in the latchStore store
 
 			clkSwitch.Set(false)
 			updateSwitches(latchSwitches, tc.input)
 
-			// try as actual Qs
-			for i, q := range latch.Qs {
-				got := q.GetIsPowered()
-				want := priorWant[i]
-
-				if got != want {
-					t.Errorf(fmt.Sprintf("[As Q] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got))
-				}
-			}
-
-			// now try AsPwrEmitters
 			for i, pwr := range latch.AsPwrEmitters() {
 				got := pwr.(*NORGate).GetIsPowered()
 				want := priorWant[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got))
+					t.Errorf("[As PwrEmitter] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
 				}
 			}
 
-			// Now set to ON to test that requested changes did occur in the latch store
+			// Now set to ON to test that requested changes did occur in the latchStore store
 
 			clkSwitch.Set(true)
 
-			// try as actual Qs
-			for i, q := range latch.Qs {
-				got := q.GetIsPowered()
-				want := tc.want[i]
-
-				if got != want {
-					t.Errorf(fmt.Sprintf("[As Q] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got))
-				}
-			}
-
-			// now try AsPwrEmitters
 			for i, pwr := range latch.AsPwrEmitters() {
 				got := pwr.(*NORGate).GetIsPowered()
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf(fmt.Sprintf("[As PwrEmitter] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got))
+					t.Errorf("[As PwrEmitter] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
 				}
 			}
 
 			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (so matches prior)
 			for i, q := range latch.Qs {
-				priorWant[i] = q.GetIsPowered()
+				priorWant[i] = q.(*NORGate).GetIsPowered()
 			}
 		})
 	}
@@ -1511,7 +1517,7 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 			addend1Switches, _ := NewNSwitchBank(tc.byte1)
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
 
-			sel, err := NewTwoToOneSelector(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), nil)
+			sel, err := NewTwoToOneSelector(nil, addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters())
 
 			if sel != nil {
 				t.Error("Did not expect a Selector to be created, but got one")
@@ -1553,7 +1559,7 @@ func TestTwoToOneSelector(t *testing.T) {
 	bInSwitches, _ := NewNSwitchBank("000")
 	selectBSwitch := NewSwitch(false)
 
-	sel, _ := NewTwoToOneSelector(aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters(), selectBSwitch)
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("With aIn as %s and bIn as %s, selecting bIn (%t)", tc.aIn, tc.bIn, tc.selectB), func(t *testing.T) {
@@ -1562,14 +1568,99 @@ func TestTwoToOneSelector(t *testing.T) {
 			updateSwitches(bInSwitches, tc.bIn)
 			selectBSwitch.Set(tc.selectB)
 
-			// try as actual Qs
 			for i, out := range sel.Outs {
-				got := out.GetIsPowered()
+				got := out.(*ORGate).GetIsPowered()
 
 				if got != tc.want[i] {
-					t.Errorf(fmt.Sprintf("At index %d, with signal %t, wanted %t but got %t", i, tc.selectB, tc.want[i], got))
+					t.Errorf("At index %d, with signal %t, wanted %t but got %t", i, tc.selectB, tc.want[i], got)
 				}
 			}
 		})
+	}
+}
+
+func TestClunkyAdder_MismatchInputs(t *testing.T) {
+	wantError := "Mismatched input lengths. Switchbank 1 switch count: 8, Switchbank 2 switch count: 4"
+
+	aInSwitches, _ := NewNSwitchBank("00000000")
+	bInSwitches, _ := NewNSwitchBank("0000")
+
+	addr, err := NewClunkyAdder(aInSwitches, bInSwitches)
+
+	if addr != nil {
+		t.Error("Did not expect an adder back but got one.")
+	}
+	if err != nil && err.Error() != wantError {
+		t.Errorf("Wanted error %s, but got %", wantError, err.Error())
+	}
+}
+
+func TestClunkyAdder_InitialAnswer(t *testing.T) {
+	testCases := []struct {
+		aIn        string
+		bIn        string
+		wantAnswer string
+		wantCarry  bool
+	}{
+		{"00000000", "00000001", "00000001", false},
+		{"00000001", "00000010", "00000011", false},
+		{"10000001", "10000000", "00000001", true},
+		{"11111111", "11111111", "11111110", true},
+	}
+
+	// flip switches to match bit pattern
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
+		}
+	}
+
+	aInSwitches, _ := NewNSwitchBank("00000000")
+	bInSwitches, _ := NewNSwitchBank("00000000")
+	addr, _ := NewClunkyAdder(aInSwitches, bInSwitches)
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Adding %s to %s", tc.aIn, tc.bIn), func(t *testing.T) {
+
+			updateSwitches(aInSwitches, tc.aIn)
+			updateSwitches(bInSwitches, tc.bIn)
+
+			if gotAnswer := addr.AsAnswerString(); gotAnswer != tc.wantAnswer {
+				t.Errorf("Wanted answer %s but %s", tc.wantAnswer, gotAnswer)
+			}
+
+			if gotCarry := addr.CarryOutAsBool(); gotCarry != tc.wantCarry {
+				t.Errorf("Wanted carry %t, but %t", tc.wantCarry, gotCarry)
+			}
+		})
+	}
+}
+
+func TestClunkyAdder_MultiAdd(t *testing.T) {
+
+	// flip switches to match bit pattern
+	updateSwitches := func(switchBank *NSwitchBank, bits string) {
+		for i, bit := range bits {
+			switchBank.Switches[i].Set(bit == '1')
+		}
+	}
+
+	aInSwitches, _ := NewNSwitchBank("00000000")
+	bInSwitches, _ := NewNSwitchBank("00000001")
+	addr, _ := NewClunkyAdder(aInSwitches, bInSwitches)
+
+	//addr.SaveToLatch.Set(true)
+	addr.ReadFromLatch.Set(true)
+	updateSwitches(aInSwitches, "00000010")
+
+	wantAnswer := "00000011"
+	wantCarry := false
+
+	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
+		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+	}
+
+	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
+		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
 	}
 }
