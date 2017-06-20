@@ -40,7 +40,6 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 
 	for _, dataInPin := range dataInPins {
 		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkInPin, dataInPin))
-		//latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(latch.saveSwitch, dataInPin))
 
 		// refer to the inner-latchStore's Qs output for easier external access
 		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
