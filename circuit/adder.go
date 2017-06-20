@@ -121,7 +121,6 @@ type ClunkyAdder struct {
 }
 
 func NewClunkyAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ClunkyAdder, error) {
-	var err error
 
 	if len(aSwitchBank.Switches) != len(bSwitchBank.Switches) {
 		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. Switchbank 1 switch count: %d, Switchbank 2 switch count: %d", len(aSwitchBank.Switches), len(bSwitchBank.Switches)))
@@ -129,17 +128,14 @@ func NewClunkyAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ClunkyAdder, error)
 
 	addr := &ClunkyAdder{}
 
+	// build the selector
 	addr.ReadFromLatch = NewSwitch(false)
-	addr.selector, err = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.AsPwrEmitters(), nil) // we don't have a latch store yet so cannot set bPins
-	if err != nil {
-		return nil, err
-	}
+	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.AsPwrEmitters(), nil) // we don't have a latch store yet so cannot set bPins
 
-	addr.adder, err = NewNBitAdder(aSwitchBank.AsPwrEmitters(), addr.selector.Outs, nil)
-	if err != nil {
-		return nil, err
-	}
+	// build the adder, handing it the selector for the B pins
+	addr.adder, _ = NewNBitAdder(aSwitchBank.AsPwrEmitters(), addr.selector.Outs, nil)
 
+	// build the latch, handing it the adder for its input pins (for the loop)
 	addr.SaveToLatch = NewSwitch(false)
 	addr.latchStore = NewNBitLatch(addr.SaveToLatch, addr.adder.Sums)
 
@@ -151,12 +147,6 @@ func NewClunkyAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ClunkyAdder, error)
 	addr.CarryOut = addr.adder.CarryOut
 
 	return addr, nil
-}
-
-func (a *ClunkyAdder) Add() {
-
-	a.SaveToLatch.Set(true)
-	a.SaveToLatch.Set(false)
 }
 
 func (a *ClunkyAdder) AsAnswerString() string {

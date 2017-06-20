@@ -1649,11 +1649,7 @@ func TestClunkyAdder_MultiAdd(t *testing.T) {
 	bInSwitches, _ := NewNSwitchBank("00000001")
 	addr, _ := NewClunkyAdder(aInSwitches, bInSwitches)
 
-	//addr.SaveToLatch.Set(true)
-	addr.ReadFromLatch.Set(true)
-	updateSwitches(aInSwitches, "00000010")
-
-	wantAnswer := "00000011"
+	wantAnswer := "00000001"
 	wantCarry := false
 
 	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
@@ -1662,5 +1658,36 @@ func TestClunkyAdder_MultiAdd(t *testing.T) {
 
 	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
 		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
+	}
+
+	addr.SaveToLatch.Set(true)
+	addr.SaveToLatch.Set(false)
+	addr.ReadFromLatch.Set(true)
+
+	updateSwitches(aInSwitches, "00000010")
+	updateSwitches(bInSwitches, "00000000") // reset to prove we recalled the 1 stored in the latch
+
+	wantAnswer = "00000011"
+	wantCarry = false
+
+	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
+		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+	}
+
+	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
+		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
+	}
+
+	for i := 0; i < 3; i++ {
+		addr.SaveToLatch.Set(true)
+		addr.SaveToLatch.Set(false)
+	}
+
+	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
+	//	t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+	}
+
+	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
+	//	t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
 	}
 }
