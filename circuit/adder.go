@@ -75,10 +75,11 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 			full = NewFullAdder(addend1Pins[i], addend2Pins[i], carryInPin) // carry-in is the actual (potential) carry from an adjoining circuit
 		} else {
 			// [carry-in is the neighboring adders carry-out]
-			// since insert at the front of the slice, the neigher is always the one at the front per the prior insert
+			// since insert at the front of the slice, the neighbor is always the one at the front per the prior insert
 			full = NewFullAdder(addend1Pins[i], addend2Pins[i], addr.fullAdders[0].Carry)
 		}
 
+		// prepend since going in reverse order
 		addr.fullAdders = append([]*FullAdder{full}, addr.fullAdders...)
 
 		// make Sums refer to each for easier external access (pre-pending here)
@@ -110,7 +111,7 @@ func (a *NBitAdder) CarryOutAsBool() bool {
 	return a.CarryOut.(*ORGate).GetIsPowered()
 }
 
-type ClunkyAdder struct {
+type ThreeNumberAdder struct {
 	latchStore    *NBitLatch
 	selector      *TwoToOneSelector
 	adder         *NBitAdder
@@ -120,13 +121,13 @@ type ClunkyAdder struct {
 	CarryOut      pwrEmitter
 }
 
-func NewClunkyAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ClunkyAdder, error) {
+func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdder, error) {
 
 	if len(aSwitchBank.Switches) != len(bSwitchBank.Switches) {
 		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. Switchbank 1 switch count: %d, Switchbank 2 switch count: %d", len(aSwitchBank.Switches), len(bSwitchBank.Switches)))
 	}
 
-	addr := &ClunkyAdder{}
+	addr := &ThreeNumberAdder{}
 
 	// build the selector
 	addr.ReadFromLatch = NewSwitch(false)
@@ -149,10 +150,10 @@ func NewClunkyAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ClunkyAdder, error)
 	return addr, nil
 }
 
-func (a *ClunkyAdder) AsAnswerString() string {
+func (a *ThreeNumberAdder) AsAnswerString() string {
 	return a.adder.AsAnswerString()
 }
 
-func (a *ClunkyAdder) CarryOutAsBool() bool {
+func (a *ThreeNumberAdder) CarryOutAsBool() bool {
 	return a.adder.CarryOutAsBool()
 }

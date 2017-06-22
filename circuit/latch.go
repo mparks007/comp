@@ -47,7 +47,7 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 
 	return latch
 }
-
+/*
 // AsPwrEmitters will return pwrEmitter versions of the internal latchStore's Qs out
 func (l *NBitLatch) AsPwrEmitters() []pwrEmitter {
 	pwrEmits := []pwrEmitter{}
@@ -58,3 +58,4 @@ func (l *NBitLatch) AsPwrEmitters() []pwrEmitter {
 
 	return pwrEmits
 }
+*/

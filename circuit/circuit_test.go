@@ -217,11 +217,11 @@ func TestRelay_WithSwitches(t *testing.T) {
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 
-	r := NewRelay(aSwitch, bSwitch)
+	rel := NewRelay(aSwitch, bSwitch)
 
 	var gotOpenOut, gotClosedOut bool
-	r.OpenOut.WireUp(func(state bool) { gotOpenOut = state })
-	r.ClosedOut.WireUp(func(state bool) { gotClosedOut = state })
+	rel.OpenOut.WireUp(func(state bool) { gotOpenOut = state })
+	rel.ClosedOut.WireUp(func(state bool) { gotClosedOut = state })
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip [%d]: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -1472,7 +1472,7 @@ func TestNBitLatch(t *testing.T) {
 			clkSwitch.Set(false)
 			updateSwitches(latchSwitches, tc.input)
 
-			for i, pwr := range latch.AsPwrEmitters() {
+			for i, pwr := range latch.Qs {
 				got := pwr.(*NORGate).GetIsPowered()
 				want := priorWant[i]
 
@@ -1485,7 +1485,7 @@ func TestNBitLatch(t *testing.T) {
 
 			clkSwitch.Set(true)
 
-			for i, pwr := range latch.AsPwrEmitters() {
+			for i, pwr := range latch.Qs {
 				got := pwr.(*NORGate).GetIsPowered()
 				want := tc.want[i]
 
@@ -1545,6 +1545,10 @@ func TestTwoToOneSelector(t *testing.T) {
 		{"000", "111", true, []bool{true, true, true}},
 		{"111", "000", true, []bool{false, false, false}},
 		{"111", "000", false, []bool{true, true, true}},
+		{"110", "000", false, []bool{true, true, false}},
+		{"110", "000", true, []bool{false, false, false}},
+		{"110", "111", true, []bool{true, true, true}},
+		{"110", "111", false, []bool{true, true, false}},
 	}
 
 	// flip switches to match bit pattern
@@ -1579,13 +1583,21 @@ func TestTwoToOneSelector(t *testing.T) {
 	}
 }
 
-func TestClunkyAdder_MismatchInputs(t *testing.T) {
+func TestTwoToOneSelector_UpdateBPins(t *testing.T) {
+	// no latch, just send in two banks of switches and prove both work
+}
+
+func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
+	//
+}
+
+func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Switchbank 1 switch count: 8, Switchbank 2 switch count: 4"
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("0000")
 
-	addr, err := NewClunkyAdder(aInSwitches, bInSwitches)
+	addr, err := NewThreeNumberAdder(aInSwitches, bInSwitches)
 
 	if addr != nil {
 		t.Error("Did not expect an adder back but got one.")
@@ -1595,12 +1607,12 @@ func TestClunkyAdder_MismatchInputs(t *testing.T) {
 	}
 }
 
-func TestClunkyAdder_InitialAnswer(t *testing.T) {
+func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	testCases := []struct {
-		aIn        string
-		bIn        string
-		wantAnswer string
-		wantCarry  bool
+		aIn          string
+		bIn          string
+		wantAnswer   string
+		wantCarryOut bool
 	}{
 		{"00000000", "00000001", "00000001", false},
 		{"00000001", "00000010", "00000011", false},
@@ -1617,7 +1629,7 @@ func TestClunkyAdder_InitialAnswer(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("00000000")
-	addr, _ := NewClunkyAdder(aInSwitches, bInSwitches)
+	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s", tc.aIn, tc.bIn), func(t *testing.T) {
@@ -1629,14 +1641,14 @@ func TestClunkyAdder_InitialAnswer(t *testing.T) {
 				t.Errorf("Wanted answer %s but %s", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotCarry := addr.CarryOutAsBool(); gotCarry != tc.wantCarry {
-				t.Errorf("Wanted carry %t, but %t", tc.wantCarry, gotCarry)
+			if gotCarry := addr.CarryOutAsBool(); gotCarry != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but %t", tc.wantCarryOut, gotCarry)
 			}
 		})
 	}
 }
 
-func TestClunkyAdder_FromLatch_Once(t *testing.T) {
+func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	// flip switches to match bit pattern
 	updateSwitches := func(switchBank *NSwitchBank, bits string) {
@@ -1647,7 +1659,7 @@ func TestClunkyAdder_FromLatch_Once(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("00000001")
-	addr, _ := NewClunkyAdder(aInSwitches, bInSwitches)
+	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
 
 	wantAnswer := "00000001"
 	wantCarry := false
@@ -1676,64 +1688,5 @@ func TestClunkyAdder_FromLatch_Once(t *testing.T) {
 
 	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
 		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
-	}
-}
-
-func TestClunkyAdder_FromLatch_MultiAdd(t *testing.T) {
-
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
-
-	aInSwitches, _ := NewNSwitchBank("00000000")
-	bInSwitches, _ := NewNSwitchBank("00000001")
-	addr, _ := NewClunkyAdder(aInSwitches, bInSwitches)
-
-	wantAnswer := "00000001"
-	wantCarry := false
-
-	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
-		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
-	}
-
-	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
-		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
-	}
-
-	addr.SaveToLatch.Set(true)
-	addr.SaveToLatch.Set(false)
-	addr.ReadFromLatch.Set(true)
-
-	updateSwitches(aInSwitches, "00000010")
-	updateSwitches(bInSwitches, "00000000") // reset to prove we recalled the 1 stored in the latch
-
-	wantAnswer = "00000011"
-	wantCarry = false
-
-	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
-		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
-	}
-
-	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
-		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
-	}
-
-	//addr.SaveToLatch.Set(true)
-	//addr.SaveToLatch.Set(false)
-
-	for i := 0; i < 3; i++ {
-		//addr.SaveToLatch.Set(true)
-		//addr.SaveToLatch.Set(false)
-	}
-
-	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
-		//	t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
-	}
-
-	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
-		//	t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
 	}
 }
