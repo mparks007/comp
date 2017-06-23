@@ -47,15 +47,51 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 
 	return latch
 }
-/*
-// AsPwrEmitters will return pwrEmitter versions of the internal latchStore's Qs out
-func (l *NBitLatch) AsPwrEmitters() []pwrEmitter {
-	pwrEmits := []pwrEmitter{}
 
-	for _, latch := range l.latches {
-		pwrEmits = append(pwrEmits, latch.Q)
+type LevelTriggeredDTypeLatchWithClear struct {
+	rs   *RSFlipFlop
+	rAnd *ANDGate
+	sAnd *ANDGate
+	clrOR *ORGate
+	Q    *NORGate
+	QBar *NORGate
+}
+
+func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatchWithClear {
+	latch := &LevelTriggeredDTypeLatchWithClear{}
+
+	latch.rAnd = NewANDGate(clkInPin, NewInverter(dataInPin))
+	latch.sAnd = NewANDGate(clkInPin, dataInPin)
+
+	latch.clrOR = NewORGate(clrPin, latch.rAnd)
+
+	latch.rs = NewRSFlipFLop(latch.clrOR, latch.sAnd)
+
+	// refer to the inner-flipflop's outputs for easier external access
+	latch.Q = latch.rs.Q
+	latch.QBar = latch.rs.QBar
+
+	return latch
+}
+
+type NBitLatchWithClear struct {
+	latches []*LevelTriggeredDTypeLatchWithClear
+	Qs      []pwrEmitter
+}
+
+func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatchWithClear {
+	latch := &NBitLatchWithClear{}
+
+	for _, dataInPin := range dataInPins {
+		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin))
+
+		// refer to the inner-latchStore's Qs output for easier external access
+		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
 	}
 
-	return pwrEmits
+	return latch
 }
-*/
+
+func (l *NBitLatchWithClear) UpdatePins(pins []pwrEmitter) {
+
+}

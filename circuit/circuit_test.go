@@ -13,6 +13,13 @@ import (
 // go test -v
 // go test -run TestOscillator (specific test)
 
+// updateSwitches will flip passed in switches to match a passed in bit pattern
+func updateSwitches(switchBank *NSwitchBank, bits string) {
+	for i, b := range bits {
+		switchBank.Switches[i].Set(b == '1')
+	}
+}
+
 func TestPwrSource(t *testing.T) {
 	var want, got1, got2 bool
 
@@ -289,7 +296,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 	}
 }
 
-func TestRelay_UpdatePinPanic_High(t *testing.T) {
+func TestRelay_UpdatePinPanic_TooHigh(t *testing.T) {
 	want := "Invalid relay pin number.  Relays have two pins and the requested pin was (3)"
 
 	defer func() {
@@ -303,7 +310,7 @@ func TestRelay_UpdatePinPanic_High(t *testing.T) {
 	rel.UpdatePin(3, NewBattery())
 }
 
-func TestRelay_UpdatePinPanic_Low(t *testing.T) {
+func TestRelay_UpdatePinPanic_TooLow(t *testing.T) {
 	want := "Invalid relay pin number.  Relays have two pins and the requested pin was (0)"
 
 	defer func() {
@@ -371,7 +378,7 @@ func TestANDGate_UpdatePinPanic_TooHigh(t *testing.T) {
 	gate.UpdatePin(3, 1, NewBattery())
 }
 
-func TestANDGate_UpdatePinPanic_Low(t *testing.T) {
+func TestANDGate_UpdatePinPanic_TooLow(t *testing.T) {
 	want := "Invalid gate pin number.  Input pin count (2), requested pin (0)"
 
 	defer func() {
@@ -519,7 +526,7 @@ func TestNORGate_UpdatePinPanic_TooHigh(t *testing.T) {
 	gate.UpdatePin(3, 1, NewBattery())
 }
 
-func TestNORGate_UpdatePinPanic_Low(t *testing.T) {
+func TestNORGate_UpdatePinPanic_TooLow(t *testing.T) {
 	want := "Invalid gate pin number.  Input pin count (2), requested pin (0)"
 
 	defer func() {
@@ -772,13 +779,6 @@ func TestNBitAdder_EightBit_AsAnswerString(t *testing.T) {
 		{"10101010", "01010101", true, "00000000", true},
 	}
 
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
-
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("00000000")
 	addend2Switches, _ := NewNSwitchBank("00000000")
@@ -808,7 +808,7 @@ func TestNBitAdder_EightBit_AsAnswerString(t *testing.T) {
 	}
 }
 
-func TestNBitAdder_EightBit_AnswerViaRegistration(t *testing.T) {
+func TestNBitAdder_EightBit_AnswerViaViaCallback(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -824,13 +824,6 @@ func TestNBitAdder_EightBit_AnswerViaRegistration(t *testing.T) {
 	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
 	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
 	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
-
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
-		}
-	}
 
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("00000000")
@@ -882,13 +875,6 @@ func TestNBitAdder_SixteenBit_AsAnswerString(t *testing.T) {
 		{"1001110110011101", "1101011011010110", false, "0111010001110011", true},
 	}
 
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
-
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("0000000000000000")
 	addend2Switches, _ := NewNSwitchBank("0000000000000000")
@@ -918,7 +904,7 @@ func TestNBitAdder_SixteenBit_AsAnswerString(t *testing.T) {
 	}
 }
 
-func TestNBitAdder_SixteenBit_AnswerViaRegistration(t *testing.T) {
+func TestNBitAdder_SixteenBit_AnswerViaCallback(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -942,13 +928,6 @@ func TestNBitAdder_SixteenBit_AnswerViaRegistration(t *testing.T) {
 	callbackFuncs[13] = func(state bool) { gotAnswer[13] = state }
 	callbackFuncs[14] = func(state bool) { gotAnswer[14] = state }
 	callbackFuncs[15] = func(state bool) { gotAnswer[15] = state }
-
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
 
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("0000000000000000")
@@ -1159,13 +1138,6 @@ func TestNBitSubtractor_EightBit_AsAnswerString(t *testing.T) {
 		{"10000001", "01111110", "00000011", true},  // -127 - 126 = 3 signed or (129 - 126 = 3 unsigned)
 	}
 
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
-
 	// start with off switches
 	minuendwitches, _ := NewNSwitchBank("00000000")
 	subtrahendSwitches, _ := NewNSwitchBank("00000000")
@@ -1194,7 +1166,7 @@ func TestNBitSubtractor_EightBit_AsAnswerString(t *testing.T) {
 	}
 }
 
-func TestNBitSubtractor_EightBit_AnswerViaRegistration(t *testing.T) {
+func TestNBitSubtractor_EightBit_AnswerViaCallback(t *testing.T) {
 	wantCarryOut := true
 	var gotCarryOut bool
 
@@ -1210,13 +1182,6 @@ func TestNBitSubtractor_EightBit_AnswerViaRegistration(t *testing.T) {
 	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
 	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
 	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
-
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
-		}
-	}
 
 	// start with off switches
 	minuendSwitches, _ := NewNSwitchBank("00000000")
@@ -1338,7 +1303,7 @@ func TestRSFlipFlop(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
-			// must discharge both first since power at R and S is disallowed
+			// must discharge both first since simultaneous power at R <and> S is disallowed
 			rPinBattery.Discharge()
 			sPinBattery.Discharge()
 
@@ -1408,19 +1373,19 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		return fmt.Sprintf("Stage %d: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i+1, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
 	}
 
-	var holdBattery, dataBattery *Battery
-	holdBattery = NewBattery()
+	var clkBattery, dataBattery *Battery
+	clkBattery = NewBattery()
 	dataBattery = NewBattery()
 
-	latch := NewLevelTriggeredDTypeLatch(holdBattery, dataBattery)
+	latch := NewLevelTriggeredDTypeLatch(clkBattery, dataBattery)
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
 			if tc.clkIn {
-				holdBattery.Charge()
+				clkBattery.Charge()
 			} else {
-				holdBattery.Discharge()
+				clkBattery.Discharge()
 			}
 
 			if tc.dataIn {
@@ -1449,13 +1414,6 @@ func TestNBitLatch(t *testing.T) {
 		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
 		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
 		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
-	}
-
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, b := range bits {
-			switchBank.Switches[i].Set(b == '1')
-		}
 	}
 
 	latchSwitches, _ := NewNSwitchBank("00000000")
@@ -1551,13 +1509,6 @@ func TestTwoToOneSelector(t *testing.T) {
 		{"110", "111", false, []bool{true, true, false}},
 	}
 
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
-
 	// start with off switches
 	aInSwitches, _ := NewNSwitchBank("000")
 	bInSwitches, _ := NewNSwitchBank("000")
@@ -1584,11 +1535,79 @@ func TestTwoToOneSelector(t *testing.T) {
 }
 
 func TestTwoToOneSelector_UpdateBPins(t *testing.T) {
-	// no latch, just send in two banks of switches and prove both work
+	// start with off switches
+	aInSwitches, _ := NewNSwitchBank("000")
+	bInSwitches, _ := NewNSwitchBank("111")
+	cInSwitches, _ := NewNSwitchBank("101")
+	selectBSwitch := NewSwitch(false)
+
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
+
+	// starting with selecting A, get A's state
+	for _, out := range sel.Outs {
+		if out.(*ORGate).GetIsPowered() {
+			t.Error("Expect false on all Outs of selector but got a true")
+		}
+	}
+
+	selectBSwitch.Set(true)
+
+	// selecting B, get B's state
+	for _, out := range sel.Outs {
+		if !out.(*ORGate).GetIsPowered() {
+			t.Error("Expect true on all Outs of selector but got a true")
+		}
+	}
+
+	sel.UpdateBPins(cInSwitches.AsPwrEmitters())
+
+	// now prove C switches took over the B side
+	want1 := true
+	want2 := false
+	want3 := true
+	if got := sel.Outs[0].(*ORGate).GetIsPowered(); got != want1 {
+		t.Errorf("Expect %t left bit, but got %t", want1, got)
+	}
+	if got := sel.Outs[1].(*ORGate).GetIsPowered(); got != want2 {
+		t.Errorf("Expect %t left bit, but got %t", want2, got)
+	}
+	if got := sel.Outs[2].(*ORGate).GetIsPowered(); got != want3 {
+		t.Errorf("Expect %t left bit, but got %t", want3, got)
+	}
 }
 
 func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
-	//
+	// start with off switches
+	aInSwitches, _ := NewNSwitchBank("000")
+	bInSwitches, _ := NewNSwitchBank("111")
+	selectBSwitch := NewSwitch(false)
+
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
+
+	// starting with selecting A, get A's state
+	for _, out := range sel.Outs {
+		if out.(*ORGate).GetIsPowered() {
+			t.Error("Expect false on all Outs of selector but got a true")
+		}
+	}
+
+	selectBSwitch.Set(true)
+
+	// selecting B, get B's state
+	for _, out := range sel.Outs {
+		if !out.(*ORGate).GetIsPowered() {
+			t.Error("Expect true on all Outs of selector but got a true")
+		}
+	}
+
+	updateSwitches(aInSwitches, "101")
+
+	// still selecting B, get B's state, regardless of A's state changing
+	for _, out := range sel.Outs {
+		if !out.(*ORGate).GetIsPowered() {
+			t.Error("Expect true on all Outs of selector but got a true")
+		}
+	}
 }
 
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
@@ -1620,13 +1639,6 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 		{"11111111", "11111111", "11111110", true},
 	}
 
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
-
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("00000000")
 	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
@@ -1649,13 +1661,6 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 }
 
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
-
-	// flip switches to match bit pattern
-	updateSwitches := func(switchBank *NSwitchBank, bits string) {
-		for i, bit := range bits {
-			switchBank.Switches[i].Set(bit == '1')
-		}
-	}
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("00000001")
@@ -1688,5 +1693,180 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
 		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
+	}
+}
+
+func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
+	testCases := []struct {
+		clrIn    bool
+		clkIn    bool
+		dataIn   bool
+		wantQ    bool
+		wantQBar bool
+	}{ // construction of the latchStore will start with a default of clrIn:false, clkIn:true, dataIn:true, which causes Q on (QBar off)
+		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
+		{false, false, true, true, false},  // clrIn off, clkIn off should cause no change
+		{false, true, true, true, false},   // clrIn off, clkIn with dataIn causes Q on (QBar off)
+		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
+		{false, true, false, false, true},  // clrIn off, clkIn with no dataIn causes Q off (QBar on)
+		{false, false, false, false, true}, // clrIn off, clkIn off should cause no change
+		{false, true, false, false, true},  // clrIn off, clkIn again with same dataIn should cause no change
+		{false, true, true, true, false},   // clrIn off, clkIn with dataIn should cause Q on (QBar off)
+		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
+		{true, false, true, false, true},   // clrIn on again should always cause Q off (QBar on)
+		{true, false, false, false, true},  // clrIn on should always cause Q off (QBar on)
+		{true, true, false, false, true},   // clrIn and clkOn should NOT panic since no data
+	}
+
+	testName := func(i int) string {
+		var priorClrIn bool
+		var priorClkIn bool
+		var priorDataIn bool
+
+		if i == 0 {
+			// trues since starting with charged batteries when Newing thew Latch initially
+			priorClrIn = false
+			priorClkIn = true
+			priorDataIn = true
+		} else {
+			priorClrIn = testCases[i-1].clrIn
+			priorClkIn = testCases[i-1].clkIn
+			priorDataIn = testCases[i-1].dataIn
+		}
+
+		return fmt.Sprintf("Stage %d: Switching from [clrIn (%t), clkIn (%t), dataIn (%t)] to [clrIn (%t), clkIn (%t), dataIn (%t)]", i+1, priorClrIn, priorClkIn, priorDataIn, testCases[i].clrIn, testCases[i].clkIn, testCases[i].dataIn)
+	}
+
+	var clrBattery, clkBattery, dataBattery *Battery
+	clrBattery = NewBattery()
+	clrBattery.Discharge()
+	clkBattery = NewBattery()
+	dataBattery = NewBattery()
+
+	latch := NewLevelTriggeredDTypeLatchWithClear(clrBattery, clkBattery, dataBattery)
+
+	for i, tc := range testCases {
+		t.Run(testName(i), func(t *testing.T) {
+
+			if tc.clrIn {
+				clrBattery.Charge()
+			} else {
+				clrBattery.Discharge()
+			}
+
+			if tc.clkIn {
+				clkBattery.Charge()
+			} else {
+				clkBattery.Discharge()
+			}
+
+			if tc.dataIn {
+				dataBattery.Charge()
+			} else {
+				dataBattery.Discharge()
+			}
+
+			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
+				t.Errorf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ)
+			}
+
+			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
+			}
+		})
+	}
+}
+
+func TestLevelTriggeredDTypeLatchWithClear_Panic(t *testing.T) {
+
+	want := "A Flip-Flop cannot have equivalent power status at both Qs and QBar"
+
+	defer func() {
+		if got := recover(); got != want {
+			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
+		}
+	}()
+
+	// clear flag and clock (save) flag and data flag cause the inner RSFlipflop to be of invalid state
+	NewLevelTriggeredDTypeLatchWithClear(NewBattery(), NewBattery(), NewBattery())
+}
+
+func TestNBitLatchWithClear(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  [8]bool
+	}{
+		{"00000001", [8]bool{false, false, false, false, false, false, false, true}},
+		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
+		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
+		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
+	}
+
+	latchSwitches, _ := NewNSwitchBank("00000000")
+	clrSwitch := NewSwitch(false)
+	clkSwitch := NewSwitch(false)
+	latch := NewNBitLatchWithClear(clrSwitch, clkSwitch, latchSwitches.AsPwrEmitters())
+
+	priorWant := [8]bool{false, false, false, false, false, false, false, false}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Stage %d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
+
+			// set to OFF to test that nothing will change in the latchStore store
+
+			clkSwitch.Set(false)
+			updateSwitches(latchSwitches, tc.input)
+
+			for i, pwr := range latch.Qs {
+				got := pwr.(*NORGate).GetIsPowered()
+				want := priorWant[i]
+
+				if got != want {
+					t.Errorf("[As Qs] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
+				}
+			}
+
+			// Now set to ON to test that requested changes did occur in the latchStore store
+
+			clkSwitch.Set(true)
+
+			for i, pwr := range latch.Qs {
+				got := pwr.(*NORGate).GetIsPowered()
+				want := tc.want[i]
+
+				if got != want {
+					t.Errorf("[As Qs] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
+				}
+			}
+
+			for _, l := range latch.latches {
+				l.Q.WireUp(func(state bool) {
+					fmt.Printf("Q:    %t\n", state)
+				})
+				l.QBar.WireUp(func(state bool) {
+					fmt.Printf("QBar: %t\n", state)
+				})
+			}
+
+			// Now Clear the latchStore
+
+			clkSwitch.Set(false) // must ensure not having clock and clear at same time in case data is on too (which causes invalid state)
+			clrSwitch.Set(true)
+			clrSwitch.Set(false)
+
+			for i, pwr := range latch.Qs {
+				got := pwr.(*NORGate).GetIsPowered()
+				want := false
+
+				if got != want {
+					t.Errorf("[As Qs] At index %d, with clkSwitch off, but clrSwitch on, wanted %v but got %v", i, want, got)
+				}
+			}
+
+			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top of the loop) proves it didn't change (aka matches prior)
+			for i, q := range latch.Qs {
+				priorWant[i] = q.(*NORGate).GetIsPowered()
+			}
+		})
 	}
 }
