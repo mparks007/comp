@@ -43,6 +43,9 @@ func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOn
 }
 
 func (s *TwoToOneSelector) UpdateBPins(bPins []pwrEmitter) {
+
+	// TODO: validate bPins is same length as the aANDs
+
 	for i, bPin := range bPins {
 		s.bANDs[i].UpdatePin(2, 2, bPin)
 	}

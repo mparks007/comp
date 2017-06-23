@@ -815,16 +815,6 @@ func TestNBitAdder_EightBit_AnswerViaViaCallback(t *testing.T) {
 	wantAnswer := [8]bool{true, false, false, false, false, false, true, false}
 	var gotAnswer [8]bool
 
-	var callbackFuncs [8]func(state bool)
-	callbackFuncs[0] = func(state bool) { gotAnswer[0] = state }
-	callbackFuncs[1] = func(state bool) { gotAnswer[1] = state }
-	callbackFuncs[2] = func(state bool) { gotAnswer[2] = state }
-	callbackFuncs[3] = func(state bool) { gotAnswer[3] = state }
-	callbackFuncs[4] = func(state bool) { gotAnswer[4] = state }
-	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
-	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
-	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
-
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("00000000")
 	addend2Switches, _ := NewNSwitchBank("00000000")
@@ -833,7 +823,9 @@ func TestNBitAdder_EightBit_AnswerViaViaCallback(t *testing.T) {
 	addr, _ := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
 	for i, sum := range addr.Sums {
-		sum.WireUp(callbackFuncs[i])
+		sum.WireUp(func(i int) func(bool) {
+			return func(state bool) { gotAnswer[i] = state }
+		}(i))
 	}
 	addr.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
@@ -911,24 +903,6 @@ func TestNBitAdder_SixteenBit_AnswerViaCallback(t *testing.T) {
 	wantAnswer := [16]bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false}
 	var gotAnswer [16]bool
 
-	var callbackFuncs [16]func(state bool)
-	callbackFuncs[0] = func(state bool) { gotAnswer[0] = state }
-	callbackFuncs[1] = func(state bool) { gotAnswer[1] = state }
-	callbackFuncs[2] = func(state bool) { gotAnswer[2] = state }
-	callbackFuncs[3] = func(state bool) { gotAnswer[3] = state }
-	callbackFuncs[4] = func(state bool) { gotAnswer[4] = state }
-	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
-	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
-	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
-	callbackFuncs[8] = func(state bool) { gotAnswer[8] = state }
-	callbackFuncs[9] = func(state bool) { gotAnswer[9] = state }
-	callbackFuncs[10] = func(state bool) { gotAnswer[10] = state }
-	callbackFuncs[11] = func(state bool) { gotAnswer[11] = state }
-	callbackFuncs[12] = func(state bool) { gotAnswer[12] = state }
-	callbackFuncs[13] = func(state bool) { gotAnswer[13] = state }
-	callbackFuncs[14] = func(state bool) { gotAnswer[14] = state }
-	callbackFuncs[15] = func(state bool) { gotAnswer[15] = state }
-
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("0000000000000000")
 	addend2Switches, _ := NewNSwitchBank("0000000000000000")
@@ -937,7 +911,9 @@ func TestNBitAdder_SixteenBit_AnswerViaCallback(t *testing.T) {
 	addr, _ := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
 
 	for i, sum := range addr.Sums {
-		sum.WireUp(callbackFuncs[i])
+		sum.WireUp(func(i int) func(bool) {
+			return func(state bool) { gotAnswer[i] = state }
+		}(i))
 	}
 	addr.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
 
@@ -1173,16 +1149,6 @@ func TestNBitSubtractor_EightBit_AnswerViaCallback(t *testing.T) {
 	wantAnswer := [8]bool{false, false, false, false, false, false, true, true}
 	var gotAnswer [8]bool
 
-	var callbackFuncs [8]func(state bool)
-	callbackFuncs[0] = func(state bool) { gotAnswer[0] = state }
-	callbackFuncs[1] = func(state bool) { gotAnswer[1] = state }
-	callbackFuncs[2] = func(state bool) { gotAnswer[2] = state }
-	callbackFuncs[3] = func(state bool) { gotAnswer[3] = state }
-	callbackFuncs[4] = func(state bool) { gotAnswer[4] = state }
-	callbackFuncs[5] = func(state bool) { gotAnswer[5] = state }
-	callbackFuncs[6] = func(state bool) { gotAnswer[6] = state }
-	callbackFuncs[7] = func(state bool) { gotAnswer[7] = state }
-
 	// start with off switches
 	minuendSwitches, _ := NewNSwitchBank("00000000")
 	subtrahendSwitches, _ := NewNSwitchBank("00000000")
@@ -1190,7 +1156,9 @@ func TestNBitSubtractor_EightBit_AnswerViaCallback(t *testing.T) {
 	sub, _ := NewNBitSubtractor(minuendSwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
 
 	for i, dif := range sub.Differences {
-		dif.WireUp(callbackFuncs[i])
+		dif.WireUp(func(i int) func(bool) {
+			return func(state bool) { gotAnswer[i] = state }
+		}(i))
 	}
 
 	sub.CarryOut.WireUp(func(state bool) { gotCarryOut = state })
@@ -1226,7 +1194,6 @@ func TestOscillator(t *testing.T) {
 			var gotResults string
 
 			osc := NewOscillator(tc.initState)
-			osc.Oscillate(tc.oscHertz)
 
 			osc.WireUp(func(state bool) {
 				if state {
@@ -1235,6 +1202,8 @@ func TestOscillator(t *testing.T) {
 					gotResults += "F"
 				}
 			})
+
+			osc.Oscillate(tc.oscHertz)
 
 			time.Sleep(time.Second * 2)
 
@@ -1839,18 +1808,11 @@ func TestNBitLatchWithClear(t *testing.T) {
 				}
 			}
 
-			for _, l := range latch.latches {
-				l.Q.WireUp(func(state bool) {
-					fmt.Printf("Q:    %t\n", state)
-				})
-				l.QBar.WireUp(func(state bool) {
-					fmt.Printf("QBar: %t\n", state)
-				})
-			}
-
 			// Now Clear the latchStore
 
-			clkSwitch.Set(false) // must ensure not having clock and clear at same time in case data is on too (which causes invalid state)
+			// must ensure not having clock and clear at same time in case data is on too (which causes invalid state)
+			clkSwitch.Set(false)
+
 			clrSwitch.Set(true)
 			clrSwitch.Set(false)
 
@@ -1859,7 +1821,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 				want := false
 
 				if got != want {
-					t.Errorf("[As Qs] At index %d, with clkSwitch off, but clrSwitch on, wanted %v but got %v", i, want, got)
+					t.Errorf("[As Qs] At index %d, with clkSwitch off, but clrSwitch just triggered, wanted %v but got %v", i, want, got)
 				}
 			}
 
@@ -1869,4 +1831,14 @@ func TestNBitLatchWithClear(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNNumberAdder(t *testing.T) {
+
+	switches, _ := NewNSwitchBank("00000000")
+
+	addr, _ := NewNNumberAdder(switches)
+
+	addr.Clear.Set(false)
+	addr.Add.Set(false)
 }
