@@ -41,7 +41,7 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 	for _, dataInPin := range dataInPins {
 		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkInPin, dataInPin))
 
-		// refer to the inner-latchStore's Qs output for easier external access
+		// refer to the inner-latches's Qs output for easier external access
 		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
 	}
 
@@ -49,12 +49,12 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 }
 
 type LevelTriggeredDTypeLatchWithClear struct {
-	rs   *RSFlipFlop
-	rAnd *ANDGate
-	sAnd *ANDGate
+	rs    *RSFlipFlop
+	rAnd  *ANDGate
+	sAnd  *ANDGate
 	clrOR *ORGate
-	Q    *NORGate
-	QBar *NORGate
+	Q     *NORGate
+	QBar  *NORGate
 }
 
 func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatchWithClear {
@@ -74,6 +74,11 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 	return latch
 }
 
+func (l *LevelTriggeredDTypeLatchWithClear) UpdateDataPin(dataPin pwrEmitter) {
+	l.rAnd.UpdatePin(2, 2, NewInverter(dataPin))
+	l.sAnd.UpdatePin(2, 2, dataPin)
+}
+
 type NBitLatchWithClear struct {
 	latches []*LevelTriggeredDTypeLatchWithClear
 	Qs      []pwrEmitter
@@ -85,13 +90,18 @@ func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter)
 	for _, dataInPin := range dataInPins {
 		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin))
 
-		// refer to the inner-latchStore's Qs output for easier external access
+		// refer to the inner-latches's Qs output for easier external access
 		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
 	}
 
 	return latch
 }
 
-func (l *NBitLatchWithClear) UpdatePins(pins []pwrEmitter) {
+func (l *NBitLatchWithClear) UpdateDataPins(dataPins []pwrEmitter) {
 
+	// TODO: validate dataPins is same length as the latches slice
+
+	for i, latch := range l.latches {
+		latch.UpdateDataPin(dataPins[i])
+	}
 }

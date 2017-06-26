@@ -32,6 +32,6 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 
 func (f *RSFlipFlop) validateOutputRule(newState bool) {
 	if f.Q.isPowered == f.QBar.isPowered {
-		panic("A Flip-Flop cannot have equivalent power status at both Qs and QBar")
+		panic("A Flip-Flop cannot have equivalent power status at both Q and QBar")
 	}
 }

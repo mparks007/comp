@@ -159,12 +159,12 @@ func (a *ThreeNumberAdder) CarryOutAsBool() bool {
 }
 
 type NNumberAdder struct {
-	latchStore *NBitLatchWithClear
-	adder      *NBitAdder
-	Clear      *Switch
-	Add        *Switch
-	Sums       []pwrEmitter
-	CarryOut   pwrEmitter
+	latches  *NBitLatchWithClear
+	adder    *NBitAdder
+	Clear    *Switch
+	Add      *Switch
+	Sums     []pwrEmitter
+	CarryOut pwrEmitter
 }
 
 func NewNNumberAdder(switchBank *NSwitchBank) (*NNumberAdder, error) {
@@ -174,16 +174,16 @@ func NewNNumberAdder(switchBank *NSwitchBank) (*NNumberAdder, error) {
 	// build the latch
 	addr.Clear = NewSwitch(false)
 	addr.Add = NewSwitch(false)
-	addr.latchStore = NewNBitLatchWithClear(addr.Clear, addr.Add, make([]pwrEmitter, len(switchBank.Switches))) // we don't have an adder yet so cannot set data pins correctly yet
+	addr.latches = NewNBitLatchWithClear(addr.Clear, addr.Add, make([]pwrEmitter, len(switchBank.Switches))) // we don't have an adder yet so cannot set data pins correctly yet (but I need SOMETHING in to make the inner components!)
 
 	// build the adder, handing it the selector for the B pins
-	addr.adder, _ = NewNBitAdder(switchBank.AsPwrEmitters(), addr.latchStore.Qs, nil)
+	addr.adder, _ = NewNBitAdder(switchBank.AsPwrEmitters(), addr.latches.Qs, nil)
 
 	// now refresh the latch's inputs with the adder's output
-	addr.latchStore.UpdatePins(addr.adder.Sums)
+	addr.latches.UpdateDataPins(addr.adder.Sums)
 
 	// refer to the appropriate adder innards for easier external access
-	addr.Sums = addr.latchStore.Qs
+	addr.Sums = addr.latches.Qs
 
 	return addr, nil
 }
@@ -191,7 +191,7 @@ func NewNNumberAdder(switchBank *NSwitchBank) (*NNumberAdder, error) {
 func (a *NNumberAdder) AsAnswerString() string {
 	answer := ""
 
-	for _, q := range a.latchStore.Qs {
+	for _, q := range a.latches.Qs {
 
 		if q.(*NORGate).GetIsPowered() {
 			answer += "1"

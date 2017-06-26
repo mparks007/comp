@@ -1155,8 +1155,8 @@ func TestNBitSubtractor_EightBit_AnswerViaCallback(t *testing.T) {
 
 	sub, _ := NewNBitSubtractor(minuendSwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
 
-	for i, dif := range sub.Differences {
-		dif.WireUp(func(i int) func(bool) {
+	for i, diff := range sub.Differences {
+		diff.WireUp(func(i int) func(bool) {
 			return func(state bool) { gotAnswer[i] = state }
 		}(i))
 	}
@@ -1209,7 +1209,7 @@ func TestOscillator(t *testing.T) {
 
 			osc.Stop()
 
-			if gotResults != tc.wantResults {
+			if !strings.HasPrefix(tc.wantResults, gotResults) {
 				t.Errorf("Wanted results %s but got %s.", tc.wantResults, gotResults)
 			}
 		})
@@ -1296,7 +1296,7 @@ func TestRSFlipFlop(t *testing.T) {
 }
 
 func TestRSFlipFlop_Panic(t *testing.T) {
-	want := "A Flip-Flop cannot have equivalent power status at both Qs and QBar"
+	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
 
 	defer func() {
 		if got := recover(); !strings.HasPrefix(got.(string), want) {
@@ -1314,7 +1314,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		dataIn   bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latchStore will start with a default of clkIn:true, dataIn:true, which causes Qs on (QBar off)
+	}{ // construction of the latches will start with a default of clkIn:true, dataIn:true, which causes Qs on (QBar off)
 		{false, false, true, false}, // clkIn off should cause no change
 		{false, true, true, false},  // clkIn off should cause no change
 		{true, true, true, false},   // clkIn with dataIn causes Qs on (QBar off)
@@ -1394,7 +1394,7 @@ func TestNBitLatch(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Stage %d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
 
-			// set to OFF to test that nothing will change in the latchStore store
+			// set to OFF to test that nothing will change in the latches store
 
 			clkSwitch.Set(false)
 			updateSwitches(latchSwitches, tc.input)
@@ -1408,7 +1408,7 @@ func TestNBitLatch(t *testing.T) {
 				}
 			}
 
-			// Now set to ON to test that requested changes did occur in the latchStore store
+			// Now set to ON to test that requested changes did occur in the latches store
 
 			clkSwitch.Set(true)
 
@@ -1672,7 +1672,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		dataIn   bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latchStore will start with a default of clrIn:false, clkIn:true, dataIn:true, which causes Q on (QBar off)
+	}{ // construction of the latches will start with a default of clrIn:false, clkIn:true, dataIn:true, which causes Q on (QBar off)
 		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
 		{false, false, true, true, false},  // clrIn off, clkIn off should cause no change
 		{false, true, true, true, false},   // clrIn off, clkIn with dataIn causes Q on (QBar off)
@@ -1746,9 +1746,38 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	}
 }
 
+func TestLevelTriggeredDTypeLatchWithClear_UpdatePins(t *testing.T) {
+
+	clkSwitch := NewSwitch(true)
+	latch := NewLevelTriggeredDTypeLatchWithClear(NewSwitch(false), clkSwitch, nil)
+
+	want := false
+	if got := latch.Q.GetIsPowered(); got != want {
+		t.Errorf("With data as nil, wanted power %t but got %t", want, got)
+	}
+
+	clkSwitch.Set(false)
+	latch.UpdateDataPin(NewSwitch(true))
+	clkSwitch.Set(true)
+
+	want = true
+	if got := latch.Q.GetIsPowered(); got != want {
+		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
+	}
+
+	clkSwitch.Set(false)
+	latch.UpdateDataPin(NewSwitch(false))
+	clkSwitch.Set(true)
+
+	want = false
+	if got := latch.Q.GetIsPowered(); got != want {
+		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
+	}
+}
+
 func TestLevelTriggeredDTypeLatchWithClear_Panic(t *testing.T) {
 
-	want := "A Flip-Flop cannot have equivalent power status at both Qs and QBar"
+	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
 
 	defer func() {
 		if got := recover(); got != want {
@@ -1781,7 +1810,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Stage %d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
 
-			// set to OFF to test that nothing will change in the latchStore store
+			// set to OFF to test that nothing will change in the latches store
 
 			clkSwitch.Set(false)
 			updateSwitches(latchSwitches, tc.input)
@@ -1795,7 +1824,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 				}
 			}
 
-			// Now set to ON to test that requested changes did occur in the latchStore store
+			// Now set to ON to test that requested changes did occur in the latches store
 
 			clkSwitch.Set(true)
 
@@ -1808,7 +1837,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 				}
 			}
 
-			// Now Clear the latchStore
+			// Now Clear the latches
 
 			// must ensure not having clock and clear at same time in case data is on too (which causes invalid state)
 			clkSwitch.Set(false)
@@ -1833,12 +1862,86 @@ func TestNBitLatchWithClear(t *testing.T) {
 	}
 }
 
-func TestNNumberAdder(t *testing.T) {
+func TestNBitLatchWithClear_UpdatePins(t *testing.T) {
 
-	switches, _ := NewNSwitchBank("00000000")
+	clkSwitch := NewSwitch(true)
+	latch := NewNBitLatchWithClear(NewSwitch(false), clkSwitch, make([]pwrEmitter, 2))
+
+	want := false
+	if got := latch.Qs[0].(*NORGate).GetIsPowered(); got != want {
+		t.Errorf("With data as nil, wanted Q 1 power %t but got %t", want, got)
+	}
+	if got := latch.Qs[1].(*NORGate).GetIsPowered(); got != want {
+		t.Errorf("With data as nil, wanted Q 2 power %t but got %t", want, got)
+	}
+
+	clkSwitch.Set(false)
+	latchSwitches, _ := NewNSwitchBank("11")
+	latch.UpdateDataPins(latchSwitches.AsPwrEmitters())
+	clkSwitch.Set(true)
+
+	want = true
+	if got := latch.Qs[0].(*NORGate).GetIsPowered(); got != want {
+		t.Errorf("With data 1 as an On switch, wanted Q 1 power %t but got %t", want, got)
+	}
+	if got := latch.Qs[1].(*NORGate).GetIsPowered(); got != want {
+		t.Errorf("With data 2 as an On switch, wanted Q 2 power %t but got %t", want, got)
+	}
+
+	clkSwitch.Set(false)
+	latchSwitches, _ = NewNSwitchBank("00")
+	latch.UpdateDataPins(latchSwitches.AsPwrEmitters())
+	clkSwitch.Set(true)
+
+	want = false
+	if got := latch.Qs[0].(*NORGate).GetIsPowered(); got != want {
+		t.Errorf("With data 1 as an Off switch, wanted Q 1 power %t but got %t", want, got)
+	}
+	if got := latch.Qs[1].(*NORGate).GetIsPowered(); got != want {
+		t.Errorf("With data 2 as an Off switch, wanted Q 2 power %t but got %t", want, got)
+	}
+}
+
+func TestNNumberAdder(t *testing.T) {
+	switches, _ := NewNSwitchBank("00000001")
 
 	addr, _ := NewNNumberAdder(switches)
 
+	want := "00000001"
+	if got := addr.AsAnswerString(); got != want {
+		t.Errorf("Initial zero setup, wanted %s but got %s", want, got)
+	}
+
+	fmt.Println("Initial adder")
+	for _, s := range addr.adder.Sums {
+		s.WireUp(func(bool) {
+			fmt.Println(addr.AsAnswerString())
+		})
+	}
+
+	fmt.Println("Initial latches")
+	for _, q := range addr.latches.Qs {
+		q.WireUp(func(state bool) {
+			fmt.Println(state)
+		})
+	}
+
+	fmt.Println("Update Switches to 00000001")
+	updateSwitches(switches, "00000001")
+
+	fmt.Println("Clear set")
+	addr.Clear.Set(true)
+
+	fmt.Println("Clear unset")
 	addr.Clear.Set(false)
-	addr.Add.Set(false)
+
+	fmt.Println("Add Set")
+		addr.Add.Set(true)
+	//	addr.Add.Set(false)
+
+	want = "00000001"
+	if got := addr.AsAnswerString(); got != want {
+		t.Errorf("Initial zero setup, wanted %s but got %s", want, got)
+	}
+
 }
