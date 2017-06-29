@@ -1295,6 +1295,7 @@ func TestRSFlipFlop(t *testing.T) {
 	}
 }
 
+/*
 func TestRSFlipFlop_Panic(t *testing.T) {
 	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
 
@@ -1307,6 +1308,7 @@ func TestRSFlipFlop_Panic(t *testing.T) {
 	// use two ON batteries to trigger invalid state
 	NewRSFlipFLop(NewBattery(), NewBattery())
 }
+*/
 
 func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
@@ -1756,18 +1758,14 @@ func TestLevelTriggeredDTypeLatchWithClear_UpdatePins(t *testing.T) {
 		t.Errorf("With data as nil, wanted power %t but got %t", want, got)
 	}
 
-	clkSwitch.Set(false)
 	latch.UpdateDataPin(NewSwitch(true))
-	clkSwitch.Set(true)
 
 	want = true
 	if got := latch.Q.GetIsPowered(); got != want {
 		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
 	}
 
-	clkSwitch.Set(false)
 	latch.UpdateDataPin(NewSwitch(false))
-	clkSwitch.Set(true)
 
 	want = false
 	if got := latch.Q.GetIsPowered(); got != want {
@@ -1775,6 +1773,7 @@ func TestLevelTriggeredDTypeLatchWithClear_UpdatePins(t *testing.T) {
 	}
 }
 
+/*
 func TestLevelTriggeredDTypeLatchWithClear_Panic(t *testing.T) {
 
 	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
@@ -1788,6 +1787,7 @@ func TestLevelTriggeredDTypeLatchWithClear_Panic(t *testing.T) {
 	// clear flag and clock (save) flag and data flag cause the inner RSFlipflop to be of invalid state
 	NewLevelTriggeredDTypeLatchWithClear(NewBattery(), NewBattery(), NewBattery())
 }
+*/
 
 func TestNBitLatchWithClear(t *testing.T) {
 	testCases := []struct {
@@ -1902,46 +1902,41 @@ func TestNBitLatchWithClear_UpdatePins(t *testing.T) {
 	}
 }
 
+// TestNNumberAdder is trying to simulate a feedback loop that has no bounds so it is expected to stack overlow
+//     runtime: goroutine stack exceeds 1000000000-byte limit
+//     fatal error: stack overflow
+/*
 func TestNNumberAdder(t *testing.T) {
-	switches, _ := NewNSwitchBank("00000001")
 
+	switches, _ := NewNSwitchBank("00000001")
 	addr, _ := NewNNumberAdder(switches)
 
-	want := "00000001"
-	if got := addr.AsAnswerString(); got != want {
-		t.Errorf("Initial zero setup, wanted %s but got %s", want, got)
-	}
-
-	fmt.Println("Initial adder")
-	for _, s := range addr.adder.Sums {
-		s.WireUp(func(bool) {
-			fmt.Println(addr.AsAnswerString())
-		})
-	}
-
-	fmt.Println("Initial latches")
-	for _, q := range addr.latches.Qs {
-		q.WireUp(func(state bool) {
-			fmt.Println(state)
-		})
-	}
-
-	fmt.Println("Update Switches to 00000001")
-	updateSwitches(switches, "00000001")
-
-	fmt.Println("Clear set")
 	addr.Clear.Set(true)
-
-	fmt.Println("Clear unset")
 	addr.Clear.Set(false)
 
-	fmt.Println("Add Set")
-		addr.Add.Set(true)
-	//	addr.Add.Set(false)
+	want := "00000000"
+	if got := addr.AsAnswerString(); got != want {
+		t.Errorf("[Initial setup] Wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+	}
+
+	want = "00000001"
+	if got := addr.adder.AsAnswerString(); got != want {
+		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
+	}
+
+	addr.Add.Set(true)
+	addr.Add.Set(false)
 
 	want = "00000001"
 	if got := addr.AsAnswerString(); got != want {
-		t.Errorf("Initial zero setup, wanted %s but got %s", want, got)
+		t.Errorf("After an add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
 	}
 
+	updateSwitches(switches, "00000010")
+
+	want = "00000011"
+	if got := addr.AsAnswerString(); got != want {
+		t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+	}
 }
+*/

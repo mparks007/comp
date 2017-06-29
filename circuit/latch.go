@@ -30,6 +30,11 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 	return latch
 }
 
+func (l *LevelTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
+	l.rAnd.UpdatePin(2, 2, NewInverter(dataPin))
+	l.sAnd.UpdatePin(2, 2, dataPin)
+}
+
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
 	Qs      []pwrEmitter
@@ -104,4 +109,30 @@ func (l *NBitLatchWithClear) UpdateDataPins(dataPins []pwrEmitter) {
 	for i, latch := range l.latches {
 		latch.UpdateDataPin(dataPins[i])
 	}
+}
+
+type EdgeTriggeredDTypeLatch struct {
+	rRS   *RSFlipFlop
+	rRAnd *ANDGate
+	rSAnd *ANDGate
+	lRS   *RSFlipFlop
+	lRAnd *ANDGate
+	lSAnd *ANDGate
+	Q     *NORGate
+	QBar  *NORGate
+}
+
+func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
+	latch := &EdgeTriggeredDTypeLatch{}
+
+	//latch.rAnd = NewANDGate(clkInPin, NewInverter(dataInPin))
+	//latch.sAnd = NewANDGate(clkInPin, dataInPin)
+
+	//latch.rs = NewRSFlipFLop(latch.rAnd, latch.sAnd)
+
+	// refer to the inner-right-flipflop's outputs for easier external access
+	latch.Q = latch.rRS.Q
+	latch.QBar = latch.rRS.QBar
+
+	return latch
 }

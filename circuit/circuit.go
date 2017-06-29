@@ -1,5 +1,11 @@
 package circuit
 
+import (
+	"github.com/sirupsen/logrus"
+)
+
+var logger = logrus.New()
+
 type pwrEmitter interface {
 	WireUp(func(bool))
 }
@@ -14,6 +20,7 @@ type pwrSource struct {
 func (p *pwrSource) WireUp(callback func(bool)) {
 	p.wiredCallbacks = append(p.wiredCallbacks, callback)
 
+	logger.Debug("WireUp")
 	callback(p.isPowered)
 }
 
