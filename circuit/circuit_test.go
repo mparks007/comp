@@ -1182,10 +1182,10 @@ func TestOscillator(t *testing.T) {
 		oscHertz    int
 		wantResults string
 	}{
-		{false, 1, "FTF"},
-		{true, 1, "TFT"},
-		{false, 5, "FTFTFTFTFTF"},
-		{true, 5, "TFTFTFTFTFT"},
+		{false, 1, "0101"},
+		{true, 1, "101"},
+		{false, 5, "010101010101"},
+		{true, 5, "101010101010"},
 	}
 
 	for _, tc := range testCases {
@@ -1197,9 +1197,9 @@ func TestOscillator(t *testing.T) {
 
 			osc.WireUp(func(state bool) {
 				if state {
-					gotResults += "T"
+					gotResults += "1"
 				} else {
-					gotResults += "F"
+					gotResults += "0"
 				}
 			})
 
@@ -1222,19 +1222,19 @@ func TestRSFlipFlop(t *testing.T) {
 		sPinPowered bool
 		wantQ       bool
 		wantQBar    bool
-	}{ // contsruction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Qs off)
+	}{ // contsruction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Q off)
 		{false, false, false, true}, // Un-Set should remember prior
-		{false, true, true, false},  // Set causes Qs on (QBar off)
+		{false, true, true, false},  // Set causes Q on (QBar off)
 		{false, true, true, false},  // Set again should change nothing
 		{false, false, true, false}, // Un-Set should remember prior
 		{false, false, true, false}, // Un-Set again should change nothing
-		{true, false, false, true},  // Reset causes Qs off (QBar on)
+		{true, false, false, true},  // Reset causes Q off (QBar on)
 		{true, false, false, true},  // Reset again should change nothing
 		{false, false, false, true}, // Un-Reset should remember prior
 		{true, false, false, true},  // Un-Reset again should change nothing
-		{false, true, true, false},  // Set causes Qs on (QBar off)
-		{true, false, false, true},  // Reset causes Qs off (QBar on)
-		{false, true, true, false},  // Set causes Qs on (QBar off)
+		{false, true, true, false},  // Set causes Q on (QBar off)
+		{true, false, false, true},  // Reset causes Q off (QBar on)
+		{false, true, true, false},  // Set causes Q on (QBar off)
 	}
 
 	testName := func(i int) string {
@@ -1262,7 +1262,7 @@ func TestRSFlipFlop(t *testing.T) {
 	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
 
 	if gotQ := ff.Q.GetIsPowered(); gotQ != false {
-		t.Errorf("Wanted power of %t at Qs, but got %t.", false, gotQ)
+		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ)
 	}
 
 	if gotQBar := ff.QBar.GetIsPowered(); gotQBar != true {
@@ -1285,7 +1285,7 @@ func TestRSFlipFlop(t *testing.T) {
 			}
 
 			if gotQ := ff.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ)
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
 			}
 
 			if gotQBar := ff.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
@@ -1316,15 +1316,15 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		dataIn   bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latches will start with a default of clkIn:true, dataIn:true, which causes Qs on (QBar off)
+	}{ // construction of the latches will start with a default of clkIn:true, dataIn:true, which causes Q on (QBar off)
 		{false, false, true, false}, // clkIn off should cause no change
 		{false, true, true, false},  // clkIn off should cause no change
-		{true, true, true, false},   // clkIn with dataIn causes Qs on (QBar off)
+		{true, true, true, false},   // clkIn with dataIn causes Q on (QBar off)
 		{false, false, true, false}, // clkIn off should cause no change
-		{true, false, false, true},  // clkIn with no dataIn causes Qs off (QBar on)
+		{true, false, false, true},  // clkIn with no dataIn causes Q off (QBar on)
 		{false, false, false, true}, // clkIn off should cause no change
 		{true, false, false, true},  // clkIn again with same dataIn should cause no change
-		{true, true, true, false},   // clkIn with dataIn should cause Qs on (QBar off)
+		{true, true, true, false},   // clkIn with dataIn should cause Q on (QBar off)
 		{false, false, true, false}, // clkIn off should cause no change
 	}
 
@@ -1366,7 +1366,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			}
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ)
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
 			}
 
 			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
@@ -1738,7 +1738,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			}
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf("Wanted power of %t at Qs, but got %t.", tc.wantQ, gotQ)
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
 			}
 
 			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
@@ -1750,8 +1750,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 
 func TestLevelTriggeredDTypeLatchWithClear_UpdatePins(t *testing.T) {
 
-	clkSwitch := NewSwitch(true)
-	latch := NewLevelTriggeredDTypeLatchWithClear(NewSwitch(false), clkSwitch, nil)
+	latch := NewLevelTriggeredDTypeLatchWithClear(NewSwitch(false), NewSwitch(true), nil)
 
 	want := false
 	if got := latch.Q.GetIsPowered(); got != want {
@@ -1784,7 +1783,7 @@ func TestLevelTriggeredDTypeLatchWithClear_Panic(t *testing.T) {
 		}
 	}()
 
-	// clear flag and clock (save) flag and data flag cause the inner RSFlipflop to be of invalid state
+	// setting Clear and Clock and Data all true cause the inner RSFlipflop to be of invalid state
 	NewLevelTriggeredDTypeLatchWithClear(NewBattery(), NewBattery(), NewBattery())
 }
 */
@@ -1820,7 +1819,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 				want := priorWant[i]
 
 				if got != want {
-					t.Errorf("[As Qs] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
+					t.Errorf("[As Q] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
 				}
 			}
 
@@ -1833,7 +1832,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf("[As Qs] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
+					t.Errorf("[As Q] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
 				}
 			}
 
@@ -1850,7 +1849,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 				want := false
 
 				if got != want {
-					t.Errorf("[As Qs] At index %d, with clkSwitch off, but clrSwitch just triggered, wanted %v but got %v", i, want, got)
+					t.Errorf("[As Q] At index %d, with clkSwitch off, but clrSwitch just triggered, wanted %v but got %v", i, want, got)
 				}
 			}
 
@@ -1940,3 +1939,137 @@ func TestNNumberAdder(t *testing.T) {
 	}
 }
 */
+
+func TestEdgeTriggeredDTypeLatch(t *testing.T) {
+	testCases := []struct {
+		clkIn    bool
+		dataIn   bool
+		wantQ    bool
+		wantQBar bool
+	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
+		{false, false, false, true}, // clkIn staying false should cause no change
+		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
+		{true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
+		{true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
+		{false, false, false, true}, // clkIn going to false, with no dataIn, causes Q off (QBar on)
+		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
+		{true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
+		{true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
+	}
+
+	testName := func(i int) string {
+		var priorClkIn bool
+		var priorDataIn bool
+
+		if i == 0 {
+			// trues since starting with charged batteries when Newing thew Latch initially
+			priorClkIn = true
+			priorDataIn = true
+		} else {
+			priorClkIn = testCases[i-1].clkIn
+			priorDataIn = testCases[i-1].dataIn
+		}
+
+		return fmt.Sprintf("Stage %d: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i+1, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
+	}
+
+	var clkBattery, dataBattery *Battery
+	clkBattery = NewBattery()
+	dataBattery = NewBattery()
+	clkBattery.Discharge()
+	dataBattery.Discharge()
+
+	latch := NewEdgeTriggeredDTypeLatch(clkBattery, dataBattery)
+
+	want := false
+	if gotQ := latch.Q.GetIsPowered(); gotQ != want {
+		t.Errorf("On contruction, wanted power of %t at Q, but got %t.", want, gotQ)
+	}
+
+	want = true
+	if gotQBar := latch.QBar.GetIsPowered(); gotQBar != want {
+		t.Errorf("On construction, wanted power of %t at QBar, but got %t.", want, gotQBar)
+	}
+
+	for i, tc := range testCases {
+		t.Run(testName(i), func(t *testing.T) {
+
+			if tc.dataIn {
+				dataBattery.Charge()
+			} else {
+				dataBattery.Discharge()
+			}
+			if tc.clkIn {
+				clkBattery.Charge()
+			} else {
+				clkBattery.Discharge()
+			}
+
+			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
+			}
+
+			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
+			}
+		})
+	}
+}
+
+func TestEdgeTriggeredDTypeLatch_UpdatePins(t *testing.T) {
+
+	clkSwitch := NewSwitch(false)
+	latch := NewEdgeTriggeredDTypeLatch(clkSwitch, nil)
+	clkSwitch.Set(true)
+
+	want := false
+	if got := latch.Q.GetIsPowered(); got != want {
+		t.Errorf("With data as nil, wanted power %t but got %t", want, got)
+	}
+
+	latch.UpdateDataPin(NewSwitch(true))
+
+	clkSwitch.Set(false)
+	clkSwitch.Set(true)
+
+	want = true
+	if got := latch.Q.GetIsPowered(); got != want {
+		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
+	}
+
+	latch.UpdateDataPin(NewSwitch(false))
+
+	clkSwitch.Set(false)
+	clkSwitch.Set(true)
+
+	want = false
+	if got := latch.Q.GetIsPowered(); got != want {
+		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
+	}
+}
+
+func TestFrequencyDivider(t *testing.T) {
+	var gotResults string
+
+	osc := NewOscillator(false)
+	freqDiv := NewFrequencyDivider(osc)
+
+	freqDiv.Q.WireUp(func(state bool) {
+		if state {
+			gotResults += "1"
+		} else {
+			gotResults += "0"
+		}
+	})
+
+	osc.Oscillate(8)
+
+	//time.Sleep(time.Second * 2)
+
+	osc.Stop()
+
+	want := "XXX"
+	if !strings.HasPrefix(want, gotResults) {
+		t.Errorf("Wanted results %s but got %s.", want, gotResults)
+	}
+}

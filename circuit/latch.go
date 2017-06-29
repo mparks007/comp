@@ -2,10 +2,10 @@ package circuit
 
 // Level-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
-// d clk   q  !q
-// 0 1     0  1
-// 1 1     1  0
-// X 0     q  !q  (data doesn't matter, no clock high to trigger s store-it action)
+// d clk    q  !q
+// 0  1     0  1
+// 1  1     1  0
+// X  0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
 
 type LevelTriggeredDTypeLatch struct {
 	rs   *RSFlipFlop
@@ -30,11 +30,12 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 	return latch
 }
 
+/*
 func (l *LevelTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
 	l.rAnd.UpdatePin(2, 2, NewInverter(dataPin))
 	l.sAnd.UpdatePin(2, 2, dataPin)
 }
-
+*/
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
 	Qs      []pwrEmitter
@@ -52,6 +53,15 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 
 	return latch
 }
+
+// Level-triggered D-Type Latch With Clear ("Level" = clock high/low, "D" = data 0/1)
+
+// d clk clr   q  !q
+// 0  1   0    0  1
+// 1  1   0    1  0
+// X  0   0    q  !q  (data doesn't matter, no clock high to trigger a store-it action)
+// X  X   1    0  1   (forces reset so data and clock do not matter)
+// 1  1   1    X  X   (invalid)
 
 type LevelTriggeredDTypeLatchWithClear struct {
 	rs    *RSFlipFlop
@@ -111,13 +121,21 @@ func (l *NBitLatchWithClear) UpdateDataPins(dataPins []pwrEmitter) {
 	}
 }
 
+// Edge-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
+
+// d clk   q  !q
+// 0  ^    0  1
+// 1  ^    1  0
+// X  1    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
+// X  0    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
+
 type EdgeTriggeredDTypeLatch struct {
-	rRS   *RSFlipFlop
-	rRAnd *ANDGate
-	rSAnd *ANDGate
 	lRS   *RSFlipFlop
 	lRAnd *ANDGate
 	lSAnd *ANDGate
+	rRS   *RSFlipFlop
+	rRAnd *ANDGate
+	rSAnd *ANDGate
 	Q     *NORGate
 	QBar  *NORGate
 }
@@ -125,14 +143,41 @@ type EdgeTriggeredDTypeLatch struct {
 func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
-	//latch.rAnd = NewANDGate(clkInPin, NewInverter(dataInPin))
-	//latch.sAnd = NewANDGate(clkInPin, dataInPin)
+	latch.lRAnd = NewANDGate(NewInverter(clkInPin), dataInPin)
+	latch.lSAnd = NewANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
+	latch.lRS = NewRSFlipFLop(latch.lRAnd, latch.lSAnd)
 
-	//latch.rs = NewRSFlipFLop(latch.rAnd, latch.sAnd)
+	latch.rRAnd = NewANDGate(clkInPin, latch.lRS.Q)
+	latch.rSAnd = NewANDGate(clkInPin, latch.lRS.QBar)
+	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
 
 	// refer to the inner-right-flipflop's outputs for easier external access
 	latch.Q = latch.rRS.Q
 	latch.QBar = latch.rRS.QBar
 
 	return latch
+}
+
+func (l *EdgeTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
+	l.lRAnd.UpdatePin(2, 2, dataPin)
+	l.lSAnd.UpdatePin(2, 2, NewInverter(dataPin))
+}
+
+// Frequency Divider
+
+type FrequencyDivider struct {
+	latch *EdgeTriggeredDTypeLatch
+	Q     *NORGate
+}
+
+func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
+	freqDiv := &FrequencyDivider{}
+
+	freqDiv.latch = NewEdgeTriggeredDTypeLatch(oscillator, nil)
+	freqDiv.latch.UpdateDataPin(freqDiv.latch.QBar)
+
+	// refer to the inner-right-flipflop's outputs for easier external access
+	freqDiv.Q = freqDiv.latch.Q
+
+	return freqDiv
 }

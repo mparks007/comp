@@ -2,7 +2,7 @@ package circuit
 
 // Reset-Set Flip-Flop
 
-// r l   q  !q
+// r s   q  !q
 // 0 1   1   0
 // 1 0   0   1
 // 0 0   q  !q  (hold)
@@ -29,9 +29,10 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 
 	return ff
 }
-
+/*
 func (f *RSFlipFlop) validateOutputRule(newState bool) {
 	if f.Q.isPowered == f.QBar.isPowered {
 		panic("A Flip-Flop cannot have equivalent power status at both Q and QBar")
 	}
 }
+*/

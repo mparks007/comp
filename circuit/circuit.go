@@ -1,10 +1,6 @@
 package circuit
 
-import (
-	"github.com/sirupsen/logrus"
-)
-
-var logger = logrus.New()
+//var logger = logrus.New()
 
 type pwrEmitter interface {
 	WireUp(func(bool))
@@ -19,8 +15,12 @@ type pwrSource struct {
 // WireUp allows s circuit to subscribe to the power source via callback
 func (p *pwrSource) WireUp(callback func(bool)) {
 	p.wiredCallbacks = append(p.wiredCallbacks, callback)
-
-	logger.Debug("WireUp")
+	/*
+		log.WithFields(log.Fields{
+			"Callback_Address": callback,
+			"Source_Address":   &p,
+		}).Info("WireUp")
+	*/
 	callback(p.isPowered)
 }
 
@@ -30,6 +30,11 @@ func (p *pwrSource) Transmit(newState bool) {
 		p.isPowered = newState
 
 		for _, subscriber := range p.wiredCallbacks {
+			/*
+				log.WithFields(log.Fields{
+					"Callback_Address": subscriber,
+				}).Info("Transmit")
+			*/
 			subscriber(p.isPowered)
 		}
 	}
