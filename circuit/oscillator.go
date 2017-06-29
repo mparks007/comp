@@ -1,6 +1,9 @@
 package circuit
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Oscillator struct {
 	stopCh chan bool
@@ -23,8 +26,10 @@ func (o *Oscillator) Oscillate(hertz int) {
 		for {
 			select {
 			case <-tick.C:
+				fmt.Println("case <-tick.C")
 				o.Transmit(!o.GetIsPowered())
 			case <-o.stopCh:
+				fmt.Println("case <-stopCh")
 				tick.Stop()
 				break
 			}
@@ -33,5 +38,6 @@ func (o *Oscillator) Oscillate(hertz int) {
 }
 
 func (o *Oscillator) Stop() {
+	fmt.Println("o.stopCh <- true")
 	o.stopCh <- true
 }

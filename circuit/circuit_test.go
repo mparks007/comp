@@ -1182,10 +1182,10 @@ func TestOscillator(t *testing.T) {
 		oscHertz    int
 		wantResults string
 	}{
-		{false, 1, "0101"},
+		{false, 1, "010"},
 		{true, 1, "101"},
-		{false, 5, "010101010101"},
-		{true, 5, "101010101010"},
+		{false, 5, "01010101010"},
+		{true, 5, "10101010101"},
 	}
 
 	for _, tc := range testCases {
@@ -1209,7 +1209,7 @@ func TestOscillator(t *testing.T) {
 
 			osc.Stop()
 
-			if !strings.HasPrefix(tc.wantResults, gotResults) {
+			if !strings.HasPrefix(gotResults, tc.wantResults) {
 				t.Errorf("Wanted results %s but got %s.", tc.wantResults, gotResults)
 			}
 		})
@@ -2062,14 +2062,14 @@ func TestFrequencyDivider(t *testing.T) {
 		}
 	})
 
-	osc.Oscillate(8)
+	osc.Oscillate(1)
 
 	//time.Sleep(time.Second * 2)
 
 	osc.Stop()
 
-	want := "XXX"
-	if !strings.HasPrefix(want, gotResults) {
+	want := "01010101"
+	if !strings.HasPrefix(gotResults, want) {
 		t.Errorf("Wanted results %s but got %s.", want, gotResults)
 	}
 }

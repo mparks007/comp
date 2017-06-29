@@ -60,7 +60,7 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 // 0  1   0    0  1
 // 1  1   0    1  0
 // X  0   0    q  !q  (data doesn't matter, no clock high to trigger a store-it action)
-// X  X   1    0  1   (forces reset so data and clock do not matter)
+// X  X   1    0  1   (clear forces reset so data and clock do not matter)
 // 1  1   1    X  X   (invalid)
 
 type LevelTriggeredDTypeLatchWithClear struct {
