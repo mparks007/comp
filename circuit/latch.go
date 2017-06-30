@@ -1,5 +1,7 @@
 package circuit
 
+import "fmt"
+
 // Level-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
 // d clk    q  !q
@@ -130,12 +132,12 @@ func (l *NBitLatchWithClear) UpdateDataPins(dataPins []pwrEmitter) {
 // X  0    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
 
 type EdgeTriggeredDTypeLatch struct {
-	lRS   *RSFlipFlop
 	lRAnd *ANDGate
 	lSAnd *ANDGate
-	rRS   *RSFlipFlop
+	lRS   *RSFlipFlop
 	rRAnd *ANDGate
 	rSAnd *ANDGate
+	rRS   *RSFlipFlop
 	Q     *NORGate
 	QBar  *NORGate
 }
@@ -143,13 +145,16 @@ type EdgeTriggeredDTypeLatch struct {
 func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
+	latch.rRAnd = NewANDGate(clkInPin, nil)
+	latch.rSAnd = NewANDGate(clkInPin, nil)
+	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
+
 	latch.lRAnd = NewANDGate(NewInverter(clkInPin), dataInPin)
 	latch.lSAnd = NewANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
 	latch.lRS = NewRSFlipFLop(latch.lRAnd, latch.lSAnd)
 
-	latch.rRAnd = NewANDGate(clkInPin, latch.lRS.Q)
-	latch.rSAnd = NewANDGate(clkInPin, latch.lRS.QBar)
-	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
+	latch.rRAnd.UpdatePin(2, 2, latch.lRS.Q)
+	latch.rSAnd.UpdatePin(2, 2, latch.lRS.QBar)
 
 	// refer to the inner-right-flipflop's outputs for easier external access
 	latch.Q = latch.rRS.Q
@@ -161,6 +166,21 @@ func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDT
 func (l *EdgeTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
 	l.lRAnd.UpdatePin(2, 2, dataPin)
 	l.lSAnd.UpdatePin(2, 2, NewInverter(dataPin))
+}
+
+func (l *EdgeTriggeredDTypeLatch) StateDump() string {
+
+	state := fmt.Sprintf("Left_R_AND:    %t\n", l.lRAnd.GetIsPowered())
+	state += fmt.Sprintf("Left_S_AND:    %t\n", l.lSAnd.GetIsPowered())
+	state += fmt.Sprintf("Left_RS_Q:     %t\n", l.lRS.Q.GetIsPowered())
+	state += fmt.Sprintf("Left_RS_QBar:  %t\n", l.lRS.QBar.GetIsPowered())
+
+	state += fmt.Sprintf("Right_R_AND:   %t\n", l.rRAnd.GetIsPowered())
+	state += fmt.Sprintf("Right_S_AND:   %t\n", l.rSAnd.GetIsPowered())
+	state += fmt.Sprintf("Right_RS_Q:    %t\n", l.rRS.Q.GetIsPowered())
+	state += fmt.Sprintf("Right_RS_QBar: %t\n", l.rRS.QBar.GetIsPowered())
+
+	return state
 }
 
 // Frequency Divider

@@ -1947,12 +1947,13 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
+		{false, true, false, true},  // clkIn staying false should cause no change
 		{false, false, false, true}, // clkIn staying false should cause no change
 		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
 		{true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
 		{true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
-		{false, false, false, true}, // clkIn going to false, with no dataIn, causes Q off (QBar on)
-		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
+		{false, false, true, false}, // clkIn going to false should cause no change
+		{false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
 		{true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
 		{true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
 	}
@@ -1963,8 +1964,8 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 
 		if i == 0 {
 			// trues since starting with charged batteries when Newing thew Latch initially
-			priorClkIn = true
-			priorDataIn = true
+			priorClkIn = false
+			priorDataIn = false
 		} else {
 			priorClkIn = testCases[i-1].clkIn
 			priorDataIn = testCases[i-1].dataIn
@@ -1980,6 +1981,7 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	dataBattery.Discharge()
 
 	latch := NewEdgeTriggeredDTypeLatch(clkBattery, dataBattery)
+	fmt.Printf("[After New]\nclkIn:  %t\ndataIn: %t\n\n%s\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered(), latch.StateDump())
 
 	want := false
 	if gotQ := latch.Q.GetIsPowered(); gotQ != want {
@@ -1994,16 +1996,19 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
+			fmt.Println(testName(i) + "\n")
 			if tc.dataIn {
 				dataBattery.Charge()
 			} else {
 				dataBattery.Discharge()
 			}
+			fmt.Printf("[After Data \"Change\"]\nclkIn:  %t\ndataIn: %t\n\n%s\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered(), latch.StateDump())
 			if tc.clkIn {
 				clkBattery.Charge()
 			} else {
 				clkBattery.Discharge()
 			}
+			fmt.Printf("[After Clock \"Change\"]\nclkIn:  %t\ndataIn: %t\n\n%s\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered(), latch.StateDump())
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
