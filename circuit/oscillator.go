@@ -2,11 +2,14 @@ package circuit
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
 type Oscillator struct {
 	stopCh chan bool
+	mu     sync.Mutex
+	active bool
 	pwrSource
 }
 
@@ -23,6 +26,9 @@ func (o *Oscillator) Oscillate(hertz int) {
 
 	go func() {
 		tick := time.NewTicker(time.Second / time.Duration(hertz))
+		o.mu.Lock()
+		o.active = true
+		o.mu.Unlock()
 		for {
 			select {
 			case <-tick.C:
@@ -31,6 +37,9 @@ func (o *Oscillator) Oscillate(hertz int) {
 			case <-o.stopCh:
 				fmt.Println("case <-stopCh")
 				tick.Stop()
+				o.mu.Lock()
+				o.active = false
+				o.mu.Unlock()
 				break
 			}
 		}
@@ -38,6 +47,12 @@ func (o *Oscillator) Oscillate(hertz int) {
 }
 
 func (o *Oscillator) Stop() {
-	fmt.Println("o.stopCh <- true")
-	o.stopCh <- true
+	o.mu.Lock()
+	active := o.active
+	o.mu.Unlock()
+
+	if active {
+		fmt.Println("o.stopCh <- true")
+		o.stopCh <- true
+	}
 }

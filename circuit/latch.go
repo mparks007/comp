@@ -145,6 +145,7 @@ type EdgeTriggeredDTypeLatch struct {
 func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
+	// for this to work, the clock wiring up has to be done against the right-side flipflop aspects FIRST
 	latch.rRAnd = NewANDGate(clkInPin, nil)
 	latch.rSAnd = NewANDGate(clkInPin, nil)
 	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
@@ -188,6 +189,7 @@ func (l *EdgeTriggeredDTypeLatch) StateDump() string {
 type FrequencyDivider struct {
 	latch *EdgeTriggeredDTypeLatch
 	Q     *NORGate
+	QBar     *NORGate
 }
 
 func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
@@ -198,6 +200,7 @@ func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
 
 	// refer to the inner-right-flipflop's outputs for easier external access
 	freqDiv.Q = freqDiv.latch.Q
+	freqDiv.QBar = freqDiv.latch.QBar
 
 	return freqDiv
 }

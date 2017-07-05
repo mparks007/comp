@@ -1981,7 +1981,6 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	dataBattery.Discharge()
 
 	latch := NewEdgeTriggeredDTypeLatch(clkBattery, dataBattery)
-	fmt.Printf("[After New]\nclkIn:  %t\ndataIn: %t\n\n%s\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered(), latch.StateDump())
 
 	want := false
 	if gotQ := latch.Q.GetIsPowered(); gotQ != want {
@@ -1996,19 +1995,16 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
-			fmt.Println(testName(i) + "\n")
 			if tc.dataIn {
 				dataBattery.Charge()
 			} else {
 				dataBattery.Discharge()
 			}
-			fmt.Printf("[After Data \"Change\"]\nclkIn:  %t\ndataIn: %t\n\n%s\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered(), latch.StateDump())
 			if tc.clkIn {
 				clkBattery.Charge()
 			} else {
 				clkBattery.Discharge()
 			}
-			fmt.Printf("[After Clock \"Change\"]\nclkIn:  %t\ndataIn: %t\n\n%s\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered(), latch.StateDump())
 
 			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
@@ -2054,27 +2050,82 @@ func TestEdgeTriggeredDTypeLatch_UpdatePins(t *testing.T) {
 }
 
 func TestFrequencyDivider(t *testing.T) {
-	var gotResults string
+	var gotQResults, gotQBarResults, gotOscResults string
 
 	osc := NewOscillator(false)
-	freqDiv := NewFrequencyDivider(osc)
+	//freqDiv := NewFrequencyDivider(osc)
+
+	sw := NewSwitch(false)
+	freqDiv := NewFrequencyDivider(sw)
+
+	osc.WireUp(func(state bool) {
+		if state {
+			gotOscResults += "1"
+		} else {
+			gotOscResults += "0"
+		}
+		fmt.Println("gotOscResults: " + gotOscResults)
+	})
 
 	freqDiv.Q.WireUp(func(state bool) {
 		if state {
-			gotResults += "1"
+			gotQResults += "1"
 		} else {
-			gotResults += "0"
+			gotQResults += "0"
 		}
+		fmt.Println("gotQResults: " + gotQResults)
 	})
 
-	osc.Oscillate(1)
+	freqDiv.QBar.WireUp(func(state bool) {
+		if state {
+			gotQBarResults += "1"
+		} else {
+			gotQBarResults += "0"
+		}
+		fmt.Println("gotQBarResults: " + gotQBarResults)
+	})
 
-	//time.Sleep(time.Second * 2)
+	fmt.Println("==Inital Wireup Start==")
+	freqDiv.latch.lRAnd.WireUp(func(state bool) {
+		fmt.Printf("lRAnd: %t\n", state)
+	})
+	freqDiv.latch.lSAnd.WireUp(func(state bool) {
+		fmt.Printf("lSAnd: %t\n", state)
+	})
+	freqDiv.latch.lRS.Q.WireUp(func(state bool) {
+		fmt.Printf("lRS.Q: %t\n", state)
+	})
+	freqDiv.latch.lRS.QBar.WireUp(func(state bool) {
+		fmt.Printf("lRS.QBar: %t\n", state)
+	})
 
-	osc.Stop()
+	freqDiv.latch.rRAnd.WireUp(func(state bool) {
+		fmt.Printf("rRAnd: %t\n", state)
+	})
+	freqDiv.latch.rSAnd.WireUp(func(state bool) {
+		fmt.Printf("rSAnd: %t\n", state)
+	})
+	freqDiv.latch.rRS.Q.WireUp(func(state bool) {
+		fmt.Printf("rRS.Q: %t\n", state)
+	})
+	freqDiv.latch.rRS.QBar.WireUp(func(state bool) {
+		fmt.Printf("rRS.QBar: %t\n", state)
+	})
+	fmt.Println("==Inital Wireup End==")
+
+	//osc.Oscillate(50)
+
+	time.Sleep(time.Second * 1)
+
+	//osc.Stop()
+
+	fmt.Println("==Set Clock True==")
+	sw.Set(true)
+	fmt.Println("==Set Clock False==")
+	//sw.Set(false)
 
 	want := "01010101"
-	if !strings.HasPrefix(gotResults, want) {
-		//	t.Errorf("Wanted results %s but got %s.", want, gotResults)
+	if !strings.HasPrefix(gotQBarResults, want) {
+		//t.Errorf("Wanted results %s but got %s.", want, gotQBarResults)
 	}
 }
