@@ -1947,7 +1947,7 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-		{false, true, false, true},  // clkIn staying false should cause no change
+		{false, true, false, true}, // clkIn staying false should cause no change
 		{false, false, false, true}, // clkIn staying false should cause no change
 		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
 		{true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
@@ -1982,6 +1982,54 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 
 	latch := NewEdgeTriggeredDTypeLatch(clkBattery, dataBattery)
 
+	fmt.Printf("==After Contruction==\nclk: %t\ndata: %t\n", clkBattery.GetIsPowered(), dataBattery.GetIsPowered())
+	var gotQResults, gotQBarResults string
+	latch.Q.WireUp(func(state bool) {
+		if state {
+			gotQResults += "1"
+		} else {
+			gotQResults += "0"
+		}
+		fmt.Println("gotQResults: " + gotQResults)
+	})
+
+	latch.QBar.WireUp(func(state bool) {
+		if state {
+			gotQBarResults += "1"
+		} else {
+			gotQBarResults += "0"
+		}
+		fmt.Println("gotQBarResults: " + gotQBarResults)
+	})
+
+	fmt.Println("==Inital Wireup Start==")
+	latch.lRAnd.WireUp(func(state bool) {
+		fmt.Printf("lRAnd: %t\n", state)
+	})
+	latch.lSAnd.WireUp(func(state bool) {
+		fmt.Printf("lSAnd: %t\n", state)
+	})
+	latch.lRS.Q.WireUp(func(state bool) {
+		fmt.Printf("lRS.Q: %t\n", state)
+	})
+	latch.lRS.QBar.WireUp(func(state bool) {
+		fmt.Printf("lRS.QBar: %t\n", state)
+	})
+
+	latch.rRAnd.WireUp(func(state bool) {
+		fmt.Printf("rRAnd: %t\n", state)
+	})
+	latch.rSAnd.WireUp(func(state bool) {
+		fmt.Printf("rSAnd: %t\n", state)
+	})
+	latch.rRS.Q.WireUp(func(state bool) {
+		fmt.Printf("rRS.Q: %t\n", state)
+	})
+	latch.rRS.QBar.WireUp(func(state bool) {
+		fmt.Printf("rRS.QBar: %t\n", state)
+	})
+	fmt.Println("==Inital Wireup End==")
+
 	want := false
 	if gotQ := latch.Q.GetIsPowered(); gotQ != want {
 		t.Errorf("On contruction, wanted power of %t at Q, but got %t.", want, gotQ)
@@ -1995,6 +2043,7 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
 
+			fmt.Println(testName(i))
 			if tc.dataIn {
 				dataBattery.Charge()
 			} else {
