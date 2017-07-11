@@ -150,8 +150,8 @@ func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDT
 	latch.rSAnd = NewANDGate(clkInPin, nil)
 	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
 
-	latch.lRAnd = NewANDGate(NewInverter(clkInPin), dataInPin)
-	latch.lSAnd = NewANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
+	latch.lRAnd = NewSyncANDGate(NewInverter(clkInPin), dataInPin)
+	latch.lSAnd = NewSyncANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
 	latch.lRS = NewRSFlipFLop(latch.lRAnd, latch.lSAnd)
 
 	latch.rRAnd.UpdatePin(2, 2, latch.lRS.Q)
@@ -189,7 +189,7 @@ func (l *EdgeTriggeredDTypeLatch) StateDump() string {
 type FrequencyDivider struct {
 	latch *EdgeTriggeredDTypeLatch
 	Q     *NORGate
-	QBar     *NORGate
+	QBar  *NORGate
 }
 
 func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {

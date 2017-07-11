@@ -1947,7 +1947,7 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-		{false, true, false, true}, // clkIn staying false should cause no change
+		{false, true, false, true},  // clkIn staying false should cause no change
 		{false, false, false, true}, // clkIn staying false should cause no change
 		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
 		{true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
@@ -2102,10 +2102,10 @@ func TestFrequencyDivider(t *testing.T) {
 	var gotQResults, gotQBarResults, gotOscResults string
 
 	osc := NewOscillator(false)
-	//freqDiv := NewFrequencyDivider(osc)
+	freqDiv := NewFrequencyDivider(osc)
 
-	sw := NewSwitch(false)
-	freqDiv := NewFrequencyDivider(sw)
+	//sw := NewSwitch(false)
+	//freqDiv := NewFrequencyDivider(sw)
 
 	osc.WireUp(func(state bool) {
 		if state {
@@ -2162,19 +2162,33 @@ func TestFrequencyDivider(t *testing.T) {
 	})
 	fmt.Println("==Inital Wireup End==")
 
-	//osc.Oscillate(50)
+	osc.Oscillate(5)
 
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 2)
 
-	//osc.Stop()
-
-	fmt.Println("==Set Clock True==")
-	sw.Set(true)
-	fmt.Println("==Set Clock False==")
-	//sw.Set(false)
-
-	want := "01010101"
+	osc.Stop()
+	/*
+		fmt.Println("==Set Clock True==")
+		sw.Set(true)
+		fmt.Println("==Set Clock False==")
+		sw.Set(false)
+		fmt.Println("==Set Clock True==")
+		sw.Set(true)
+		fmt.Println("==Set Clock True==")
+		sw.Set(true)
+		fmt.Println("==Set Clock True==")
+		sw.Set(true)
+		fmt.Println("==Set Clock False==")
+		sw.Set(false)
+		fmt.Println("==Set Clock False==")
+		sw.Set(false)
+		fmt.Println("==Set Clock False==")
+		sw.Set(false)
+		fmt.Println("==Set Clock True==")
+		sw.Set(true)
+	*/
+	want := "10101010"
 	if !strings.HasPrefix(gotQBarResults, want) {
-		//t.Errorf("Wanted results %s but got %s.", want, gotQBarResults)
+		t.Errorf("Wanted results %s but got %s.", want, gotQBarResults)
 	}
 }

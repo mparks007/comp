@@ -9,6 +9,7 @@ type Relay struct {
 	bInPowered bool
 	OpenOut    pwrSource
 	ClosedOut  pwrSource
+	ready bool
 }
 
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
@@ -37,6 +38,7 @@ func (r *Relay) UpdatePin(pinNum int, pin pwrEmitter) {
 }
 
 func (r *Relay) aInPowerUpdate(newState bool) {
+	r.ready = true
 	if r.aInPowered != newState {
 		r.aInPowered = newState
 		r.transmit()
@@ -44,6 +46,7 @@ func (r *Relay) aInPowerUpdate(newState bool) {
 }
 
 func (r *Relay) bInPowerUpdate(newState bool) {
+	r.ready = true
 	if r.bInPowered != newState {
 		r.bInPowered = newState
 		r.transmit()

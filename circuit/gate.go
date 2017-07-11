@@ -14,20 +14,20 @@ type ANDGate struct {
 }
 
 func NewANDGate(pins ...pwrEmitter) *ANDGate {
-	g := &ANDGate{}
+	gate := &ANDGate{}
 
 	for i, pin := range pins {
 		if i == 0 {
-			g.relays = append(g.relays, NewRelay(NewBattery(), pin))
+			gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
 		} else {
-			g.relays = append(g.relays, NewRelay(&g.relays[i-1].ClosedOut, pin))
+			gate.relays = append(gate.relays, NewRelay(&gate.relays[i-1].ClosedOut, pin))
 		}
 	}
 
 	// the last relay in the chain is the final answer for an AND
-	g.relays[len(pins)-1].ClosedOut.WireUp(g.Transmit)
+	gate.relays[len(pins)-1].ClosedOut.WireUp(gate.Transmit)
 
-	return g
+	return gate
 }
 
 func (g *ANDGate) UpdatePin(andPinNum, relayPinNum int, pin pwrEmitter) {
@@ -36,6 +36,42 @@ func (g *ANDGate) UpdatePin(andPinNum, relayPinNum int, pin pwrEmitter) {
 	}
 
 	g.relays[andPinNum-1].UpdatePin(relayPinNum, pin)
+}
+
+func NewSyncANDGate(pins ...pwrEmitter) *ANDGate {
+	gate := &ANDGate{}
+
+	for i, pin := range pins {
+		if i == 0 {
+			gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
+		} else {
+			gate.relays = append(gate.relays, NewRelay(&gate.relays[i-1].ClosedOut, pin))
+		}
+
+		// every relay needs to be a part of the final answer on a sync'd ANDGate
+		gate.relays[i].ClosedOut.WireUp(gate.powerUpdate)
+	}
+
+	return gate
+}
+
+func (g *ANDGate) powerUpdate(newState bool) {
+
+	allReady := true
+
+	for _, rel := range g.relays {
+		if !rel.ready {
+			allReady = false
+			break
+		}
+	}
+
+	if allReady {
+		for _, rel := range g.relays {
+			rel.ready = false
+		}
+		g.Transmit(g.relays[len(g.relays)-1].aInPowered && g.relays[len(g.relays)-1].bInPowered)
+	}
 }
 
 // OR
