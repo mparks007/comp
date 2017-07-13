@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 
+	"strings"
+
 	"github.concur.com/mparks/adder/circuit"
 )
 
@@ -42,7 +44,26 @@ func executeAdder() {
 		if addr.CarryOutAsBool() {
 			carry = "1"
 		}
-		fmt.Printf("%18s\n+%17s\n=%1s%16s\n\n", *bitString1, *bitString2, carry, addr.AsAnswerString())
+		fmt.Printf("  %s\n+ %s\n=%1s%s\n\n", *bitString1, *bitString2, carry, addr.AsAnswerString())
+	case "sub":
+		switches1, err := circuit.NewNSwitchBank(*bitString1)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+		switches2, err := circuit.NewNSwitchBank(*bitString2)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+
+		subtr, err := circuit.NewNBitSubtractor(switches1.AsPwrEmitters(), switches2.AsPwrEmitters())
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+
+		fmt.Printf("  %s\n- %s\n= %s\n\n", *bitString1, *bitString2, subtr.AsAnswerString())
 	case "comp":
 		switches1, err := circuit.NewNSwitchBank(*bitString1)
 		if err != nil {
@@ -53,5 +74,15 @@ func executeAdder() {
 		c := circuit.NewOnesComplementer(switches1.AsPwrEmitters(), circuit.NewBattery())
 		fmt.Println("   Input String: " + *bitString1)
 		fmt.Println("Ones Complement: " + c.AsComplementString())
+
+		switches, _ := circuit.NewNSwitchBank(strings.Repeat("0", len(c.Complements)-1) + "1")
+		twosC, err := circuit.NewNBitAdder(c.Complements, switches.AsPwrEmitters(), nil)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		} else {
+			fmt.Println("Twos Complement: " + twosC.AsAnswerString())
+		}
+
 	}
 }

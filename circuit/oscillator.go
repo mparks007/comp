@@ -32,10 +32,12 @@ func (o *Oscillator) Oscillate(hertz int) {
 		for {
 			select {
 			case <-tick.C:
-				fmt.Println("case <-tick.C")
+				if !o.GetIsPowered() {
+					fmt.Println("case <-tick.C ^")
+				}
 				o.Transmit(!o.GetIsPowered())
 			case <-o.stopCh:
-				fmt.Println("case <-stopCh")
+				//fmt.Println("case <-stopCh")
 				tick.Stop()
 				o.mu.Lock()
 				o.active = false
@@ -52,7 +54,7 @@ func (o *Oscillator) Stop() {
 	o.mu.Unlock()
 
 	if active {
-		fmt.Println("o.stopCh <- true")
+		//fmt.Println("o.stopCh <- true")
 		o.stopCh <- true
 	}
 }

@@ -38,7 +38,7 @@ func (g *ANDGate) UpdatePin(andPinNum, relayPinNum int, pin pwrEmitter) {
 	g.relays[andPinNum-1].UpdatePin(relayPinNum, pin)
 }
 
-func NewSyncANDGate(pins ...pwrEmitter) *ANDGate {
+func NewSynchronizedANDGate(pins ...pwrEmitter) *ANDGate {
 	gate := &ANDGate{}
 
 	for i, pin := range pins {
@@ -57,19 +57,23 @@ func NewSyncANDGate(pins ...pwrEmitter) *ANDGate {
 
 func (g *ANDGate) powerUpdate(newState bool) {
 
-	allReady := true
+	allRelaysUpdated := true
 
+	// check see if all relays have had their power state updated
 	for _, rel := range g.relays {
-		if !rel.ready {
-			allReady = false
+		if !rel.updated {
+			allRelaysUpdated = false
 			break
 		}
 	}
 
-	if allReady {
+	if allRelaysUpdated {
+		// reset each relay's updated state since we got our answer and are handling it
 		for _, rel := range g.relays {
-			rel.ready = false
+			rel.updated = false
 		}
+
+		// as an AND, transmit if the LAST relay in the chain has power at both A and B in
 		g.Transmit(g.relays[len(g.relays)-1].aInPowered && g.relays[len(g.relays)-1].bInPowered)
 	}
 }

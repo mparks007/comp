@@ -150,8 +150,8 @@ func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDT
 	latch.rSAnd = NewANDGate(clkInPin, nil)
 	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
 
-	latch.lRAnd = NewSyncANDGate(NewInverter(clkInPin), dataInPin)
-	latch.lSAnd = NewSyncANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
+	latch.lRAnd = NewANDGate(NewInverter(clkInPin), dataInPin)
+	latch.lSAnd = NewANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
 	latch.lRS = NewRSFlipFLop(latch.lRAnd, latch.lSAnd)
 
 	latch.rRAnd.UpdatePin(2, 2, latch.lRS.Q)
@@ -169,6 +169,28 @@ func (l *EdgeTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
 	l.lSAnd.UpdatePin(2, 2, NewInverter(dataPin))
 }
 
+func NewSynchronizedEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
+	latch := &EdgeTriggeredDTypeLatch{}
+
+	// for this to work, the clock wiring up has to be done against the right-side flipflop aspects FIRST
+	latch.rRAnd = NewANDGate(clkInPin, nil)
+	latch.rSAnd = NewANDGate(clkInPin, nil)
+	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
+
+	latch.lRAnd = NewSynchronizedANDGate(NewInverter(clkInPin), dataInPin)
+	latch.lSAnd = NewSynchronizedANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
+	latch.lRS = NewRSFlipFLop(latch.lRAnd, latch.lSAnd)
+
+	latch.rRAnd.UpdatePin(2, 2, latch.lRS.Q)
+	latch.rSAnd.UpdatePin(2, 2, latch.lRS.QBar)
+
+	// refer to the inner-right-flipflop's outputs for easier external access
+	latch.Q = latch.rRS.Q
+	latch.QBar = latch.rRS.QBar
+
+	return latch
+}
+
 func (l *EdgeTriggeredDTypeLatch) StateDump() string {
 
 	state := fmt.Sprintf("Left_R_AND:    %t\n", l.lRAnd.GetIsPowered())
@@ -183,7 +205,6 @@ func (l *EdgeTriggeredDTypeLatch) StateDump() string {
 
 	return state
 }
-
 // Frequency Divider
 
 type FrequencyDivider struct {
@@ -195,7 +216,7 @@ type FrequencyDivider struct {
 func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
 	freqDiv := &FrequencyDivider{}
 
-	freqDiv.latch = NewEdgeTriggeredDTypeLatch(oscillator, nil)
+	freqDiv.latch = NewSynchronizedEdgeTriggeredDTypeLatch(oscillator, nil)
 	freqDiv.latch.UpdateDataPin(freqDiv.latch.QBar)
 
 	// refer to the inner-right-flipflop's outputs for easier external access
@@ -203,4 +224,48 @@ func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
 	freqDiv.QBar = freqDiv.latch.QBar
 
 	return freqDiv
+}
+
+type NBitRippleCounter struct {
+	latches []*EdgeTriggeredDTypeLatch
+	Qs      []*NORGate
+}
+
+func NewNBitRippleCounter(oscillator pwrEmitter, size int) *NBitRippleCounter {
+	counter := &NBitRippleCounter{}
+
+	for i := size - 1; i >= 0; i-- {
+		var latch *EdgeTriggeredDTypeLatch
+
+		if i == size-1 {
+			latch = NewSynchronizedEdgeTriggeredDTypeLatch(oscillator, nil)
+			latch.UpdateDataPin(latch.QBar)
+		} else {
+			latch = NewSynchronizedEdgeTriggeredDTypeLatch(counter.latches[0].QBar, nil)
+			latch.UpdateDataPin(latch.QBar)
+		}
+
+		// prepend since going in reverse order
+		counter.latches = append([]*EdgeTriggeredDTypeLatch{latch}, counter.latches...)
+
+		// make Qs refer to each for easier external access (pre-pending here too)
+		counter.Qs = append([]*NORGate{latch.Q}, counter.Qs...)
+	}
+
+	return counter
+}
+
+func (c *NBitRippleCounter) AsAnswerString() string {
+	answer := ""
+
+	for _, q := range c.Qs {
+
+		if q.GetIsPowered() {
+			answer += "1"
+		} else {
+			answer += "0"
+		}
+	}
+
+	return answer
 }
