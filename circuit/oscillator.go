@@ -1,7 +1,7 @@
 package circuit
 
 import (
-	"fmt"
+	//"fmt"
 	"sync"
 	"time"
 )
@@ -33,7 +33,9 @@ func (o *Oscillator) Oscillate(hertz int) {
 			select {
 			case <-tick.C:
 				if !o.GetIsPowered() {
-					fmt.Println("case <-tick.C ^")
+					//fmt.Println("\ncase <-tick.C ^")
+				} else {
+					//fmt.Println("\ncase <-tick.C v")
 				}
 				o.Transmit(!o.GetIsPowered())
 			case <-o.stopCh:

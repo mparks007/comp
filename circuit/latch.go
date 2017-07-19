@@ -205,6 +205,7 @@ func (l *EdgeTriggeredDTypeLatch) StateDump() string {
 
 	return state
 }
+
 // Frequency Divider
 
 type FrequencyDivider struct {
@@ -227,29 +228,27 @@ func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
 }
 
 type NBitRippleCounter struct {
-	latches []*EdgeTriggeredDTypeLatch
-	Qs      []*NORGate
+	freqDivs []*FrequencyDivider
+	Qs       []*NORGate
 }
 
 func NewNBitRippleCounter(oscillator pwrEmitter, size int) *NBitRippleCounter {
 	counter := &NBitRippleCounter{}
 
 	for i := size - 1; i >= 0; i-- {
-		var latch *EdgeTriggeredDTypeLatch
+		var freqDiv *FrequencyDivider
 
 		if i == size-1 {
-			latch = NewSynchronizedEdgeTriggeredDTypeLatch(oscillator, nil)
-			latch.UpdateDataPin(latch.QBar)
+			freqDiv = NewFrequencyDivider(oscillator)
 		} else {
-			latch = NewSynchronizedEdgeTriggeredDTypeLatch(counter.latches[0].QBar, nil)
-			latch.UpdateDataPin(latch.QBar)
+			freqDiv = NewFrequencyDivider(counter.freqDivs[0].QBar)
 		}
 
 		// prepend since going in reverse order
-		counter.latches = append([]*EdgeTriggeredDTypeLatch{latch}, counter.latches...)
+		counter.freqDivs = append([]*FrequencyDivider{freqDiv}, counter.freqDivs...)
 
 		// make Qs refer to each for easier external access (pre-pending here too)
-		counter.Qs = append([]*NORGate{latch.Q}, counter.Qs...)
+		counter.Qs = append([]*NORGate{freqDiv.Q}, counter.Qs...)
 	}
 
 	return counter

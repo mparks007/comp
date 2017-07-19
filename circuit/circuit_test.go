@@ -2115,6 +2115,26 @@ func TestFrequencyDivider(t *testing.T) {
 	}
 }
 
+func TestFrequencyDivider2(t *testing.T) {
+
+	sw1 := NewSwitch(false)
+	freqDiv1 := NewFrequencyDivider(sw1)
+	freqDiv2 := NewFrequencyDivider(freqDiv1.QBar)
+
+	freqDiv1.Q.WireUp(func(state bool) {
+		fmt.Printf("freqDiv1.Q: %v\n", state)
+	})
+	freqDiv1.QBar.WireUp(func(state bool) {
+		fmt.Printf("freqDiv1.QBar: %v\n", state)
+	})
+	freqDiv2.Q.WireUp(func(state bool) {
+		fmt.Printf("freqDiv2.Q: %v\n", state)
+	})
+	freqDiv2.QBar.WireUp(func(state bool) {
+		fmt.Printf("freqDiv2.QBar: %v\n", state)
+	})
+}
+
 func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 	//	var gotQBarResults string
 
@@ -2123,45 +2143,50 @@ func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 	//sw := NewSwitch(false)
 	//counter := NewNBitRippleCounter(sw, 2)
 
-	fmt.Println("Wire up")
-	counter.Qs[len(counter.Qs)-1].WireUp(func(bool) {
-		fmt.Println(counter.AsAnswerString())
-	})
-/*
-	fmt.Println("First latch")
-	fmt.Println(counter.latches[len(counter.latches)-1].StateDump())
-	counter.latches[len(counter.latches)-1].Q.WireUp(func(state bool) {
-		fmt.Printf("First latch Q: %v\n", state)
-	})
-	counter.latches[len(counter.latches)-1].QBar.WireUp(func(state bool) {
-		fmt.Printf("First latch QBar: %v\n", state)
-	})
+	//fmt.Println("Wire up")
+	//counter.Qs[len(counter.Qs)-1].WireUp(func(bool) {
+	//	fmt.Println(counter.AsAnswerString())
+	//})
+	/*
+		fmt.Println("First latch")
+		fmt.Println(counter.latches[len(counter.latches)-1].StateDump())
+		counter.latches[len(counter.latches)-1].Q.WireUp(func(state bool) {
+			fmt.Printf("First latch Q: %v\n", state)
+		})
+		counter.latches[len(counter.latches)-1].QBar.WireUp(func(state bool) {
+			fmt.Printf("First latch QBar: %v\n", state)
+		})
 
-	fmt.Println("Second latch")
-	fmt.Println(counter.latches[0].StateDump())
-	counter.latches[0].Q.WireUp(func(state bool) {
-		fmt.Printf("Second latch Q: %v\n", state)
-	})
-	counter.latches[0].QBar.WireUp(func(state bool) {
-		fmt.Printf("Scond latch QBar: %v\n", state)
-	})
-*/
+		fmt.Println("Second latch")
+		fmt.Println(counter.latches[0].StateDump())
+		counter.latches[0].Q.WireUp(func(state bool) {
+			fmt.Printf("Second latch Q: %v\n", state)
+		})
+		counter.latches[0].QBar.WireUp(func(state bool) {
+			fmt.Printf("Scond latch QBar: %v\n", state)
+		})
+	*/
 	//fmt.Println("Oscillate")
 	osc.Oscillate(5)
+	osc.WireUp(func(state bool) {
+		if state {
+			fmt.Println(counter.AsAnswerString())
+		}
+	})
 
 	time.Sleep(time.Second * 2)
-/*
-	fmt.Println("Set Switch True")
-	sw.Set(true)
-	fmt.Println("Set Switch False")
-	sw.Set(false)
-	fmt.Println("Set Switch True")
-	sw.Set(true)
-	fmt.Println("Set Switch False")
-	sw.Set(false)
-	fmt.Println("Set Switch True")
-	sw.Set(true)
-*/
+	/*
+		fmt.Println("Set Switch True")
+		sw.Set(true)
+		fmt.Println("Set Switch False")
+		sw.Set(false)
+		fmt.Println("Set Switch True")
+		sw.Set(true)
+		fmt.Println("Set Switch False")
+		sw.Set(false)
+		fmt.Println("Set Switch True")
+		sw.Set(true)
+	*/
 	osc.Stop()
 
 	want := "00000110"
