@@ -191,9 +191,15 @@ func NewSynchronizedEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *Edg
 	return latch
 }
 
-func (l *EdgeTriggeredDTypeLatch) StateDump() string {
+func (l *EdgeTriggeredDTypeLatch) StateDump(label string) string {
 
-	state := fmt.Sprintf("Left_R_AND:    %t\n", l.lRAnd.GetIsPowered())
+	var state = ""
+
+	if len(label) > 0 {
+		state += fmt.Sprintf("** BEGIN %s DUMP **\n", label)
+	}
+
+	state += fmt.Sprintf("Left_R_AND:    %t\n", l.lRAnd.GetIsPowered())
 	state += fmt.Sprintf("Left_S_AND:    %t\n", l.lSAnd.GetIsPowered())
 	state += fmt.Sprintf("Left_RS_Q:     %t\n", l.lRS.Q.GetIsPowered())
 	state += fmt.Sprintf("Left_RS_QBar:  %t\n", l.lRS.QBar.GetIsPowered())
@@ -201,7 +207,11 @@ func (l *EdgeTriggeredDTypeLatch) StateDump() string {
 	state += fmt.Sprintf("Right_R_AND:   %t\n", l.rRAnd.GetIsPowered())
 	state += fmt.Sprintf("Right_S_AND:   %t\n", l.rSAnd.GetIsPowered())
 	state += fmt.Sprintf("Right_RS_Q:    %t\n", l.rRS.Q.GetIsPowered())
-	state += fmt.Sprintf("Right_RS_QBar: %t\n", l.rRS.QBar.GetIsPowered())
+	state += fmt.Sprintf("Right_RS_QBar: %t", l.rRS.QBar.GetIsPowered())
+
+	if len(label) > 0 {
+		state += fmt.Sprintf("\n** END %s DUMP **", label)
+	}
 
 	return state
 }

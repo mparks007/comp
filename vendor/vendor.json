@@ -3,6 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
+			"path": "appengine/cloudsql",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "i3UtE7/Cn57eX1hO5Z0CqY/Eeb4=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "3955978caca48c1658a4bb7a9c6a0f084e326af3",
+			"revisionTime": "2017-07-15T19:24:08Z"
+		},
+		{
 			"checksumSHA1": "/YsxkUA+LSSCvK4zVU7Oa3s0470=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "3d4380f53a34dcdc95f0c1db702615992b38d9a4",

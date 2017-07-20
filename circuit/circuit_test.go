@@ -2118,21 +2118,98 @@ func TestFrequencyDivider(t *testing.T) {
 func TestFrequencyDivider2(t *testing.T) {
 
 	sw1 := NewSwitch(false)
-	freqDiv1 := NewFrequencyDivider(sw1)
-	freqDiv2 := NewFrequencyDivider(freqDiv1.QBar)
+	freqDiv0 := NewFrequencyDivider(sw1)
+	freqDiv1 := NewFrequencyDivider(freqDiv0.QBar)
 
-	freqDiv1.Q.WireUp(func(state bool) {
-		fmt.Printf("freqDiv1.Q: %v\n", state)
+	var result0 = ""
+	var result1 = ""
+
+	if freqDiv1.Q.GetIsPowered() {
+		result1 = "1"
+	} else {
+		result1 = "0"
+	}
+	if freqDiv0.Q.GetIsPowered() {
+		result0 = "1"
+	} else {
+		result0 = "0"
+	}
+
+	fmt.Println("==Just Created==")
+	fmt.Println(freqDiv0.latch.StateDump("freqDiv0"))
+	fmt.Println(freqDiv1.latch.StateDump("freqDiv1"))
+	fmt.Println("\n==Ripple Value==\n" + result1 + result0 + "\n")
+
+	fmt.Println("==Wiring Up freqDiv0.Q==")
+	freqDiv0.Q.WireUp(func(state bool) {
+		if state {
+			result0 = "1"
+		} else {
+			result0 = "0"
+		}
+		fmt.Printf("freqDiv0.Q:    %v\n", state)
+		fmt.Println(freqDiv0.latch.StateDump("freqDiv0"))
 	})
+
+	fmt.Println("\n==Wiring Up freqDiv0.QBar==")
+	freqDiv0.QBar.WireUp(func(state bool) {
+		fmt.Printf("freqDiv0.QBar: %v\n", state)
+		fmt.Println(freqDiv0.latch.StateDump("freqDiv0"))
+	})
+
+	fmt.Println("\n==Wiring Up freqDiv1.Q==")
+	freqDiv1.Q.WireUp(func(state bool) {
+		if state {
+			result1 = "1"
+		} else {
+			result1 = "0"
+		}
+		fmt.Printf("freqDiv1.Q:    %v\n", state)
+		fmt.Println(freqDiv1.latch.StateDump("freqDiv1"))
+	})
+	fmt.Println("\n==Wiring Up freqDiv1.QBar==")
 	freqDiv1.QBar.WireUp(func(state bool) {
 		fmt.Printf("freqDiv1.QBar: %v\n", state)
+		fmt.Println(freqDiv1.latch.StateDump("freqDiv1"))
 	})
-	freqDiv2.Q.WireUp(func(state bool) {
-		fmt.Printf("freqDiv2.Q: %v\n", state)
-	})
-	freqDiv2.QBar.WireUp(func(state bool) {
-		fmt.Printf("freqDiv2.QBar: %v\n", state)
-	})
+
+	fmt.Println("\n==Ripple Value==\n" + result1 + result0 + "\n")
+
+	fmt.Println("==Clock On==")
+	sw1.Set(true)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+	fmt.Println("==Clock Off==")
+	sw1.Set(false)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+
+	fmt.Println("==Clock On==")
+	sw1.Set(true)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+	fmt.Println("==Clock Off==")
+	sw1.Set(false)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+
+	fmt.Println("==Clock On==")
+	sw1.Set(true)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+	fmt.Println("==Clock Off==")
+	sw1.Set(false)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+
+	fmt.Println("==Clock On==")
+	sw1.Set(true)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+	fmt.Println("==Clock Off==")
+	sw1.Set(false)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+
+	fmt.Println("==Clock On==")
+	sw1.Set(true)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+	fmt.Println("==Clock Off==")
+	sw1.Set(false)
+	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
+
 }
 
 func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
@@ -2140,6 +2217,7 @@ func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 
 	osc := NewOscillator(false)
 	counter := NewNBitRippleCounter(osc, 8)
+	fmt.Println(counter.AsAnswerString())
 	//sw := NewSwitch(false)
 	//counter := NewNBitRippleCounter(sw, 2)
 
@@ -2163,18 +2241,18 @@ func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 			fmt.Printf("Second latch Q: %v\n", state)
 		})
 		counter.latches[0].QBar.WireUp(func(state bool) {
-			fmt.Printf("Scond latch QBar: %v\n", state)
+			fmt.Printf("Second latch QBar: %v\n", state)
 		})
 	*/
 	//fmt.Println("Oscillate")
-	osc.Oscillate(5)
+	osc.Oscillate(3)
 	osc.WireUp(func(state bool) {
 		if state {
 			fmt.Println(counter.AsAnswerString())
 		}
 	})
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 8)
 	/*
 		fmt.Println("Set Switch True")
 		sw.Set(true)
