@@ -16,9 +16,9 @@ import (
 )
 
 var actionType = flag.String("action", "", "Type of action to take (e.g. battery/switch/relay/and/or/nand/nor/xor/invert/osc/select/halfadd/fulladd/add/3add/sub/comp/flipflop/levellatch/nbitlatch/edgelatch/freqdiv)")
-var aIn = flag.String("aIn", "0", "Power indicator at pin A (1 or 0)")
-var bIn = flag.String("bIn", "0", "Power indicator at pin B (1 or 0)")
-var cIn = flag.String("cIn", "0", "Power indicator at pin C (1 or 0)")
+var aIn = flag.String("aIn", "", "Power indicator at pin A (1 or 0)")
+var bIn = flag.String("bIn", "", "Power indicator at pin B (1 or 0)")
+var cIn = flag.String("cIn", "", "Power indicator at pin C (1 or 0)")
 var bitString1 = flag.String("bits1", "00000000", "First string of bits in an action (e.g. 11110000)")
 var bitString2 = flag.String("bits2", "00000000", "Second string of bits in an action that takes two inputs (e.g. 00001111)")
 
@@ -55,7 +55,7 @@ func execute() {
 
 		state, err := strconv.ParseBool(*aIn)
 		if err != nil {
-			fmt.Println("Invalid value for boolean power state: " + *aIn)
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
 			return
 		}
 
@@ -78,12 +78,12 @@ func execute() {
 
 		a, err := strconv.ParseBool(*aIn)
 		if err != nil {
-			fmt.Println("Invalid value for boolean power state: " + *aIn)
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
 			return
 		}
 		b, err := strconv.ParseBool(*bIn)
 		if err != nil {
-			fmt.Println("Invalid value for boolean power state: " + *bIn)
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
 			return
 		}
 
@@ -94,7 +94,72 @@ func execute() {
 		fmt.Printf("Open circuit power?: %v\n", relay.OpenOut.GetIsPowered())
 		fmt.Printf("Closed circuit power?: %v\n", relay.ClosedOut.GetIsPowered())
 
+	case "and":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+
+		var and *circuit.ANDGate = nil
+		if len(*cIn) > 0 {
+
+			c, err := strconv.ParseBool(*cIn)
+			if err != nil {
+				fmt.Println("Invalid value for boolean power state: (cIn)" + *cIn)
+				return
+			}
+			sw3 := circuit.NewSwitch(c)
+
+			and = circuit.NewANDGate(sw1, sw2, sw3)
+		} else {
+			and = circuit.NewANDGate(sw1, sw2)
+		}
+
+		fmt.Printf("AND Gate outputting power?: %v\n", and.GetIsPowered())
+
+	case "or":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+
+		var or *circuit.ORGate = nil
+		if len(*cIn) > 0 {
+
+			c, err := strconv.ParseBool(*cIn)
+			if err != nil {
+				fmt.Println("Invalid value for boolean power state: (cIn)" + *cIn)
+				return
+			}
+			sw3 := circuit.NewSwitch(c)
+
+			or = circuit.NewORGate(sw1, sw2, sw3)
+		} else {
+			or = circuit.NewORGate(sw1, sw2)
+		}
+
+		fmt.Printf("OR Gate outputting power?: %v\n", or.GetIsPowered())
+
 	case "add":
+
 		switches1, err := circuit.NewNSwitchBank(*bitString1)
 		if err != nil {
 			fmt.Println("Error:" + err.Error())
@@ -117,7 +182,9 @@ func execute() {
 			carry = "1"
 		}
 		fmt.Printf("  %s\n+ %s\n=%1s%s\n\n", *bitString1, *bitString2, carry, addr.AsAnswerString())
+
 	case "sub":
+
 		switches1, err := circuit.NewNSwitchBank(*bitString1)
 		if err != nil {
 			fmt.Println("Error:" + err.Error())
@@ -136,7 +203,9 @@ func execute() {
 		}
 
 		fmt.Printf("  %s\n- %s\n= %s\n\n", *bitString1, *bitString2, subtr.AsAnswerString())
+
 	case "comp":
+
 		switches1, err := circuit.NewNSwitchBank(*bitString1)
 		if err != nil {
 			fmt.Println("Error:" + err.Error())
