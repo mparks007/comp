@@ -133,7 +133,7 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	for i, pin := range pins {
 		gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
 
-		// every relay can trigger state in s chain of NANDs
+		// every relay can trigger state in a chain of NANDs
 		gate.relays[i].OpenOut.WireUp(gate.powerUpdate)
 	}
 
@@ -176,7 +176,7 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 		}
 	}
 
-	// the last relay in the chain is the final answer for s NOR
+	// the last relay in the chain is the final answer for a NOR
 	gate.relays[len(gate.relays)-1].OpenOut.WireUp(gate.Transmit)
 
 	return gate

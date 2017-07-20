@@ -20,7 +20,8 @@ var aIn = flag.String("aIn", "", "Power indicator at pin A (1 or 0)")
 var bIn = flag.String("bIn", "", "Power indicator at pin B (1 or 0)")
 var cIn = flag.String("cIn", "", "Power indicator at pin C (1 or 0)")
 var bitString1 = flag.String("bits1", "00000000", "First string of bits in an action (e.g. 11110000)")
-var bitString2 = flag.String("bits2", "00000000", "Second string of bits in an action that takes two inputs (e.g. 00001111)")
+var bitString2 = flag.String("bits2", "00000000", "Second string of bits in an action (e.g. 00001111)")
+var bitString3 = flag.String("bits3", "00000000", "Third string of bits in an action (e.g. 10101010)")
 
 func main() {
 	flag.Parse()
@@ -114,7 +115,7 @@ func execute() {
 
 			c, err := strconv.ParseBool(*cIn)
 			if err != nil {
-				fmt.Println("Invalid value for boolean power state: (cIn)" + *cIn)
+				fmt.Println("Invalid value for boolean power state (cIn):" + *cIn)
 				return
 			}
 			sw3 := circuit.NewSwitch(c)
@@ -146,7 +147,7 @@ func execute() {
 
 			c, err := strconv.ParseBool(*cIn)
 			if err != nil {
-				fmt.Println("Invalid value for boolean power state: (cIn)" + *cIn)
+				fmt.Println("Invalid value for boolean power state (cIn):" + *cIn)
 				return
 			}
 			sw3 := circuit.NewSwitch(c)
@@ -157,6 +158,214 @@ func execute() {
 		}
 
 		fmt.Printf("OR Gate outputting power?: %v\n", or.GetIsPowered())
+
+	case "nand":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+
+		var nand *circuit.NANDGate = nil
+		if len(*cIn) > 0 {
+
+			c, err := strconv.ParseBool(*cIn)
+			if err != nil {
+				fmt.Println("Invalid value for boolean power state (cIn):" + *cIn)
+				return
+			}
+			sw3 := circuit.NewSwitch(c)
+
+			nand = circuit.NewNANDGate(sw1, sw2, sw3)
+		} else {
+			nand = circuit.NewNANDGate(sw1, sw2)
+		}
+
+		fmt.Printf("NAND Gate outputting power?: %v\n", nand.GetIsPowered())
+
+	case "nor":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+
+		var nor *circuit.NORGate = nil
+		if len(*cIn) > 0 {
+
+			c, err := strconv.ParseBool(*cIn)
+			if err != nil {
+				fmt.Println("Invalid value for boolean power state (cIn):" + *cIn)
+				return
+			}
+			sw3 := circuit.NewSwitch(c)
+
+			nor = circuit.NewNORGate(sw1, sw2, sw3)
+		} else {
+			nor = circuit.NewNORGate(sw1, sw2)
+		}
+
+		fmt.Printf("NOR Gate outputting power?: %v\n", nor.GetIsPowered())
+
+	case "xor":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+		xor := circuit.NewXORGate(sw1, sw2)
+
+		fmt.Printf("XOR Gate outputting power?: %v\n", xor.GetIsPowered())
+
+	case "xnor":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+		xnor := circuit.NewXNORGate(sw1, sw2)
+
+		fmt.Printf("XNOR Gate outputting power?: %v\n", xnor.GetIsPowered())
+
+	case "invert":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		inv := circuit.NewInverter(sw1)
+
+		fmt.Printf("Inverted output power: %v\n", inv.GetIsPowered())
+
+	case "select":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for boolean power state (aIn): " + *aIn)
+			return
+		}
+		switchesA, err := circuit.NewNSwitchBank(*bitString1)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+		switchesB, err := circuit.NewNSwitchBank(*bitString2)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+		selB := circuit.NewSwitch(a)
+		sel, err := circuit.NewTwoToOneSelector(selB, switchesA.AsPwrEmitters(), switchesB.AsPwrEmitters())
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+
+		answer := ""
+		for _, o := range sel.Outs {
+
+			if o.(*circuit.ORGate).GetIsPowered() {
+				answer += "1"
+			} else {
+				answer += "0"
+			}
+		}
+
+		fmt.Printf("Selector outputting: %s\n", answer)
+
+	case "halfadd":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for bit (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for bit (bIn): " + *bIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+		hAdd := circuit.NewHalfAdder(sw1, sw2)
+
+		sum := "0"
+		if hAdd.Sum.(*circuit.XORGate).GetIsPowered() {
+			sum = "1"
+		}
+		carry := "0"
+		if hAdd.Carry.(*circuit.ANDGate).GetIsPowered() {
+			carry = "1"
+		}
+		fmt.Printf("Sum: %s\n", sum)
+		fmt.Printf("Carry: %s\n", carry)
+
+	case "fulladd":
+
+		a, err := strconv.ParseBool(*aIn)
+		if err != nil {
+			fmt.Println("Invalid value for bit (aIn): " + *aIn)
+			return
+		}
+		b, err := strconv.ParseBool(*bIn)
+		if err != nil {
+			fmt.Println("Invalid value for bit (bIn): " + *bIn)
+			return
+		}
+		c, err := strconv.ParseBool(*cIn)
+		if err != nil {
+			fmt.Println("Invalid value for carry-in bit (cIn):" + *cIn)
+			return
+		}
+		sw1 := circuit.NewSwitch(a)
+		sw2 := circuit.NewSwitch(b)
+		sw3 := circuit.NewSwitch(c)
+		fAdd := circuit.NewFullAdder(sw1, sw2, sw3)
+
+		sum := "0"
+		if fAdd.Sum.(*circuit.XORGate).GetIsPowered() {
+			sum = "1"
+		}
+		carry := "0"
+		if fAdd.Carry.(*circuit.ORGate).GetIsPowered() {
+			carry = "1"
+		}
+		fmt.Printf("Sum: %s\n", sum)
+		fmt.Printf("Carry: %s\n", carry)
 
 	case "add":
 
@@ -182,6 +391,49 @@ func execute() {
 			carry = "1"
 		}
 		fmt.Printf("  %s\n+ %s\n=%1s%s\n\n", *bitString1, *bitString2, carry, addr.AsAnswerString())
+
+	case "3add":
+
+		switchesA, err := circuit.NewNSwitchBank(*bitString1)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+		switchesB, err := circuit.NewNSwitchBank(*bitString2)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+		if len(*bitString3) != len(*bitString2) {
+			fmt.Printf("Final addend length doesn't match other addends: %s\n", *bitString3)
+			return
+		}
+		_, err = circuit.NewNSwitchBank(*bitString3)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+
+		addr, err := circuit.NewThreeNumberAdder(switchesA, switchesB)
+		if err != nil {
+			fmt.Println("Error:" + err.Error())
+			return
+		}
+
+		addr.SaveToLatch.Set(true)
+		addr.SaveToLatch.Set(false)
+		addr.ReadFromLatch.Set(true)
+
+		for i, b := range *bitString3 {
+			switchesA.Switches[i].Set(b == '1')
+		}
+
+		var carry string
+		if addr.CarryOutAsBool() {
+			carry = "1"
+		}
+
+		fmt.Printf("  %s\n+ %s\n+ %s\n=%1s%s\n\n", *bitString1, *bitString2, *bitString3, carry, addr.AsAnswerString())
 
 	case "sub":
 
