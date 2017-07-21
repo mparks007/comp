@@ -124,7 +124,7 @@ type ThreeNumberAdder struct {
 func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdder, error) {
 
 	if len(aSwitchBank.Switches) != len(bSwitchBank.Switches) {
-		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. Switchbank 1 switch count: %d, Switchbank 2 switch count: %d", len(aSwitchBank.Switches), len(bSwitchBank.Switches)))
+		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. Addend1 len: %d, Addend2 len: %d", len(aSwitchBank.Switches), len(bSwitchBank.Switches)))
 	}
 
 	addr := &ThreeNumberAdder{}

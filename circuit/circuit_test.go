@@ -150,7 +150,7 @@ func TestNewNSwitchBank_BadInputs(t *testing.T) {
 				t.Error("Didn't expected a Switch Bank back but got one.")
 			}
 
-			tc.wantError += tc.input
+			tc.wantError += "\"" + tc.input + "\""
 
 			if err == nil || (err != nil && err.Error() != tc.wantError) {
 				t.Errorf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err)
@@ -1622,7 +1622,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 }
 
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
-	wantError := "Mismatched input lengths. Switchbank 1 switch count: 8, Switchbank 2 switch count: 4"
+	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("0000")

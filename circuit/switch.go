@@ -51,7 +51,7 @@ func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 		return nil, err
 	}
 	if !match {
-		err = errors.New(fmt.Sprint("Input not in binary format: " + bits))
+		err = errors.New(fmt.Sprintf("Input not in binary format: \"%s\"", bits))
 		return nil, err
 	}
 
