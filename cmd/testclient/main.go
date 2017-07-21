@@ -6,11 +6,9 @@ import (
 
 	"strings"
 
-	"database/sql"
-
-	_ "github.com/go-sql-driver/mysql"
-
 	"strconv"
+
+	"context"
 
 	"github.concur.com/mparks/adder/circuit"
 )
@@ -23,14 +21,18 @@ var bitString1 = flag.String("bits1", "", "First string of bits in an action (e.
 var bitString2 = flag.String("bits2", "", "Second string of bits in an action (e.g. 00001111)")
 var bitString3 = flag.String("bits3", "", "Third string of bits in an action (e.g. 10101010)")
 
+var logger circuit.MySqlLogger
+
 func main() {
 	flag.Parse()
 
-	_, err := sql.Open("mysql", "user:password@/dbname")
+	logger, err := circuit.NewMySqlLogger("mparks:dbadmin@/circuit", context.Background())
 	if err != nil {
-		fmt.Println("Error: " + err.Error())
+		fmt.Println("Error creating MySqlLogger:", err.Error())
 		return
 	}
+
+	logger.Log("testcat", "testdata", context.Background())
 
 	execute()
 }

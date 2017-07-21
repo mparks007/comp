@@ -6,6 +6,10 @@ type pwrEmitter interface {
 	WireUp(func(bool))
 }
 
+type Logger interface {
+	Log(cat, data string) error
+}
+
 // pwrSource is the basic means for which an object can store s single state and transmit it to subscribers
 type pwrSource struct {
 	isPowered      bool

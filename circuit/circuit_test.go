@@ -2245,14 +2245,14 @@ func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 		})
 	*/
 	//fmt.Println("Oscillate")
-	osc.Oscillate(3)
+	//osc.Oscillate(3)
 	osc.WireUp(func(state bool) {
 		if state {
-			fmt.Println(counter.AsAnswerString())
+			//fmt.Println(counter.AsAnswerString())
 		}
 	})
 
-	time.Sleep(time.Second * 8)
+//	time.Sleep(time.Second * 8)
 	/*
 		fmt.Println("Set Switch True")
 		sw.Set(true)
