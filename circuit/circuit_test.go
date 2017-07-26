@@ -2244,15 +2244,18 @@ func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 			fmt.Printf("Second latch QBar: %v\n", state)
 		})
 	*/
-	//fmt.Println("Oscillate")
-	//osc.Oscillate(3)
+	fmt.Println("Oscillate")
+	osc.Oscillate(3)
+	count := 0
 	osc.WireUp(func(state bool) {
 		if state {
+			count += 1
+			fmt.Println(count)
 			//fmt.Println(counter.AsAnswerString())
 		}
 	})
 
-//	time.Sleep(time.Second * 8)
+	time.Sleep(time.Second * 8)
 	/*
 		fmt.Println("Set Switch True")
 		sw.Set(true)
@@ -2269,6 +2272,6 @@ func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
 
 	want := "00000110"
 	if got := counter.AsAnswerString(); !strings.HasPrefix(got, want) {
-		//t.Errorf("Wanted results %s but got %s.", want, got)
+		t.Errorf("Wanted results %s but got %s.", want, got)
 	}
 }

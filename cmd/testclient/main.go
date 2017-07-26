@@ -10,6 +10,8 @@ import (
 
 	"context"
 
+	"time"
+
 	"github.concur.com/mparks/adder/circuit"
 )
 
@@ -26,14 +28,13 @@ var logger circuit.MySqlLogger
 func main() {
 	flag.Parse()
 
-	logger, err := circuit.NewMySqlLogger("mparks:dbadmin@/circuit", context.Background())
+	l, err := circuit.NewMySqlLogger("mparks:dbadmin@/circuit", context.Background())
 	if err != nil {
 		fmt.Println("Error creating MySqlLogger:", err.Error())
 		return
 	}
 
-	logger.Log("testcat", "testdata", context.Background())
-
+	logger = *l
 	execute()
 }
 
@@ -363,6 +364,7 @@ func execute() {
 			carry = "1"
 		}
 		fmt.Printf("  %s\n+ %s\n=%1s%s\n", *bitString1, *bitString2, carry, addr.AsAnswerString())
+		logger.Log("testcat", "testdata", context.Background())
 
 	case "3add":
 
@@ -471,9 +473,69 @@ func execute() {
 		fmt.Printf("QBar: %v\n", latch.QBar.GetIsPowered())
 
 	case "nbitlatch":
+		clockBit, err := parseBool(*aIn, "aIn", "Clock bit value")
+		if err != nil {
+			return
+		}
+		dataSwitches, err := parseStringToSwitchbank(*bitString1, "bits1", "data bits")
+		if err != nil {
+			return
+		}
+		aSwitch := circuit.NewSwitch(clockBit)
+		latch := circuit.NewNBitLatch(aSwitch, dataSwitches.AsPwrEmitters())
+
+		output := ""
+		for _, q := range latch.Qs {
+
+			if q.(*circuit.NORGate).GetIsPowered() {
+				output += "1"
+			} else {
+				output += "0"
+			}
+		}
+
+		fmt.Printf("Latch state: %s\n", output)
 
 	case "freqdiv":
+		hertz, err := parseInt(*aIn, "aIn", "hertz value")
+		if err != nil {
+			return
+		}
+		secs, err := parseInt(*bIn, "aIn", "duration (seconds) value")
+		if err != nil {
+			return
+		}
+		var init = false
+		if len(*cIn) > 0 {
 
+			init, err = parseBool(*cIn, "cIn", "initial oscillator state")
+			if err != nil {
+				return
+			}
+		}
+
+		osc := circuit.NewOscillator(init)
+		if osc.GetIsPowered() {
+			fmt.Print("1")
+		} else {
+			fmt.Print("0")
+		}
+
+		freqDiv := circuit.NewFrequencyDivider(osc)
+
+		freqDiv.QBar.WireUp(func(state bool) {
+			if state {
+				fmt.Print("1")
+			} else {
+				fmt.Print("0")
+			}
+		})
+
+		osc.Oscillate(hertz)
+
+		time.Sleep(time.Second * time.Duration(secs))
+
+		osc.Stop()
 	}
 }
 
@@ -483,6 +545,16 @@ func parseBool(paramVal, paramName, context string) (bool, error) {
 	if err != nil {
 		fmt.Printf("Value \"%s\" for parameter %s is invalid for %s\n", paramVal, paramName, context)
 		return false, err
+	}
+	return retVal, nil
+}
+
+func parseInt(paramVal, paramName, context string) (int, error) {
+
+	retVal, err := strconv.Atoi(paramVal)
+	if err != nil {
+		fmt.Printf("Value \"%s\" for parameter %s is invalid for %s\n", paramVal, paramName, context)
+		return 0, err
 	}
 	return retVal, nil
 }

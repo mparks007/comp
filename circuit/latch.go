@@ -173,8 +173,8 @@ func NewSynchronizedEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *Edg
 	latch := &EdgeTriggeredDTypeLatch{}
 
 	// for this to work, the clock wiring up has to be done against the right-side flipflop aspects FIRST
-	latch.rRAnd = NewANDGate(clkInPin, nil)
-	latch.rSAnd = NewANDGate(clkInPin, nil)
+	latch.rRAnd = NewSynchronizedANDGate(clkInPin, nil)
+	latch.rSAnd = NewSynchronizedANDGate(clkInPin, nil)
 	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
 
 	latch.lRAnd = NewSynchronizedANDGate(NewInverter(clkInPin), dataInPin)
