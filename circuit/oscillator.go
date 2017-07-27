@@ -24,11 +24,12 @@ func NewOscillator(init bool) *Oscillator {
 
 func (o *Oscillator) Oscillate(hertz int) {
 
+	o.mu.Lock()
+	o.active = true
+	o.mu.Unlock()
+
 	go func() {
 		tick := time.NewTicker(time.Second / time.Duration(hertz))
-		o.mu.Lock()
-		o.active = true
-		o.mu.Unlock()
 		for {
 			select {
 			case <-tick.C:
