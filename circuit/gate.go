@@ -1,13 +1,13 @@
 package circuit
 
-import "fmt"
+//import "fmt"
 
 // AND
 // 0 0 0
 // 1 0 0
 // 0 1 0
 // 1 1 1
-
+/*
 type ANDGate struct {
 	relays []*Relay
 	pwrSource
@@ -237,3 +237,4 @@ func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 
 	return gate
 }
+*/

@@ -1,5 +1,5 @@
 package circuit
-
+/*
 type OnesComplementer struct {
 	Complements []pwrEmitter
 }
@@ -28,3 +28,4 @@ func (c *OnesComplementer) AsComplementString() string {
 
 	return s
 }
+*/

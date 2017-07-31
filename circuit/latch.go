@@ -1,6 +1,6 @@
 package circuit
 
-import "fmt"
+//import "fmt"
 
 // Level-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
@@ -8,7 +8,7 @@ import "fmt"
 // 0  1     0  1
 // 1  1     1  0
 // X  0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
-
+/*
 type LevelTriggeredDTypeLatch struct {
 	rs   *RSFlipFlop
 	rAnd *ANDGate
@@ -31,13 +31,15 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 
 	return latch
 }
-
+*/
 /*
 func (l *LevelTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
 	l.rAnd.UpdatePin(2, 2, NewInverter(dataPin))
 	l.sAnd.UpdatePin(2, 2, dataPin)
 }
 */
+
+/*
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
 	Qs      []pwrEmitter
@@ -278,3 +280,4 @@ func (c *NBitRippleCounter) AsAnswerString() string {
 
 	return answer
 }
+*/

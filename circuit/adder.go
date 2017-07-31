@@ -1,8 +1,8 @@
 package circuit
 
 import (
-	"errors"
-	"fmt"
+//	"errors"
+	//"fmt"
 )
 
 // Half NBitAdder
@@ -12,7 +12,7 @@ import (
 // 1 0		1		0
 // 0 1		1		0
 // 1 1		0		1
-
+/*
 type HalfAdder struct {
 	Sum   pwrEmitter
 	Carry pwrEmitter
@@ -202,3 +202,4 @@ func (a *NNumberAdder) AsAnswerString() string {
 
 	return answer
 }
+*/

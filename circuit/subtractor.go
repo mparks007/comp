@@ -1,10 +1,6 @@
 package circuit
 
-import (
-	"errors"
-	"fmt"
-)
-
+/*
 type NBitSubtractor struct {
 	adder       *NBitAdder
 	comp        *OnesComplementer
@@ -36,3 +32,4 @@ func (s *NBitSubtractor) AsAnswerString() string {
 func (s *NBitSubtractor) CarryOutAsBool() bool {
 	return s.CarryOut.(*ORGate).GetIsPowered()
 }
+*/

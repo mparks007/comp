@@ -7,7 +7,7 @@ package circuit
 // 1 0   0   1
 // 0 0   q  !q  (hold)
 // 1 1   x   x  (invalid)
-
+/*
 type RSFlipFlop struct {
 	Q    *NORGate
 	QBar *NORGate
@@ -25,3 +25,4 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 
 	return ff
 }
+*/

@@ -2,10 +2,10 @@ package circuit
 
 import (
 	//"fmt"
-	"sync"
-	"time"
+//	"sync"
+//	"time"
 )
-
+/*
 type Oscillator struct {
 	stopCh chan bool
 	mu     sync.Mutex
@@ -61,3 +61,4 @@ func (o *Oscillator) Stop() {
 		o.stopCh <- true
 	}
 }
+*/

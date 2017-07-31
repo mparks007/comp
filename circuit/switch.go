@@ -10,12 +10,14 @@ import (
 type Switch struct {
 	relay       *Relay
 	pin2Battery *Battery
+	ch          chan bool
 	pwrSource
 }
 
 // NewSwitch creates s new Switch struct with its initial state based on the passed in initialization value
 func NewSwitch(init bool) *Switch {
 	sw := &Switch{}
+	sw.ch = make(chan bool, 1)
 
 	// setup the battery-based relay pin that will be used to toggle on/off of the switch
 	sw.pin2Battery = NewBattery()
@@ -24,7 +26,13 @@ func NewSwitch(init bool) *Switch {
 	}
 
 	sw.relay = NewRelay(NewBattery(), sw.pin2Battery)
-	sw.relay.ClosedOut.WireUp(sw.Transmit)
+	sw.relay.ClosedOut.WireUp(sw.ch)
+
+	go func() {
+		for {
+			sw.Transmit(<-sw.ch)
+		}
+	}()
 
 	return sw
 }

@@ -1,16 +1,14 @@
 package circuit
 
-import (
-	"errors"
-	"fmt"
-)
+//"errors"
+//"fmt"
 
 // sel a b  out
 //  0  0 x   0
 //  0  1 x   1
 //  1  x 0   0
 //  1  x 1   1
-
+/*
 type TwoToOneSelector struct {
 	aANDs []*ANDGate
 	bANDs []*ANDGate
@@ -50,3 +48,4 @@ func (s *TwoToOneSelector) UpdateBPins(bPins []pwrEmitter) {
 		s.bANDs[i].UpdatePin(2, 2, bPin)
 	}
 }
+*/
