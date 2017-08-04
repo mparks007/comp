@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-// Switch is s basic On/Off
+// Switch is a basic On/Off
 type Switch struct {
 	relay       *Relay
 	pin2Battery *Battery
@@ -14,7 +14,7 @@ type Switch struct {
 	pwrSource
 }
 
-// NewSwitch creates s new Switch struct with its initial state based on the passed in initialization value
+// NewSwitch creates a new Switch struct with its initial state based on the passed in initialization value
 func NewSwitch(init bool) *Switch {
 	sw := &Switch{}
 	sw.ch = make(chan bool, 1)
@@ -26,6 +26,7 @@ func NewSwitch(init bool) *Switch {
 	}
 
 	sw.relay = NewRelay(NewBattery(), sw.pin2Battery)
+	fmt.Println("Switch Wiring up to Relay Closedout")
 	sw.relay.ClosedOut.WireUp(sw.ch)
 
 	go func() {
@@ -37,7 +38,7 @@ func NewSwitch(init bool) *Switch {
 	return sw
 }
 
-// Set on s Switch will toggle the state of the underlying battery to activate/deactivate the internal relay
+// Set on a Switch will toggle the state of the underlying battery to activate/deactivate the internal relay
 func (s *Switch) Set(newState bool) {
 	if newState {
 		s.pin2Battery.Charge()
@@ -46,12 +47,12 @@ func (s *Switch) Set(newState bool) {
 	}
 }
 
-// NSwitchBank is s convenient way to get any number of providers from s string of 0/1s
+// NSwitchBank is a convenient way to get any number of providers from a string of 0/1s
 type NSwitchBank struct {
 	Switches []*Switch
 }
 
-// NewNSwitchBank takes s string of 0/1s and creates s variable length list of Switch structs initialized based on their off/on-ness
+// NewNSwitchBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
 func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 
 	match, err := regexp.MatchString("^[01]+$", bits)
