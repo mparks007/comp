@@ -287,10 +287,10 @@ func TestRelay_WithBatteries(t *testing.T) {
 		wantAtOpen   bool
 		wantAtClosed bool
 	}{
-	//	{false, false, false, false},
-	//{true, false, true, false},
-	//{false, true, false, false},
-	//{true, true, false, true},
+		{false, false, false, false},
+		{true, false, true, false},
+		{false, true, false, false},
+		{true, true, false, true},
 	}
 
 	var gotOpenOut, gotClosedOut bool
@@ -313,44 +313,41 @@ func TestRelay_WithBatteries(t *testing.T) {
 	}()
 
 	rel.OpenOut.WireUp(openCh)
-	//<-openCh
-	//<-closedCh
 	rel.ClosedOut.WireUp(closedCh)
+	time.Sleep(time.Millisecond * 100)
 
-	time.Sleep(time.Second * 2)
 	if gotOpenOut != false {
-		t.Errorf("Wanted power at the open position to be %t, but got %t", false, gotOpenOut)
+		t.Error("Wanted no power at the open position but got some")
 	}
 
 	if gotClosedOut != true {
-		t.Errorf("Wanted power at the closed position to be %t, but got %t", true, gotClosedOut)
+		t.Error("Wanted power at the closed position but got none")
 	}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting input A to %t and B to %t", tc.aInPowered, tc.bInPowered), func(t *testing.T) {
-			/*
-				if tc.aInPowered {
-					pin1Battery.Charge()
-				} else {
-					pin1Battery.Discharge()
-				}
-				if tc.bInPowered {
-					pin2Battery.Charge()
-				} else {
-					pin2Battery.Discharge()
-				}
 
-				if gotOpenOut := <-openCh; gotOpenOut != tc.wantAtOpen {
-					t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut)
-				}
+			if tc.aInPowered {
+				pin1Battery.Charge()
+			} else {
+				pin1Battery.Discharge()
+			}
+			if tc.bInPowered {
+				pin2Battery.Charge()
+			} else {
+				pin2Battery.Discharge()
+			}
+			time.Sleep(time.Millisecond * 100)
 
-				if gotClosedOut := <-closedCh; gotClosedOut != tc.wantAtClosed {
-					t.Errorf("Wanted power at the closed position to be %t, but got %t", tc.wantAtClosed, gotClosedOut)
-				}
-			*/
+			if gotOpenOut != tc.wantAtOpen {
+				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut)
+			}
+
+			if gotClosedOut != tc.wantAtClosed {
+				t.Errorf("Wanted power at the closed position to be %t, but got %t", tc.wantAtClosed, gotClosedOut)
+			}
 		})
 	}
-
 }
 
 /*
