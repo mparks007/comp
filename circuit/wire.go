@@ -3,6 +3,7 @@ package circuit
 import (
 	"sync"
 	"time"
+	"fmt"
 )
 
 // Wire is a component connector, which will transmit with an optional pause to simulate wire length (delay)
@@ -22,6 +23,7 @@ func NewWire(length uint) *Wire {
 func (w *Wire) WireUp(ch chan bool) {
 	w.outChannels = append(w.outChannels, ch)
 
+	fmt.Printf("WireUp: %v\n", ch)
 	// go ahead and transmit to the new subscriber
 	ch <- w.isPowered
 }
@@ -35,11 +37,12 @@ func (w *Wire) Transmit(newState bool) {
 
 		for _, ch := range w.outChannels {
 			wg.Add(1)
-			go func() {
+			go func(ch chan bool) {
 				time.Sleep(time.Millisecond * time.Duration(w.length))
+				fmt.Printf("Transmit: %v\n", ch)
 				ch <- newState
 				wg.Done()
-			}()
+			}(ch)
 		}
 
 		wg.Wait()
