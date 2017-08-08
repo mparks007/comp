@@ -117,10 +117,11 @@ func TestWire_NoDelay(t *testing.T) {
 
 func TestWire_WithDelay(t *testing.T) {
 	var want, got1, got2 bool
+	var wireLen uint = 100
 	ch1 := make(chan bool, 1)
 	ch2 := make(chan bool, 1)
 
-	wire := NewWire(500)
+	wire := NewWire(wireLen)
 
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
@@ -129,17 +130,16 @@ func TestWire_WithDelay(t *testing.T) {
 	want = false
 
 	// test default state
-	now := time.Now()
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
 	}
-	if paused as expected
 
 	if got2 = <-ch2; got2 != want {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
 	}
 
 	// test power transmit
+	start := time.Now()
 	wire.Transmit(true)
 	want = true
 
@@ -150,8 +150,15 @@ func TestWire_WithDelay(t *testing.T) {
 	if got2 = <-ch2; got2 != want {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
 	}
+	end := time.Now()
+	gotDuration := end.Sub(start)
+	wantDuration := time.Millisecond * time.Duration(wireLen)
+	if gotDuration < wantDuration {
+		t.Errorf("Wire power on transmit time should have been %v but was %v", wantDuration, gotDuration)
+	}
 
 	// test loss of power transmit
+	start = time.Now()
 	wire.Transmit(false)
 	want = false
 
@@ -161,6 +168,12 @@ func TestWire_WithDelay(t *testing.T) {
 
 	if got2 = <-ch2; got2 != want {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	}
+	end = time.Now()
+	gotDuration = end.Sub(start)
+	wantDuration = time.Millisecond * time.Duration(wireLen)
+	if gotDuration < wantDuration {
+		t.Errorf("Wire power off transmit time should have been %v but was %v", wantDuration, gotDuration)
 	}
 }
 
@@ -514,47 +527,59 @@ func TestRelay_UpdatePinPanic_TooLow(t *testing.T) {
 	rel.UpdatePin(0, NewBattery())
 }
 
-/*
 func TestANDGate(t *testing.T) {
-	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		cInPowered bool
-		want       bool
-	}{
-		{false, false, false, false},
-		{true, false, false, false},
-		{false, true, false, false},
-		{true, true, false, false},
-		{false, false, true, false},
-		{true, false, true, false},
-		{false, true, true, false},
-		{true, true, true, true},
-	}
-
+	/*
+		testCases := []struct {
+			aInPowered bool
+			bInPowered bool
+			cInPowered bool
+			want       bool
+		}{
+			{false, false, false, false},
+			//	{true, false, false, false},
+			//	{false, true, false, false},
+			//	{true, true, false, false},
+			//	{false, false, true, false},
+			//	{true, false, true, false},
+			//	{false, true, true, false},
+			//	{true, true, true, true},
+		}*/
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	gate := NewANDGate(aSwitch, bSwitch, cSwitch)
+	NewANDGate(aSwitch, bSwitch, cSwitch)
+	/*
+		var got bool
+		ch := make(chan bool, 1)
 
-	var got bool
-	gate.WireUp(func(state bool) { got = state })
-
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
-
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-			cSwitch.Set(tc.cInPowered)
-
-			if got != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+		go func() {
+			for {
+				select {
+				case got = <-ch:
+				}
 			}
-		})
-	}
+		}()
+		fmt.Println("************* Wiring up actual gate **************")
+		gate.WireUp(ch)
+
+		for i, tc := range testCases {
+			t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
+
+				aSwitch.Set(tc.aInPowered)
+				bSwitch.Set(tc.bInPowered)
+				cSwitch.Set(tc.cInPowered)
+				time.Sleep(time.Millisecond * 100)
+
+				if got != tc.want {
+					t.Errorf("Wanted power %t, but got %t", tc.want, got)
+				}
+			})
+		}
+	*/
 }
 
+/*
 func TestSyncANDGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool

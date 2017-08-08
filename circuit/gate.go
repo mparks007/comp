@@ -1,5 +1,7 @@
 package circuit
 
+import "fmt"
+
 //import "fmt"
 
 // AND
@@ -7,9 +9,10 @@ package circuit
 // 1 0 0
 // 0 1 0
 // 1 1 1
-/*
+
 type ANDGate struct {
 	relays []*Relay
+	ch     chan bool
 	pwrSource
 }
 
@@ -24,8 +27,18 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 		}
 	}
 
+	go func() {
+		for {
+			select {
+			case state := <-gate.ch:
+				fmt.Println("Gate transmit")
+				gate.Transmit(state)
+			}
+		}
+	}()
+
 	// the last relay in the chain is the final answer for an AND
-	gate.relays[len(pins)-1].ClosedOut.WireUp(gate.Transmit)
+	gate.relays[len(pins)-1].ClosedOut.WireUp(gate.ch)
 
 	return gate
 }
@@ -38,6 +51,7 @@ func (g *ANDGate) UpdatePin(andPinNum, relayPinNum int, pin pwrEmitter) {
 	g.relays[andPinNum-1].UpdatePin(relayPinNum, pin)
 }
 
+/*
 func NewSynchronizedANDGate(pins ...pwrEmitter) *ANDGate {
 	gate := &ANDGate{}
 
@@ -77,7 +91,8 @@ func (g *ANDGate) powerUpdate(newState bool) {
 		g.Transmit(g.relays[len(g.relays)-1].aInPowered && g.relays[len(g.relays)-1].bInPowered)
 	}
 }
-
+*/
+/*
 // OR
 // 0 0 0
 // 1 0 1

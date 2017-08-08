@@ -20,9 +20,6 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	rel.chAIn = make(chan bool, 1)
 	rel.chBIn = make(chan bool, 1)
 
-	rel.UpdatePin(1, pin1)
-	rel.UpdatePin(2, pin2)
-
 	// doing aIn and bIn go funcs independently since power could be changing either one at the "same" time
 
 	go func() {
@@ -46,6 +43,9 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 			rel.mu.Unlock()
 		}
 	}()
+
+	rel.UpdatePin(1, pin1)
+	rel.UpdatePin(2, pin2)
 
 	return rel
 }

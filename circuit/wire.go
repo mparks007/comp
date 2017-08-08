@@ -1,9 +1,9 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 	"time"
-	"fmt"
 )
 
 // Wire is a component connector, which will transmit with an optional pause to simulate wire length (delay)

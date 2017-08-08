@@ -2,9 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="108d38c3-0e12-48c1-b6a4-f0c31193e38f" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/libraries/GOPATH__adder_.xml" afterPath="$PROJECT_DIR$/.idea/libraries/GOPATH__adder_.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/circuit_test.go" afterPath="$PROJECT_DIR$/circuit/circuit_test.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/gate.go" afterPath="$PROJECT_DIR$/circuit/gate.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/relay.go" afterPath="$PROJECT_DIR$/circuit/relay.go" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/switch.go" afterPath="$PROJECT_DIR$/circuit/switch.go" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit/wire.go" afterPath="$PROJECT_DIR$/circuit/wire.go" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -34,11 +36,65 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file leaf-file-name="switch.go" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/circuit/switch.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="527">
+              <caret line="35" column="54" lean-forward="false" selection-start-line="35" selection-start-column="54" selection-end-line="35" selection-end-column="54" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="battery.go" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/circuit/battery.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="85">
+              <caret line="5" column="0" lean-forward="false" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="relay.go" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/circuit/relay.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="765">
+              <caret line="48" column="0" lean-forward="false" selection-start-line="48" selection-start-column="0" selection-end-line="48" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="gate.go" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/circuit/gate.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="680">
+              <caret line="40" column="4" lean-forward="false" selection-start-line="40" selection-start-column="4" selection-end-line="40" selection-end-column="4" />
+              <folding>
+                <element signature="e#17#29#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="powersource.go" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/circuit/powersource.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="272">
+              <caret line="19" column="0" lean-forward="false" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
+              <folding>
+                <element signature="e#17#42#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="circuit_test.go" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/circuit/circuit_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="425">
-              <caret line="135" column="25" lean-forward="false" selection-start-line="135" selection-start-column="25" selection-end-line="135" selection-end-column="25" />
+            <state relative-caret-position="7106">
+              <caret line="543" column="43" lean-forward="false" selection-start-line="543" selection-start-column="43" selection-end-line="543" selection-end-column="43" />
               <folding>
                 <element signature="e#17#79#0" expanded="true" />
               </folding>
@@ -49,8 +105,8 @@
       <file leaf-file-name="wire.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/circuit/wire.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="374">
-              <caret line="37" column="42" lean-forward="true" selection-start-line="37" selection-start-column="42" selection-end-line="37" selection-end-column="42" />
+            <state relative-caret-position="612">
+              <caret line="40" column="16" lean-forward="false" selection-start-line="40" selection-start-column="16" selection-end-line="40" selection-end-column="16" />
               <folding>
                 <element signature="e#17#50#0" expanded="true" />
               </folding>
@@ -58,14 +114,12 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="powersource.go" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/circuit/powersource.go">
+      <file leaf-file-name="circuit.go" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/circuit/circuit.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding>
-                <element signature="e#17#42#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="85">
+              <caret line="5" column="0" lean-forward="false" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -167,14 +221,14 @@
         <option value="$PROJECT_DIR$/circuit/latch.go" />
         <option value="$PROJECT_DIR$/circuit/subtractor.go" />
         <option value="$PROJECT_DIR$/circuit/adder.go" />
-        <option value="$PROJECT_DIR$/circuit/gate.go" />
         <option value="$PROJECT_DIR$/circuit/selector.go" />
         <option value="$PROJECT_DIR$/cmd/testclient/main.go" />
         <option value="$PROJECT_DIR$/circuit/powersource.go" />
-        <option value="$PROJECT_DIR$/circuit/relay.go" />
-        <option value="$PROJECT_DIR$/circuit/switch.go" />
         <option value="$PROJECT_DIR$/circuit/wire.go" />
+        <option value="$PROJECT_DIR$/circuit/switch.go" />
+        <option value="$PROJECT_DIR$/circuit/relay.go" />
         <option value="$PROJECT_DIR$/circuit/circuit_test.go" />
+        <option value="$PROJECT_DIR$/circuit/gate.go" />
       </list>
     </option>
   </component>
@@ -357,17 +411,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Test.TestWire_NoDelay in circuit_test.go">
-    <configuration default="false" name="TestNewNSwitchBank_GoodInputs in circuit_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
-      <module name="adder" />
-      <working_directory value="$PROJECT_DIR$/circuit" />
-      <go_parameters value="-i" />
-      <framework value="gotest" />
-      <kind value="PACKAGE" />
-      <package value="github.concur.com/mparks/adder/circuit" />
-      <pattern value="^TestNewNSwitchBank_GoodInputs$" />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="Go Test.TestANDGate in circuit_test.go">
     <configuration default="false" name="TestWire in circuit_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
       <module name="adder" />
       <working_directory value="$PROJECT_DIR$/circuit" />
@@ -406,6 +450,16 @@
       <kind value="PACKAGE" />
       <package value="github.concur.com/mparks/adder/circuit" />
       <pattern value="^TestWire_WithDelay$" />
+      <method />
+    </configuration>
+    <configuration default="false" name="TestANDGate in circuit_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
+      <module name="adder" />
+      <working_directory value="$PROJECT_DIR$/circuit" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.concur.com/mparks/adder/circuit" />
+      <pattern value="^TestANDGate$" />
       <method />
     </configuration>
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
@@ -483,19 +537,19 @@
     <list size="7">
       <item index="0" class="java.lang.String" itemvalue="Go Test.Test" />
       <item index="1" class="java.lang.String" itemvalue="Go Application.TestClient" />
-      <item index="2" class="java.lang.String" itemvalue="Go Test.TestNewNSwitchBank_GoodInputs in circuit_test.go" />
-      <item index="3" class="java.lang.String" itemvalue="Go Test.TestWire in circuit_test.go" />
-      <item index="4" class="java.lang.String" itemvalue="Go Test.TestPwrSource in circuit_test.go" />
-      <item index="5" class="java.lang.String" itemvalue="Go Test.TestWire_NoDelay in circuit_test.go" />
-      <item index="6" class="java.lang.String" itemvalue="Go Test.TestWire_WithDelay in circuit_test.go" />
+      <item index="2" class="java.lang.String" itemvalue="Go Test.TestWire in circuit_test.go" />
+      <item index="3" class="java.lang.String" itemvalue="Go Test.TestPwrSource in circuit_test.go" />
+      <item index="4" class="java.lang.String" itemvalue="Go Test.TestWire_NoDelay in circuit_test.go" />
+      <item index="5" class="java.lang.String" itemvalue="Go Test.TestWire_WithDelay in circuit_test.go" />
+      <item index="6" class="java.lang.String" itemvalue="Go Test.TestANDGate in circuit_test.go" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Go Test.TestWire_NoDelay in circuit_test.go" />
+        <item index="0" class="java.lang.String" itemvalue="Go Test.TestANDGate in circuit_test.go" />
         <item index="1" class="java.lang.String" itemvalue="Go Test.TestWire_WithDelay in circuit_test.go" />
-        <item index="2" class="java.lang.String" itemvalue="Go Test.TestWire in circuit_test.go" />
-        <item index="3" class="java.lang.String" itemvalue="Go Test.TestPwrSource in circuit_test.go" />
-        <item index="4" class="java.lang.String" itemvalue="Go Test.TestNewNSwitchBank_GoodInputs in circuit_test.go" />
+        <item index="2" class="java.lang.String" itemvalue="Go Test.TestWire_NoDelay in circuit_test.go" />
+        <item index="3" class="java.lang.String" itemvalue="Go Test.TestWire in circuit_test.go" />
+        <item index="4" class="java.lang.String" itemvalue="Go Test.TestPwrSource in circuit_test.go" />
       </list>
     </recent_temporary>
   </component>
@@ -503,35 +557,35 @@
     <option name="remove_strategy" value="false" />
   </component>
   <component name="TestHistory">
-    <history-entry file="TestPwrSource_in_circuit_test_go - 2017.08.05 at 17h 53m 20s.xml">
-      <configuration name="TestPwrSource in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="Test - 2017.08.05 at 22h 42m 38s.xml">
+      <configuration name="Test" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_NoDelay_in_circuit_test_go - 2017.08.05 at 17h 57m 28s.xml">
-      <configuration name="TestWire_NoDelay in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 38m 59s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_NoDelay_in_circuit_test_go - 2017.08.05 at 17h 58m 30s.xml">
-      <configuration name="TestWire_NoDelay in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 39m 11s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_WithDelay_in_circuit_test_go - 2017.08.05 at 17h 58m 24s.xml">
-      <configuration name="TestWire_WithDelay in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 39m 34s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_in_circuit_test_go - 2017.08.05 at 17h 50m 30s.xml">
-      <configuration name="TestWire in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 40m 18s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_in_circuit_test_go - 2017.08.05 at 17h 53m 25s.xml">
-      <configuration name="TestWire in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 40m 30s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_in_circuit_test_go - 2017.08.05 at 17h 55m 07s.xml">
-      <configuration name="TestWire in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 43m 08s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_in_circuit_test_go - 2017.08.05 at 17h 55m 26s.xml">
-      <configuration name="TestWire in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 43m 36s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_in_circuit_test_go - 2017.08.05 at 17h 56m 55s.xml">
-      <configuration name="TestWire in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 46m 36s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestWire_in_circuit_test_go - 2017.08.05 at 17h 57m 06s.xml">
-      <configuration name="TestWire in circuit_test.go" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestANDGate_in_circuit_test_go - 2017.08.05 at 22h 47m 06s.xml">
+      <configuration name="TestANDGate in circuit_test.go" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="TodoView">
@@ -544,18 +598,19 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1096" extended-state="7" />
+    <frame x="-8" y="-8" width="1936" height="1096" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15511727" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15671642" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32976446" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30406854" sideWeight="0.44498777" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.27292112" sideWeight="0.72982883" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32976446" sideWeight="0.49755502" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.27292112" sideWeight="0.72982883" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.23233405" sideWeight="0.5550122" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25267667" sideWeight="0.4828851" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25266525" sideWeight="0.4828851" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -600,7 +655,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="207" />
+      <option name="time" value="212" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -764,13 +819,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/circuit.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="5" column="0" lean-forward="true" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/circuit/complementer.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="540">
@@ -834,13 +882,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/gate.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="11" column="8" lean-forward="false" selection-start-line="11" selection-start-column="8" selection-end-line="11" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/circuit/adder.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="648">
@@ -855,34 +896,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/circuit/relay.go">
+    <entry file="file://$PROJECT_DIR$/circuit/circuit.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="453">
-          <caret line="63" column="28" lean-forward="false" selection-start-line="63" selection-start-column="28" selection-end-line="63" selection-end-column="28" />
+        <state relative-caret-position="85">
+          <caret line="5" column="0" lean-forward="false" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/battery.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
+        <state relative-caret-position="85">
+          <caret line="5" column="0" lean-forward="false" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/switch.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="527">
+          <caret line="35" column="54" lean-forward="false" selection-start-line="35" selection-start-column="54" selection-end-line="35" selection-end-column="54" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/circuit/relay.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="765">
+          <caret line="48" column="0" lean-forward="false" selection-start-line="48" selection-start-column="0" selection-end-line="48" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/powersource.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="272">
+          <caret line="19" column="0" lean-forward="false" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
           <folding>
             <element signature="e#17#42#0" expanded="true" />
           </folding>
@@ -891,18 +940,28 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit/wire.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="374">
-          <caret line="37" column="42" lean-forward="true" selection-start-line="37" selection-start-column="42" selection-end-line="37" selection-end-column="42" />
+        <state relative-caret-position="612">
+          <caret line="40" column="16" lean-forward="false" selection-start-line="40" selection-start-column="16" selection-end-line="40" selection-end-column="16" />
           <folding>
             <element signature="e#17#50#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/circuit/gate.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="680">
+          <caret line="40" column="4" lean-forward="false" selection-start-line="40" selection-start-column="4" selection-end-line="40" selection-end-column="4" />
+          <folding>
+            <element signature="e#17#29#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/circuit/circuit_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="425">
-          <caret line="135" column="25" lean-forward="false" selection-start-line="135" selection-start-column="25" selection-end-line="135" selection-end-column="25" />
+        <state relative-caret-position="7106">
+          <caret line="543" column="43" lean-forward="false" selection-start-line="543" selection-start-column="43" selection-end-line="543" selection-end-column="43" />
           <folding>
             <element signature="e#17#79#0" expanded="true" />
           </folding>

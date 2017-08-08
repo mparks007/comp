@@ -26,14 +26,15 @@ func NewSwitch(init bool) *Switch {
 	}
 
 	sw.relay = NewRelay(NewBattery(), sw.pin2Battery)
-	fmt.Println("Switch Wiring up to Relay Closedout")
-	sw.relay.ClosedOut.WireUp(sw.ch)
 
 	go func() {
 		for {
 			sw.Transmit(<-sw.ch)
 		}
 	}()
+
+	fmt.Println("Switch Wiring up to Relay Closedout")
+	sw.relay.ClosedOut.WireUp(sw.ch)
 
 	return sw
 }
