@@ -6,11 +6,13 @@ import (
 	//"strings"
 	"time"
 	//"strings"
+	"sync/atomic"
 )
 
 // go test
 // go test -race -v (verbose)
 // go test -race -cpu=1,2,4 (go max procs)
+// go test -count 100
 // go test -v
 // go test -run TestOscillator (specific test)
 
@@ -226,6 +228,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 	var pin1Battery, pin2Battery *Battery
 	openCh := make(chan bool, 1)
 	closedCh := make(chan bool, 1)
+	receivedCh := make(chan struct{})
 
 	pin1Battery = NewBattery()
 	pin2Battery = NewBattery()
@@ -238,12 +241,14 @@ func TestRelay_WithBatteries(t *testing.T) {
 			case gotOpenOut = <-openCh:
 			case gotClosedOut = <-closedCh:
 			}
+			receivedCh <- struct{}{}
 		}
 	}()
 
 	rel.OpenOut.WireUp(openCh)
 	rel.ClosedOut.WireUp(closedCh)
-	time.Sleep(time.Millisecond * 10)
+	<-receivedCh
+	<-receivedCh
 
 	if gotOpenOut != false {
 		t.Error("Wanted no power at the open position but got some")
@@ -266,7 +271,9 @@ func TestRelay_WithBatteries(t *testing.T) {
 			} else {
 				pin2Battery.Discharge()
 			}
-			time.Sleep(time.Millisecond * 10)
+			sfsklhsdakl;fhaksdfh
+			<-receivedCh
+			<-receivedCh
 
 			if gotOpenOut != tc.wantAtOpen {
 				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut)
@@ -282,19 +289,19 @@ func TestRelay_WithBatteries(t *testing.T) {
 func TestSwitch(t *testing.T) {
 	var gotState, wantState bool
 	ch := make(chan bool, 1)
+	done := make(chan struct{})
 	sw := NewSwitch(false)
 
 	go func() {
 		for {
-			select {
-			case gotState = <-ch:
-			}
+			gotState = <-ch
+			done <- struct{}{}
 		}
 	}()
 
 	fmt.Println("Test wiring up to Switch")
 	sw.WireUp(ch)
-	time.Sleep(time.Millisecond * 10)
+	<-done
 
 	wantState = false
 
@@ -305,7 +312,7 @@ func TestSwitch(t *testing.T) {
 
 	// initial turn on
 	sw.Set(true)
-	time.Sleep(time.Millisecond * 10)
+	<-done
 
 	wantState = true
 
@@ -315,7 +322,7 @@ func TestSwitch(t *testing.T) {
 
 	// turn on again, though already on
 	sw.Set(true)
-	time.Sleep(time.Millisecond * 10)
+	<-done
 
 	if gotState != wantState {
 		t.Errorf("With an attempt to turn on an already on switch, wanted the channel to be empty, but it wasn't")
@@ -323,7 +330,7 @@ func TestSwitch(t *testing.T) {
 
 	// now off
 	sw.Set(false)
-	time.Sleep(time.Millisecond * 10)
+	<-done
 
 	wantState = false
 
@@ -395,9 +402,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 				go func() {
 					for {
-						select {
-						case got = <-ch:
-						}
+						got = <-ch
 					}
 				}()
 
@@ -418,9 +423,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 				go func() {
 					for {
-						select {
-						case got = <-ch:
-						}
+						got = <-ch
 					}
 				}()
 
@@ -528,55 +531,55 @@ func TestRelay_UpdatePinPanic_TooLow(t *testing.T) {
 }
 
 func TestANDGate(t *testing.T) {
-	/*
-		testCases := []struct {
-			aInPowered bool
-			bInPowered bool
-			cInPowered bool
-			want       bool
-		}{
-			{false, false, false, false},
-			//	{true, false, false, false},
-			//	{false, true, false, false},
-			//	{true, true, false, false},
-			//	{false, false, true, false},
-			//	{true, false, true, false},
-			//	{false, true, true, false},
-			//	{true, true, true, true},
-		}*/
+	testCases := []struct {
+		aInPowered bool
+		bInPowered bool
+		cInPowered bool
+		want       bool
+	}{
+		{false, false, false, false},
+		{true, false, false, false},
+		{false, true, false, false},
+		{true, true, false, false},
+		{false, false, true, false},
+		{true, false, true, false},
+		{false, true, true, false},
+		{true, true, true, true},
+	}
 	aSwitch := NewSwitch(false)
 	bSwitch := NewSwitch(false)
 	cSwitch := NewSwitch(false)
 
-	NewANDGate(aSwitch, bSwitch, cSwitch)
-	/*
-		var got bool
-		ch := make(chan bool, 1)
+	gate := NewANDGate(aSwitch, bSwitch, cSwitch)
 
-		go func() {
-			for {
-				select {
-				case got = <-ch:
-				}
-			}
-		}()
-		fmt.Println("************* Wiring up actual gate **************")
-		gate.WireUp(ch)
+	var got bool
+	ch := make(chan bool, 1)
 
-		for i, tc := range testCases {
-			t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
-
-				aSwitch.Set(tc.aInPowered)
-				bSwitch.Set(tc.bInPowered)
-				cSwitch.Set(tc.cInPowered)
-				time.Sleep(time.Millisecond * 100)
-
-				if got != tc.want {
-					t.Errorf("Wanted power %t, but got %t", tc.want, got)
-				}
-			})
+	go func() {
+		for {
+			got = <-ch
 		}
-	*/
+	}()
+	gate.WireUp(ch)
+	time.Sleep(time.Millisecond * 10)
+
+	if got != false {
+		t.Error("Wanted no power on the gate but got some")
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
+
+			aSwitch.Set(tc.aInPowered)
+			bSwitch.Set(tc.bInPowered)
+			cSwitch.Set(tc.cInPowered)
+			time.Sleep(time.Millisecond * 10)
+
+			if got != tc.want {
+				t.Errorf("Wanted power %t, but got %t", tc.want, got)
+			}
+		})
+	}
 }
 
 /*
@@ -647,6 +650,7 @@ func TestANDGate_UpdatePinPanic_TooLow(t *testing.T) {
 
 	gate.UpdatePin(0, 1, NewBattery())
 }
+*/
 
 func TestORGate(t *testing.T) {
 	testCases := []struct {
@@ -671,8 +675,20 @@ func TestORGate(t *testing.T) {
 
 	gate := NewORGate(aSwitch, bSwitch, cSwitch)
 
-	var got bool
-	gate.WireUp(func(state bool) { got = state })
+	ch := make(chan bool, 1)
+
+	var got atomic.Value
+	go func() {
+		for {
+			got.Store(<-ch)
+		}
+	}()
+	gate.WireUp(ch)
+	time.Sleep(time.Millisecond * 10)
+
+	if got.Load().(bool) != false {
+		t.Error("Wanted no power on the gate but got some")
+	}
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip[%d]: Setting A power to %t and B power to %t and C power to %t", i+1, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
@@ -680,14 +696,16 @@ func TestORGate(t *testing.T) {
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
 			cSwitch.Set(tc.cInPowered)
+			time.Sleep(time.Millisecond * 10)
 
-			if got != tc.want {
+			if got.Load().(bool) != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got)
 			}
 		})
 	}
 }
 
+/*
 func TestNANDGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool

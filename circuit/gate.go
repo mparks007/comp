@@ -1,6 +1,9 @@
 package circuit
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 //import "fmt"
 
@@ -18,6 +21,7 @@ type ANDGate struct {
 
 func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	gate := &ANDGate{}
+	gate.ch = make(chan bool, 1)
 
 	for i, pin := range pins {
 		if i == 0 {
@@ -29,11 +33,8 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 
 	go func() {
 		for {
-			select {
-			case state := <-gate.ch:
-				fmt.Println("Gate transmit")
-				gate.Transmit(state)
-			}
+			state := <-gate.ch
+			gate.Transmit(state)
 		}
 	}()
 
@@ -92,7 +93,7 @@ func (g *ANDGate) powerUpdate(newState bool) {
 	}
 }
 */
-/*
+
 // OR
 // 0 0 0
 // 1 0 1
@@ -101,6 +102,8 @@ func (g *ANDGate) powerUpdate(newState bool) {
 
 type ORGate struct {
 	relays []*Relay
+	chans  []chan bool
+	states []bool
 	pwrSource
 }
 
@@ -110,13 +113,40 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 	for i, pin := range pins {
 		gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
 
+		ch := make(chan bool, 1)
+		gate.chans = append(gate.chans, ch)
+
 		// every relay can trigger state in s chain of ORs
-		gate.relays[i].ClosedOut.WireUp(gate.powerUpdate)
+		gate.relays[i].ClosedOut.WireUp(ch)
 	}
+
+	go func() {
+		cases := make([]reflect.SelectCase, len(gate.chans))
+
+		gate.states = make([]bool, len(gate.chans))
+		for i, ch := range gate.chans {
+			cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+		}
+
+		for {
+			chosen, value, _ := reflect.Select(cases)
+			gate.states[chosen] = value.Bool()
+
+			latestState := false
+			for _, state := range gate.states {
+				if state {
+					latestState = true
+					break
+				}
+			}
+			gate.Transmit(latestState)
+		}
+	}()
 
 	return gate
 }
 
+/*
 func (g *ORGate) powerUpdate(newState bool) {
 	newState = false
 
@@ -130,13 +160,13 @@ func (g *ORGate) powerUpdate(newState bool) {
 
 	g.Transmit(newState)
 }
-
+*/
 // NAND
 // 0 0 1
 // 1 0 1
 // 0 1 1
 // 1 1 0
-
+/*
 type NANDGate struct {
 	relays []*Relay
 	pwrSource
