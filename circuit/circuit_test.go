@@ -1734,7 +1734,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 75)
+			time.Sleep(time.Millisecond * 100)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1760,14 +1760,14 @@ func TestNBitLatch(t *testing.T) {
 
 	latchSwitches, _ := NewNSwitchBank("00011000")
 	clkSwitch := NewSwitch(true)
-	latches := NewNBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
+	latch := NewNBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)
-	got := make([]bool, 8)
+	got := make([]atomic.Value, 8)
 
 	// built the case statements to deal with each Q in the latch array
-	for i, q := range latches.Qs {
+	for i, q := range latch.Qs {
 
 		ch := make(chan bool, 1)
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
@@ -1775,63 +1775,53 @@ func TestNBitLatch(t *testing.T) {
 		q.WireUp(ch)
 	}
 
-	getStates := func() {
-		// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-		chosenCase, caseValue, _ := reflect.Select(cases)
-		got[chosenCase] = caseValue.Bool()
-	}
-
-	// calling transmit explicitly for each case to snag each state
-	for range cases {
-		getStates()
-	}
+	go func() {
+		for {
+			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+			chosenCase, caseValue, _ := reflect.Select(cases)
+			got[chosenCase].Store(caseValue.Bool())
+		}
+	}()
 
 	// let the above settle down before testing
 	time.Sleep(time.Millisecond * 75)
 
-	want := [8]bool{false, false, false, true, true, false, false, false}
+	priorWant := [8]bool{false, false, false, true, true, false, false, false}
 	for i := 0; i < 8; i++ {
-		if got[i] != want[i] {
-			t.Errorf("Latch[%d] had power (%v) but wanted (%v).\n", i, got[i], want[i])
+		if got := got[i].Load().(bool); got != priorWant[i] {
+			t.Errorf("Latch[%d] wanted (%v) but got (%v).\n", i, priorWant[i], got)
 		}
 	}
-
-	//priorWant := [8]bool{false, false, false, false, false, false, false, false}
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Stage#%d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
 
-			// // set to OFF to test that nothing will change in the latches store
+			// set to OFF to test that nothing will change in the latches store
 
-			// clkSwitch.Set(false)
-			// updateSwitches(latchSwitches, tc.input)
+			clkSwitch.Set(false)
+			updateSwitches(latchSwitches, tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
 
-			// for i, pwr := range latch.Qs {
-			// 	got := pwr.(*NORGate).GetIsPowered()
-			// 	want := priorWant[i]
+			for i, _ := range latch.Qs {
+				if got := got[i].Load().(bool); got != priorWant[i] {
+					t.Errorf("Latch[%d], with clkSwitch off, wanted %v but got %v", i, priorWant[i], got)
+				}
+			}
 
-			// 	if got != want {
-			// 		t.Errorf("[As PwrEmitter] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
-			// 	}
-			// }
+			// Now set to ON to test that requested changes DID occur in the latches store
 
-			// // Now set to ON to test that requested changes did occur in the latches store
+			clkSwitch.Set(true)
+			time.Sleep(time.Millisecond * 75) // need to allow all the latches to settle down (transmit their new Q values)
 
-			// clkSwitch.Set(true)
+			for i, _ := range latch.Qs {
+				if got := got[i].Load().(bool); got != tc.want[i] {
+					t.Errorf("Latch[%d], with clkSwitch ON, wanted %v but got %v", i, tc.want[i], got)
+				}
+			}
 
-			// for i, pwr := range latch.Qs {
-			// 	got := pwr.(*NORGate).GetIsPowered()
-			// 	want := tc.want[i]
-
-			// 	if got != want {
-			// 		t.Errorf("[As PwrEmitter] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
-			// 	}
-			// }
-
-			// // now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (so matches prior)
-			// for i, q := range latch.Qs {
-			// 	priorWant[i] = q.(*NORGate).GetIsPowered()
-			// }
+			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (ie matches prior)
+			for i, _ := range latch.Qs {
+				priorWant[i] = got[i].Load().(bool)
+			}
 		})
 	}
 }
