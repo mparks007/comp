@@ -1,18 +1,15 @@
 package circuit
 
-import (
-//	"errors"
-	//"fmt"
-)
+import "fmt"
 
-// Half NBitAdder
+// Half Adder
 // A and B in result in Sum and Carry out (doesn't handle carry in, needs full-adder)
 // A B		Sum		Carry
 // 0 0		0		0
 // 1 0		1		0
 // 0 1		1		0
 // 1 1		0		1
-/*
+
 type HalfAdder struct {
 	Sum   pwrEmitter
 	Carry pwrEmitter
@@ -27,7 +24,7 @@ func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
 	return h
 }
 
-// Full NBitAdder
+// Full Adder
 // A, B, and Carry in result in Sum and Carry out (can handle "1 + 1 = 0 carry the 1")
 
 type FullAdder struct {
@@ -49,7 +46,7 @@ func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 }
 
 // N-bit NAdder
-// Handles s Carry bit in and holds potential Carry bit after summing all
+// Handles a Carry bit in and holds potential Carry bit after summing all
 //    10011101
 // +  11010110
 // = 101110011
@@ -63,7 +60,7 @@ type NBitAdder struct {
 func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) (*NBitAdder, error) {
 
 	if len(addend1Pins) != len(addend2Pins) {
-		return nil, errors.New(fmt.Sprintf("Mismatched addend lengths.  Addend1 len: %d, Addend2 len: %d", len(addend1Pins), len(addend2Pins)))
+		return nil, fmt.Errorf("Mismatched addend lengths.  Addend1 len: %d, Addend2 len: %d", len(addend1Pins), len(addend2Pins))
 	}
 
 	addr := &NBitAdder{}
@@ -71,10 +68,11 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 	for i := len(addend1Pins) - 1; i >= 0; i-- {
 		var full *FullAdder
 
+		// if at least significant pin
 		if i == len(addend1Pins)-1 {
 			full = NewFullAdder(addend1Pins[i], addend2Pins[i], carryInPin) // carry-in is the actual (potential) carry from an adjoining circuit
 		} else {
-			// [carry-in is the neighboring adders carry-out]
+			// [carry-in is the neighboring, more significant adder's carry-out]
 			// since insert at the front of the slice, the neighbor is always the one at the front per the prior insert
 			full = NewFullAdder(addend1Pins[i], addend2Pins[i], addr.fullAdders[0].Carry)
 		}
@@ -82,35 +80,17 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 		// prepend since going in reverse order
 		addr.fullAdders = append([]*FullAdder{full}, addr.fullAdders...)
 
-		// make Sums refer to each for easier external access (pre-pending here)
+		// us external Sums for easier external access (pre-pending here too)
 		addr.Sums = append([]pwrEmitter{full.Sum}, addr.Sums...)
 	}
 
-	// make CarryOut refer to the appropriate adder for easier external access
+	// make CarryOut refer to the appropriate (most significant) adder for easier external access
 	addr.CarryOut = addr.fullAdders[0].Carry
 
 	return addr, nil
 }
 
-func (a *NBitAdder) AsAnswerString() string {
-	answer := ""
-
-	for _, full := range a.fullAdders {
-
-		if full.Sum.(*XORGate).GetIsPowered() {
-			answer += "1"
-		} else {
-			answer += "0"
-		}
-	}
-
-	return answer
-}
-
-func (a *NBitAdder) CarryOutAsBool() bool {
-	return a.CarryOut.(*ORGate).GetIsPowered()
-}
-
+/*
 type ThreeNumberAdder struct {
 	latchStore    *NBitLatch
 	selector      *TwoToOneSelector

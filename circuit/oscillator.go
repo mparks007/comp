@@ -1,11 +1,10 @@
 package circuit
 
 import (
-	//"fmt"
-//	"sync"
-//	"time"
+	"sync"
+	"time"
 )
-/*
+
 type Oscillator struct {
 	stopCh chan bool
 	mu     sync.Mutex
@@ -33,14 +32,8 @@ func (o *Oscillator) Oscillate(hertz int) {
 		for {
 			select {
 			case <-tick.C:
-				if !o.GetIsPowered() {
-					//fmt.Println("\ncase <-tick.C ^")
-				} else {
-					//fmt.Println("\ncase <-tick.C v")
-				}
-				o.Transmit(!o.GetIsPowered())
+				o.Transmit(!o.isPowered)
 			case <-o.stopCh:
-				//fmt.Println("case <-stopCh")
 				tick.Stop()
 				o.mu.Lock()
 				o.active = false
@@ -57,8 +50,6 @@ func (o *Oscillator) Stop() {
 	o.mu.Unlock()
 
 	if active {
-		//fmt.Println("o.stopCh <- true")
 		o.stopCh <- true
 	}
 }
-*/

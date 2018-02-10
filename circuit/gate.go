@@ -5,8 +5,6 @@ import (
 	"reflect"
 )
 
-//import "fmt"
-
 // AND
 // 0 0 0
 // 1 0 0
@@ -31,68 +29,24 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 		}
 	}
 
+	// for an AND, the last relay in the chain is the final answer (from CLOSED out)
+	gate.relays[len(pins)-1].ClosedOut.WireUp(gate.ch)
+
+	transmit := func() {
+		gate.Transmit(<-gate.ch)
+	}
+
+	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	transmit()
+
 	go func() {
 		for {
-			state := <-gate.ch
-			gate.Transmit(state)
+			transmit()
 		}
 	}()
 
-	// the last relay in the chain is the final answer for an AND
-	gate.relays[len(pins)-1].ClosedOut.WireUp(gate.ch)
-
 	return gate
 }
-
-func (g *ANDGate) UpdatePin(andPinNum, relayPinNum int, pin pwrEmitter) {
-	if andPinNum < 1 || andPinNum > len(g.relays) {
-		panic(fmt.Sprintf("Invalid gate pin number.  Input pin count (%d), requested pin (%d)", len(g.relays), andPinNum))
-	}
-
-	g.relays[andPinNum-1].UpdatePin(relayPinNum, pin)
-}
-
-/*
-func NewSynchronizedANDGate(pins ...pwrEmitter) *ANDGate {
-	gate := &ANDGate{}
-
-	for i, pin := range pins {
-		if i == 0 {
-			gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
-		} else {
-			gate.relays = append(gate.relays, NewRelay(&gate.relays[i-1].ClosedOut, pin))
-		}
-
-		// every relay needs to be a part of the final answer on a sync'd ANDGate
-		gate.relays[i].ClosedOut.WireUp(gate.powerUpdate)
-	}
-
-	return gate
-}
-
-func (g *ANDGate) powerUpdate(newState bool) {
-
-	allRelaysUpdated := true
-
-	// check see if all relays have had their power state updated
-	for _, rel := range g.relays {
-		if !rel.updated {
-			allRelaysUpdated = false
-			break
-		}
-	}
-
-	if allRelaysUpdated {
-		// reset each relay's updated state since we got our answer and are handling it
-		for _, rel := range g.relays {
-			rel.updated = false
-		}
-
-		// as an AND, transmit if the LAST relay in the chain has power at both A and B in
-		g.Transmit(g.relays[len(g.relays)-1].aInPowered && g.relays[len(g.relays)-1].bInPowered)
-	}
-}
-*/
 
 // OR
 // 0 0 0
@@ -100,9 +54,10 @@ func (g *ANDGate) powerUpdate(newState bool) {
 // 0 1 1
 // 1 1 1
 
+// just like a NAND Gate but wired up to the CLOSED outs of each relay
+
 type ORGate struct {
 	relays []*Relay
-	chans  []chan bool
 	states []bool
 	pwrSource
 }
@@ -110,93 +65,121 @@ type ORGate struct {
 func NewORGate(pins ...pwrEmitter) *ORGate {
 	gate := &ORGate{}
 
+	// for use in a dynamic select statement (a case per pin) and bool results per case
+	cases := make([]reflect.SelectCase, len(pins))
+	gate.states = make([]bool, len(pins))
+
+	// build a relay, channel, and case statement to deal with each input pin
 	for i, pin := range pins {
 		gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
 
 		ch := make(chan bool, 1)
-		gate.chans = append(gate.chans, ch)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 
-		// every relay can trigger state in s chain of ORs
+		// for an OR, every relay can trigger state (from CLOSED out)
 		gate.relays[i].ClosedOut.WireUp(ch)
 	}
 
-	go func() {
-		cases := make([]reflect.SelectCase, len(gate.chans))
+	transmit := func() {
+		// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+		chosenCase, caseValue, _ := reflect.Select(cases)
+		gate.states[chosenCase] = caseValue.Bool()
 
-		gate.states = make([]bool, len(gate.chans))
-		for i, ch := range gate.chans {
-			cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-		}
-
-		for {
-			chosen, value, _ := reflect.Select(cases)
-			gate.states[chosen] = value.Bool()
-
-			latestState := false
+		// if we already know we have a true, just transmit it.  no need to check all the other states (short circuit)
+		if gate.states[chosenCase] {
+			gate.Transmit(true)
+		} else {
+			finalAnswer := false
 			for _, state := range gate.states {
 				if state {
-					latestState = true
+					// aha!  found a relay that is powered, so NO need to check the remaining relays
+					finalAnswer = true
 					break
 				}
 			}
-			gate.Transmit(latestState)
+			gate.Transmit(finalAnswer)
+		}
+	}
+
+	// calling transmit explicitly for each case to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	for range cases {
+		transmit()
+	}
+
+	go func() {
+		for {
+			transmit()
 		}
 	}()
 
 	return gate
 }
 
-/*
-func (g *ORGate) powerUpdate(newState bool) {
-	newState = false
-
-	// check to see if ANY of the relays are closed
-	for _, rel := range g.relays {
-		if rel.ClosedOut.GetIsPowered() {
-			newState = true
-			break
-		}
-	}
-
-	g.Transmit(newState)
-}
-*/
 // NAND
 // 0 0 1
 // 1 0 1
 // 0 1 1
 // 1 1 0
-/*
+
+// just like an OR Gate but wired up to the OPEN outs of each relay
+
 type NANDGate struct {
 	relays []*Relay
+	states []bool
 	pwrSource
 }
 
 func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	gate := &NANDGate{}
 
+	// for use in a dynamic select statement (a case per pin) and bool results per case
+	cases := make([]reflect.SelectCase, len(pins))
+	gate.states = make([]bool, len(pins))
+
+	// build a relay, channel, and case statement to deal with each input pin
 	for i, pin := range pins {
 		gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
 
-		// every relay can trigger state in a chain of NANDs
-		gate.relays[i].OpenOut.WireUp(gate.powerUpdate)
+		ch := make(chan bool, 1)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+
+		// for a NAND, every relay can trigger state (from OPEN out)
+		gate.relays[i].OpenOut.WireUp(ch)
 	}
 
-	return gate
-}
+	transmit := func() {
+		// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+		chosenCase, caseValue, _ := reflect.Select(cases)
+		gate.states[chosenCase] = caseValue.Bool()
 
-func (g *NANDGate) powerUpdate(newState bool) {
-	newState = false
-
-	// check to see if ANY of the relays are open
-	for _, rel := range g.relays {
-		if rel.OpenOut.GetIsPowered() {
-			newState = true
-			break
+		// if we already know we have a true, just transmit it.  no need to check all the other states (short circuit)
+		if gate.states[chosenCase] {
+			gate.Transmit(true)
+		} else {
+			finalAnswer := false
+			for _, state := range gate.states {
+				if state {
+					// aha!  found a relay that is powered, so NO need to check the remaining relays
+					finalAnswer = true
+					break
+				}
+			}
+			gate.Transmit(finalAnswer)
 		}
 	}
 
-	g.Transmit(newState)
+	// calling transmit explicitly for each case to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	for range cases {
+		transmit()
+	}
+
+	go func() {
+		for {
+			transmit()
+		}
+	}()
+
+	return gate
 }
 
 // NOR
@@ -205,13 +188,21 @@ func (g *NANDGate) powerUpdate(newState bool) {
 // 0 1 0
 // 1 1 0
 
+// just like an AND Gate but wired up to the OPEN out of the last relay
+
 type NORGate struct {
 	relays []*Relay
+	ch     chan bool
 	pwrSource
 }
 
 func NewNORGate(pins ...pwrEmitter) *NORGate {
+	return NewNamedNORGate("", pins...)
+}
+
+func NewNamedNORGate(name string, pins ...pwrEmitter) *NORGate {
 	gate := &NORGate{}
+	gate.ch = make(chan bool, 1)
 
 	for i, pin := range pins {
 		if i == 0 {
@@ -221,18 +212,30 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 		}
 	}
 
-	// the last relay in the chain is the final answer for a NOR
-	gate.relays[len(gate.relays)-1].OpenOut.WireUp(gate.Transmit)
+	// for a NOR, the last relay in the chain is the final answer (from OPEN out)
+	gate.relays[len(pins)-1].OpenOut.WireUp(gate.ch)
 
-	return gate
-}
-
-func (g *NORGate) UpdatePin(norPinNum, relayPinNum int, pin pwrEmitter) {
-	if norPinNum < 1 || norPinNum > len(g.relays) {
-		panic(fmt.Sprintf("Invalid gate pin number.  Input pin count (%d), requested pin (%d)", len(g.relays), norPinNum))
+	transmit := func() {
+		state := <-gate.ch
+		fmt.Printf("Transmit of (%s) NOR, value %t\n", name, state)
+		if gate.Transmit(state) {
+			fmt.Printf("State did change for (%s) NOR, transmitted\n", name)
+		} else {
+			fmt.Printf("State did not change for (%s) NOR, skipped the transmit\n", name)
+		}
 	}
 
-	g.relays[norPinNum-1].UpdatePin(relayPinNum, pin)
+	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	fmt.Printf("Pre-Ctor-exit Transmit of (%s)\n", name)
+	transmit()
+
+	go func() {
+		for {
+			transmit()
+		}
+	}()
+
+	return gate
 }
 
 // XOR
@@ -245,18 +248,33 @@ type XORGate struct {
 	orGate   pwrEmitter
 	nandGate pwrEmitter
 	andGate  pwrEmitter
+	ch       chan bool
 	pwrSource
 }
 
 func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 	gate := &XORGate{}
+	gate.ch = make(chan bool, 1)
 
 	gate.orGate = NewORGate(pin1, pin2)
 	gate.nandGate = NewNANDGate(pin1, pin2)
 	gate.andGate = NewANDGate(gate.orGate, gate.nandGate)
 
-	// the state of the shared AND is the answer for an XOR
-	gate.andGate.WireUp(gate.Transmit)
+	// for an XOR, the state of the shared AND Gate is the answer
+	gate.andGate.WireUp(gate.ch)
+
+	transmit := func() {
+		gate.Transmit(<-gate.ch)
+	}
+
+	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	transmit()
+
+	go func() {
+		for {
+			transmit()
+		}
+	}()
 
 	return gate
 }
@@ -269,17 +287,31 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 
 type XNORGate struct {
 	inverter pwrEmitter
+	ch       chan bool
 	pwrSource
 }
 
 func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 	gate := &XNORGate{}
+	gate.ch = make(chan bool, 1)
 
 	gate.inverter = NewInverter(NewXORGate(pin1, pin2))
 
-	// the inverter owns the final answer in this approach to an XNOR
-	gate.inverter.WireUp(gate.Transmit)
+	// in this approach to an XNOR (vs. building it with a combination of other gates), the Inverter owns the final answer
+	gate.inverter.WireUp(gate.ch)
+
+	transmit := func() {
+		gate.Transmit(<-gate.ch)
+	}
+
+	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	transmit()
+
+	go func() {
+		for {
+			transmit()
+		}
+	}()
 
 	return gate
 }
-*/

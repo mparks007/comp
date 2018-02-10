@@ -1,7 +1,6 @@
 package circuit
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -9,39 +8,46 @@ import (
 type pwrSource struct {
 	outChannels []chan bool
 	isPowered   bool
+	name        string
+	mu          sync.Mutex // for isPowered usage
 }
 
 // WireUp allows a circuit to subscribe to the power source
 func (p *pwrSource) WireUp(ch chan bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	p.outChannels = append(p.outChannels, ch)
 
-	fmt.Printf("WireUp: %v\n", ch)
 	// go ahead and transmit to the new subscriber
 	ch <- p.isPowered
 }
 
 // Transmit will push out the state of things (IF state changed) to each subscriber
-func (p *pwrSource) Transmit(newState bool) {
+func (p *pwrSource) Transmit(newState bool) bool {
+	p.mu.Lock()
+	var didTransmit = false
+
 	if p.isPowered != newState {
 		p.isPowered = newState
+		didTransmit = true
 
-		wg := &sync.WaitGroup{}
+		wg := &sync.WaitGroup{} // must use this to ensure we finish blasting bools out to subscribers before we just barrel along in the code
 
 		for _, ch := range p.outChannels {
 			wg.Add(1)
 			go func(ch chan bool) {
-				fmt.Printf("Transmit: %v\n", ch)
-				ch <- newState
+				ch <- p.isPowered
 				wg.Done()
 			}(ch)
 		}
 
+		p.mu.Unlock() // wanted to explicitly unlock before the Wait ("block") since we are DONE with the locked fields at this point (is why no defer used)
 		wg.Wait()
-	}
-}
 
-// TRY NOT TO USE THIS!!!!!
-// GetIsPowered is a field to access the internal property state of the power source
-//func (p *pwrSource) GetIsPowered() bool {
-//	return p.isPowered
-//}
+	} else {
+		p.mu.Unlock() // must unlock since we may not have a state change (not using defer unlock due to the Unlock/Wait comment above)
+	}
+
+	return didTransmit
+}

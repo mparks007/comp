@@ -1,7 +1,6 @@
 package circuit
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 )
@@ -19,27 +18,33 @@ func NewSwitch(init bool) *Switch {
 	sw := &Switch{}
 	sw.ch = make(chan bool, 1)
 
-	// setup the battery-based relay pin that will be used to toggle on/off of the switch
+	// setup the battery-based relay pin that will be used to toggle on/off of the switch (see Set(bool) method)
 	sw.pin2Battery = NewBattery()
 	if !init {
 		sw.pin2Battery.Discharge()
 	}
-
 	sw.relay = NewRelay(NewBattery(), sw.pin2Battery)
+
+	// a switch acts like a relay, where Closed out is its power "answer"
+	sw.relay.ClosedOut.WireUp(sw.ch)
+
+	transmit := func() {
+		sw.Transmit(<-sw.ch)
+	}
+
+	// calling transmit explicitly to ensure the 'answer' for the switch output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	transmit()
 
 	go func() {
 		for {
-			sw.Transmit(<-sw.ch)
+			transmit()
 		}
 	}()
-
-	fmt.Println("Switch Wiring up to Relay Closedout")
-	sw.relay.ClosedOut.WireUp(sw.ch)
 
 	return sw
 }
 
-// Set on a Switch will toggle the state of the underlying battery to activate/deactivate the internal relay
+// Set method on a Switch will toggle the state of the underlying battery to activate/deactivate the internal relay
 func (s *Switch) Set(newState bool) {
 	if newState {
 		s.pin2Battery.Charge()
@@ -48,7 +53,7 @@ func (s *Switch) Set(newState bool) {
 	}
 }
 
-// NSwitchBank is a convenient way to get any number of providers from a string of 0/1s
+// NSwitchBank is a convenient way to get any number of power emitters from a string of 0/1s
 type NSwitchBank struct {
 	Switches []*Switch
 }
@@ -61,7 +66,7 @@ func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 		return nil, err
 	}
 	if !match {
-		err = errors.New(fmt.Sprintf("Input not in binary format: \"%s\"", bits))
+		err = fmt.Errorf("Input not in binary format: \"%s\"", bits)
 		return nil, err
 	}
 

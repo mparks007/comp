@@ -1,6 +1,69 @@
 package circuit
 
+import (
+	"fmt"
+	"time"
+)
+
 //import "fmt"
+
+// RS/Reset-Set (or SR/Set-Reset) Flip-Flop
+
+// r s   q  !q
+// 0 1   1   0
+// 1 0   0   1
+// 0 0   q  !q  (hold)
+// 1 1   x   x  (invalid)
+
+type RSFlipFlop struct {
+	Q    *NORGate
+	QBar *NORGate
+}
+
+func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
+	ff := &RSFlipFlop{}
+
+	chQNOROut := make(chan bool, 1)    // so a wire can listen for changes in Q NOR (and feed result to pin 2 of QBar NOR)
+	chQBarNOROut := make(chan bool, 1) // so a wire can listen for changes in QBar NOR (and feed result to pin 2 of Q NOR)
+
+	fmt.Println("Creating loopback wires")
+	wireQOut := NewNamedWire("wireQOut", 10)
+	wireQBarOut := NewNamedWire("wireQBarOut", 10)
+
+	// wireQBarOut must listen for changes in QBar NOR then transmit to Q NOR's pin 2
+	go func() {
+		for {
+			state := <-chQBarNOROut
+			fmt.Printf("Transmit of wireQBarOut, %t\n", state)
+			wireQBarOut.Transmit(state)
+		}
+	}()
+
+	// wireQOut must listen for changes in Q NOR then transmit to QBar NOR's pin 2
+	go func() {
+		for {
+			state := <-chQNOROut
+			fmt.Printf("Transmit of wireQOut, %t\n", state)
+			wireQOut.Transmit(state)
+		}
+	}()
+
+	fmt.Println("Creating QBar NOR")
+	ff.QBar = NewNamedNORGate("QBar", sPin, wireQOut)
+	fmt.Println("Wiring channel up to QBar")
+	ff.QBar.WireUp(chQBarNOROut)
+	// give the WireUp's inner transmit time to wrap up
+	time.Sleep(time.Millisecond * 10)
+
+	fmt.Println("\nCreating Q NOR")
+	ff.Q = NewNamedNORGate("Q", rPin, wireQBarOut)
+	fmt.Println("Wiring channel up to Q")
+	ff.Q.WireUp(chQNOROut)
+	// give the WireUp's inner transmit time to wrap up
+	time.Sleep(time.Millisecond * 10)
+
+	return ff
+}
 
 // Level-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
@@ -8,7 +71,7 @@ package circuit
 // 0  1     0  1
 // 1  1     1  0
 // X  0     q  !q  (data doesn't matter, no clock high to trigger a store-it action)
-/*
+
 type LevelTriggeredDTypeLatch struct {
 	rs   *RSFlipFlop
 	rAnd *ANDGate
@@ -31,15 +94,7 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 
 	return latch
 }
-*/
-/*
-func (l *LevelTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
-	l.rAnd.UpdatePin(2, 2, NewInverter(dataPin))
-	l.sAnd.UpdatePin(2, 2, dataPin)
-}
-*/
 
-/*
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
 	Qs      []pwrEmitter
@@ -58,6 +113,7 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 	return latch
 }
 
+/*
 // Level-triggered D-Type Latch With Clear ("Level" = clock high/low, "D" = data 0/1)
 
 // d clk clr   q  !q

@@ -1,5 +1,5 @@
 package circuit
-/*
+
 type OnesComplementer struct {
 	Complements []pwrEmitter
 }
@@ -14,18 +14,3 @@ func NewOnesComplementer(pins []pwrEmitter, signal pwrEmitter) *OnesComplementer
 
 	return comp
 }
-
-func (c *OnesComplementer) AsComplementString() string {
-	s := ""
-
-	for _, compOR := range c.Complements {
-		if compOR.(*XORGate).GetIsPowered() {
-			s += "1"
-		} else {
-			s += "0"
-		}
-	}
-
-	return s
-}
-*/
