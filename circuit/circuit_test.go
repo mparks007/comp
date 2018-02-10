@@ -1709,7 +1709,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	time.Sleep(time.Millisecond * 10)
+	time.Sleep(time.Millisecond * 75)
 
 	if gotQ.Load().(bool) != true {
 		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
@@ -1734,7 +1734,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 50)
+			time.Sleep(time.Millisecond * 75)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1747,7 +1747,6 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	}
 }
 
-/*
 func TestNBitLatch(t *testing.T) {
 	testCases := []struct {
 		input string
@@ -1759,64 +1758,80 @@ func TestNBitLatch(t *testing.T) {
 		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
 	}
 
-	latchSwitches, _ := NewNSwitchBank("00000000")
-	clkSwitch := NewSwitch(false)
+	latchSwitches, _ := NewNSwitchBank("00011000")
+	clkSwitch := NewSwitch(true)
 	latches := NewNBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
 
-	var gotQ atomic.Value
-	go func() {
-		for {
-			select {
-			case newQ := <-chQ:
-				gotQ.Store(newQ)
-			}
-		}
-	}()
+	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
+	cases := make([]reflect.SelectCase, 8)
+	got := make([]bool, 8)
 
-	latches.Q.WireUp(chQ)
+	// built the case statements to deal with each Q in the latch array
+	for i, q := range latches.Qs {
 
-	time.Sleep(time.Millisecond * 10)
+		ch := make(chan bool, 1)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 
-	if gotQ.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
+		q.WireUp(ch)
 	}
 
-	priorWant := [8]bool{false, false, false, false, false, false, false, false}
+	getStates := func() {
+		// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+		chosenCase, caseValue, _ := reflect.Select(cases)
+		got[chosenCase] = caseValue.Bool()
+	}
+
+	// calling transmit explicitly for each case to snag each state
+	for range cases {
+		getStates()
+	}
+
+	// let the above settle down before testing
+	time.Sleep(time.Millisecond * 75)
+
+	want := [8]bool{false, false, false, true, true, false, false, false}
+	for i := 0; i < 8; i++ {
+		if got[i] != want[i] {
+			t.Errorf("Latch[%d] had power (%v) but wanted (%v).\n", i, got[i], want[i])
+		}
+	}
+
+	//priorWant := [8]bool{false, false, false, false, false, false, false, false}
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Stage#%d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
 
-			// set to OFF to test that nothing will change in the latches store
+			// // set to OFF to test that nothing will change in the latches store
 
-			clkSwitch.Set(false)
-			updateSwitches(latchSwitches, tc.input)
+			// clkSwitch.Set(false)
+			// updateSwitches(latchSwitches, tc.input)
 
-			for i, pwr := range latch.Qs {
-				got := pwr.(*NORGate).GetIsPowered()
-				want := priorWant[i]
+			// for i, pwr := range latch.Qs {
+			// 	got := pwr.(*NORGate).GetIsPowered()
+			// 	want := priorWant[i]
 
-				if got != want {
-					t.Errorf("[As PwrEmitter] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
-				}
-			}
+			// 	if got != want {
+			// 		t.Errorf("[As PwrEmitter] At index %d, with clkSwitch off, wanted %v but got %v", i, want, got)
+			// 	}
+			// }
 
-			// Now set to ON to test that requested changes did occur in the latches store
+			// // Now set to ON to test that requested changes did occur in the latches store
 
-			clkSwitch.Set(true)
+			// clkSwitch.Set(true)
 
-			for i, pwr := range latch.Qs {
-				got := pwr.(*NORGate).GetIsPowered()
-				want := tc.want[i]
+			// for i, pwr := range latch.Qs {
+			// 	got := pwr.(*NORGate).GetIsPowered()
+			// 	want := tc.want[i]
 
-				if got != want {
-					t.Errorf("[As PwrEmitter] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
-				}
-			}
+			// 	if got != want {
+			// 		t.Errorf("[As PwrEmitter] At index %d, with clkSwitch on, wanted %v but got %v", i, want, got)
+			// 	}
+			// }
 
-			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (so matches prior)
-			for i, q := range latch.Qs {
-				priorWant[i] = q.(*NORGate).GetIsPowered()
-			}
+			// // now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (so matches prior)
+			// for i, q := range latch.Qs {
+			// 	priorWant[i] = q.(*NORGate).GetIsPowered()
+			// }
 		})
 	}
 }
