@@ -23,42 +23,23 @@ type RSFlipFlop struct {
 func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
-	chQNOROut := make(chan bool, 1)    // so a wire can listen for changes in Q NOR (and feed result to pin 2 of QBar NOR)
-	chQBarNOROut := make(chan bool, 1) // so a wire can listen for changes in QBar NOR (and feed result to pin 2 of Q NOR)
-
 	fmt.Println("Creating loopback wires")
 	wireQOut := NewNamedWire("wireQOut", 10)
 	wireQBarOut := NewNamedWire("wireQBarOut", 10)
 
-	// wireQBarOut must listen for changes in QBar NOR then transmit to Q NOR's pin 2
-	go func() {
-		for {
-			state := <-chQBarNOROut
-			fmt.Printf("Transmit of wireQBarOut, %t\n", state)
-			wireQBarOut.Transmit(state)
-		}
-	}()
-
-	// wireQOut must listen for changes in Q NOR then transmit to QBar NOR's pin 2
-	go func() {
-		for {
-			state := <-chQNOROut
-			fmt.Printf("Transmit of wireQOut, %t\n", state)
-			wireQOut.Transmit(state)
-		}
-	}()
-
 	fmt.Println("Creating QBar NOR")
 	ff.QBar = NewNamedNORGate("QBar", sPin, wireQOut)
 	fmt.Println("Wiring channel up to QBar")
-	ff.QBar.WireUp(chQBarNOROut)
+	ff.QBar.WireUp(wireQBarOut.Input)
+	
 	// give the WireUp's inner transmit time to wrap up
 	time.Sleep(time.Millisecond * 10)
 
 	fmt.Println("\nCreating Q NOR")
 	ff.Q = NewNamedNORGate("Q", rPin, wireQBarOut)
 	fmt.Println("Wiring channel up to Q")
-	ff.Q.WireUp(chQNOROut)
+	ff.Q.WireUp(wireQOut.Input)
+	
 	// give the WireUp's inner transmit time to wrap up
 	time.Sleep(time.Millisecond * 10)
 
@@ -97,7 +78,7 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
-	Qs      []*NORGate
+	Qs      []pwrEmitter
 }
 
 func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {

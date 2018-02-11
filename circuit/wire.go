@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -8,6 +9,7 @@ import (
 // Wire is a component connector, which will transmit with an optional pause to simulate wire length (delay)
 type Wire struct {
 	length      uint
+	Input       chan bool
 	outChannels []chan bool
 	isPowered   bool
 	name        string
@@ -22,6 +24,17 @@ func NewNamedWire(name string, length uint) *Wire {
 	wire := &Wire{}
 	wire.length = length
 	wire.name = name
+	wire.Input = make(chan bool, 1)
+
+	// spin up the func that will allow the wire's input to be wired up to something, then send to output as necessary
+	go func() {
+		for {
+			state := <-wire.Input
+			fmt.Printf("Transmit of %s, %t\n", wire.name, state)
+			wire.Transmit(state)
+		}
+	}()
+
 	return wire
 }
 
@@ -67,13 +80,18 @@ func (w *Wire) Transmit(newState bool) bool {
 
 	return didTransmit
 }
+
+// why do NWireBank if can just make a slice or array of wires (wires wont need any conversion of "000" to states like switchbank helped with)
+// why do NWireBank if can just make a slice or array of wires (wires wont need any conversion of "000" to states like switchbank helped with)
+// why do NWireBank if can just make a slice or array of wires (wires wont need any conversion of "000" to states like switchbank helped with)
+
 /*
 // NWireBank is a convenient way to get allow multiple wires to drop in as an array of emitters
 type NWireBank struct {
-	Wires []*Wire
+	Wires []pwrEmitter
 }
 
-// NewNSwitchBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
+// NewNWireBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
 func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 
 	match, err := regexp.MatchString("^[01]+$", bits)

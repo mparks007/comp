@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -91,7 +92,7 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 
 	return addr, nil
 }
-/*
+
 type ThreeNumberAdder struct {
 	latchStore    *NBitLatch
 	selector      *TwoToOneSelector
@@ -110,19 +111,26 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 
 	addr := &ThreeNumberAdder{}
 
+	// set of wires that will lead from the adder outputs back up to the latch inputs
+	loopWires := make([]pwrEmitter, len(aSwitchBank.Switches))
+	for i, _ := range loopWires {
+		loopWires[i] = NewWire(10)
+	}
+
+	// now to make the wires listen to channels wired up to the adder outs
+	// now to make the wires listen to channels wired up to the adder outs
+	// now to make the wires listen to channels wired up to the adder outs
+
+	// build the latch, handing it the wires for the adder output
+	addr.SaveToLatch = NewSwitch(false)
+	addr.latchStore = NewNBitLatch(addr.SaveToLatch, loopWires)
+
 	// build the selector
 	addr.ReadFromLatch = NewSwitch(false)
-	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.AsPwrEmitters(), wirebank) // we don't have a latch store yet so cannot set bPins
+	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.Switches, addr.latchStore.Qs)
 
 	// build the adder, handing it the selector for the B pins
-	addr.adder, _ = NewNBitAdder(aSwitchBank.AsPwrEmitters(), addr.selector.Outs, nil)
-
-	// build the latch, handing it the adder for its input pins (for the loop)
-	addr.SaveToLatch = NewSwitch(false)
-	addr.latchStore = NewNBitLatch(addr.SaveToLatch, addr.adder.Sums)
-
-	// now refresh the selectors b inputs with the latch store's output
-	addr.selector.UpdateBPins(addr.latchStore.Qs)
+	addr.adder, _ = NewNBitAdder(aSwitchBank.Switches, addr.selector.Outs, nil) // nil=no carry-in
 
 	// refer to the appropriate adder innards for easier external access
 	addr.Sums = addr.adder.Sums
@@ -131,6 +139,7 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 	return addr, nil
 }
 
+/*
 func (a *ThreeNumberAdder) AsAnswerString() string {
 	return a.adder.AsAnswerString()
 }

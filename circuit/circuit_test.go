@@ -1990,7 +1990,6 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	}
 }
 
-/*
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"
 
@@ -2006,7 +2005,7 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 		t.Errorf("Wanted error %s, but got %", wantError, err.Error())
 	}
 }
-
+/*
 func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	testCases := []struct {
 		aIn          string
@@ -2040,7 +2039,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 		})
 	}
 }
-
+/*
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000000")

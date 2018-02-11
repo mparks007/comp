@@ -14,7 +14,7 @@ import (
 type TwoToOneSelector struct {
 	aANDs []*ANDGate
 	bANDs []*ANDGate
-	Outs  []*ORGate
+	Outs  []pwrEmitter
 }
 
 func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
