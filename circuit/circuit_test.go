@@ -192,6 +192,32 @@ func TestWire_WithDelay(t *testing.T) {
 	}
 }
 
+func TestRibbonCable(t *testing.T) {
+	var want, got bool
+	ch1 := make(chan bool, 1)
+	ch2 := make(chan bool, 1)
+
+	rib := NewRibbonCable(2, 1)
+	inputs, _ := NewNSwitchBank("01")
+	//rib.SetInputs(inputs.Switches)
+
+	inputs.Switches[0].WireUp(rib.Wires[0].(*Wire).Input)
+	inputs.Switches[1].WireUp(rib.Wires[1].(*Wire).Input)
+
+	rib.Wires[0].(*Wire).WireUp(ch1)
+	rib.Wires[1].(*Wire).WireUp(ch2)
+
+	want = false
+	if got = <-ch1; got != want {
+		t.Errorf("Left Switch off, wanted the wire to see power as %t but got %t", want, got)
+	}
+
+	want = true
+	if got = <-ch2; got != want {
+		t.Errorf("Right Switch on, wanted the wire to see power as %t but got %t", want, got)
+	}
+}
+
 func TestBattery(t *testing.T) {
 	var want, got bool
 	ch := make(chan bool, 1)
@@ -374,7 +400,7 @@ func TestNewNSwitchBank_BadInputs(t *testing.T) {
 			tc.wantError += "\"" + tc.input + "\""
 
 			if err == nil || (err != nil && err.Error() != tc.wantError) {
-				t.Errorf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err)
+				t.Errorf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err.Error())
 			}
 		})
 	}
@@ -2002,9 +2028,10 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 		t.Error("Did not expect an adder back but got one.")
 	}
 	if err != nil && err.Error() != wantError {
-		t.Errorf("Wanted error %s, but got %", wantError, err.Error())
+		t.Errorf("Wanted error %s, but got %v", wantError, err.Error())
 	}
 }
+
 /*
 func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	testCases := []struct {

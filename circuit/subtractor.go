@@ -7,7 +7,7 @@ import (
 type NBitSubtractor struct {
 	adder       *NBitAdder
 	comp        *OnesComplementer
-	Differences []*XORGate
+	Differences []pwrEmitter
 	CarryOut    *ORGate
 }
 

@@ -81,34 +81,25 @@ func (w *Wire) Transmit(newState bool) bool {
 	return didTransmit
 }
 
-// why do NWireBank if can just make a slice or array of wires (wires wont need any conversion of "000" to states like switchbank helped with)
-// why do NWireBank if can just make a slice or array of wires (wires wont need any conversion of "000" to states like switchbank helped with)
-// why do NWireBank if can just make a slice or array of wires (wires wont need any conversion of "000" to states like switchbank helped with)
-
-/*
-// NWireBank is a convenient way to get allow multiple wires to drop in as an array of emitters
-type NWireBank struct {
+// RibbonCable is a convenient way to allow multiple wires to drop in as slice of pwrEmitters (for receiving/emitting)
+type RibbonCable struct {
 	Wires []pwrEmitter
 }
 
-// NewNWireBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
-func NewNSwitchBank(bits string) (*NSwitchBank, error) {
+// RibbonCable creates a slice of wires of the designated width (number of wires) and length (applied to each wire)
+func NewRibbonCable(width, len uint) *RibbonCable {
 
-	match, err := regexp.MatchString("^[01]+$", bits)
-	if err != nil {
-		return nil, err
-	}
-	if !match {
-		err = fmt.Errorf("Input not in binary format: \"%s\"", bits)
-		return nil, err
+	rib := &RibbonCable{}
+
+	for i := 0; uint(i) < width; i++ {
+		rib.Wires = append(rib.Wires, NewWire(len))
 	}
 
-	sb := &NSwitchBank{}
-
-	for _, bit := range bits {
-		sb.Switches = append(sb.Switches, NewSwitch(bit == '1'))
-	}
-
-	return sb, nil
+	return rib
 }
-*/
+
+func (r *RibbonCable) SetInputs(wires []pwrEmitter) {
+	for i, pwr := range wires {
+		pwr.WireUp((r.Wires[i]).(*Wire).Input)
+	}
+}

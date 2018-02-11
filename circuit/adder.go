@@ -3,6 +3,7 @@ package circuit
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 // Half Adder
@@ -56,7 +57,7 @@ func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 
 type NBitAdder struct {
 	fullAdders []*FullAdder
-	Sums       []*XORGate
+	Sums       []pwrEmitter
 	CarryOut   *ORGate
 }
 
@@ -84,7 +85,7 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 		addr.fullAdders = append([]*FullAdder{full}, addr.fullAdders...)
 
 		// us external Sums for easier external access (pre-pending here too)
-		addr.Sums = append([]*XORGate{full.Sum}, addr.Sums...)
+		addr.Sums = append([]pwrEmitter{full.Sum}, addr.Sums...)
 	}
 
 	// make CarryOut refer to the appropriate (most significant) adder for easier external access
@@ -99,7 +100,7 @@ type ThreeNumberAdder struct {
 	adder         *NBitAdder
 	SaveToLatch   *Switch
 	ReadFromLatch *Switch
-	Sums          []*XORGate
+	Sums          []pwrEmitter
 	CarryOut      *ORGate
 }
 
@@ -112,18 +113,11 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 	addr := &ThreeNumberAdder{}
 
 	// set of wires that will lead from the adder outputs back up to the latch inputs
-	loopWires := make([]pwrEmitter, len(aSwitchBank.Switches))
-	for i, _ := range loopWires {
-		loopWires[i] = NewWire(10)
-	}
-
-	// now to make the wires listen to channels wired up to the adder outs
-	// now to make the wires listen to channels wired up to the adder outs
-	// now to make the wires listen to channels wired up to the adder outs
+	loopRibbon := NewRibbonCable(uint(len(aSwitchBank.Switches)), 10)
 
 	// build the latch, handing it the wires for the adder output
 	addr.SaveToLatch = NewSwitch(false)
-	addr.latchStore = NewNBitLatch(addr.SaveToLatch, loopWires)
+	addr.latchStore = NewNBitLatch(addr.SaveToLatch, loopRibbon.Wires)
 
 	// build the selector
 	addr.ReadFromLatch = NewSwitch(false)
@@ -131,6 +125,12 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 
 	// build the adder, handing it the selector for the B pins
 	addr.adder, _ = NewNBitAdder(aSwitchBank.Switches, addr.selector.Outs, nil) // nil=no carry-in
+
+	// set adder sums to be the input to the loopback ribbon cable
+	loopRibbon.SetInputs(addr.adder.Sums)
+
+	// give the SetInputs inner go funcs time to spin up
+	time.Sleep(time.Millisecond * 10)
 
 	// refer to the appropriate adder innards for easier external access
 	addr.Sums = addr.adder.Sums
