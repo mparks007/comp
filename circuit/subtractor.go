@@ -7,8 +7,8 @@ import (
 type NBitSubtractor struct {
 	adder       *NBitAdder
 	comp        *OnesComplementer
-	Differences []pwrEmitter
-	CarryOut    pwrEmitter
+	Differences []*XORGate
+	CarryOut    *ORGate
 }
 
 func NewNBitSubtractor(minuendPins, subtrahendPins []pwrEmitter) (*NBitSubtractor, error) {

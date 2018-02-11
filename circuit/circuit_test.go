@@ -1734,7 +1734,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 200)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))

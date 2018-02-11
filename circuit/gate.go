@@ -245,9 +245,9 @@ func NewNamedNORGate(name string, pins ...pwrEmitter) *NORGate {
 // 1 1 0
 
 type XORGate struct {
-	orGate   pwrEmitter
-	nandGate pwrEmitter
-	andGate  pwrEmitter
+	orGate   *ORGate
+	nandGate *NANDGate
+	andGate  *ANDGate
 	ch       chan bool
 	pwrSource
 }
@@ -286,7 +286,7 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 // 1 1 1
 
 type XNORGate struct {
-	inverter pwrEmitter
+	inverter *Inverter
 	ch       chan bool
 	pwrSource
 }

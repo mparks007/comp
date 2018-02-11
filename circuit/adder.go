@@ -11,8 +11,8 @@ import "fmt"
 // 1 1		0		1
 
 type HalfAdder struct {
-	Sum   pwrEmitter
-	Carry pwrEmitter
+	Sum   *XORGate
+	Carry *ANDGate
 }
 
 func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
@@ -30,8 +30,8 @@ func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
 type FullAdder struct {
 	halfAdder1 *HalfAdder
 	halfAdder2 *HalfAdder
-	Sum        pwrEmitter
-	Carry      pwrEmitter
+	Sum   *XORGate
+	Carry *ORGate
 }
 
 func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
@@ -53,8 +53,8 @@ func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 
 type NBitAdder struct {
 	fullAdders []*FullAdder
-	Sums       []pwrEmitter
-	CarryOut   pwrEmitter
+	Sums       []*XORGate
+	CarryOut   *ORGate
 }
 
 func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) (*NBitAdder, error) {
@@ -81,7 +81,7 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 		addr.fullAdders = append([]*FullAdder{full}, addr.fullAdders...)
 
 		// us external Sums for easier external access (pre-pending here too)
-		addr.Sums = append([]pwrEmitter{full.Sum}, addr.Sums...)
+		addr.Sums = append([]*XORGate{full.Sum}, addr.Sums...)
 	}
 
 	// make CarryOut refer to the appropriate (most significant) adder for easier external access

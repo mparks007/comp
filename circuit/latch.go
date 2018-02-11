@@ -97,7 +97,7 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 
 type NBitLatch struct {
 	latches []*LevelTriggeredDTypeLatch
-	Qs      []pwrEmitter
+	Qs      []*NORGate
 }
 
 func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {

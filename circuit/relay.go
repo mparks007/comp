@@ -73,21 +73,3 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	return rel
 }
 
-// IS THIS NECESSARY!!!!!!!!!!!!???????? after the wire concept gets added?  Can't wire be the only thing needing an update?
-// IS THIS NECESSARY!!!!!!!!!!!!???????? after the wire concept gets added?  Can't wire be the only thing needing an update?
-// IS THIS NECESSARY!!!!!!!!!!!!???????? after the wire concept gets added?  Can't wire be the only thing needing an update?
-// func (r *Relay) UpdatePin(pinNum int, pin pwrEmitter) {
-// 	if pinNum < 1 || pinNum > 2 {
-// 		panic(fmt.Sprintf("Invalid relay pin number.  Relays have two pins and the requested pin was (%d)", pinNum))
-// 	}
-
-// 	if pinNum == 1 {
-// 		if pin != nil {
-// 			pin.WireUp(r.aInCh)
-// 		}
-// 	} else {
-// 		if pin != nil {
-// 			pin.WireUp(r.bInCh)
-// 		}
-// 	}
-// }

@@ -8,19 +8,19 @@ package circuit
 //  0  1 x   1
 //  1  x 0   0
 //  1  x 1   1
-/*
+
 type TwoToOneSelector struct {
 	aANDs []*ANDGate
 	bANDs []*ANDGate
-	Outs  []pwrEmitter
+	Outs  []*ORGate
 }
 
 func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
 
-	// allowing bPins to be nil since we might want to plug in those pins later
-	if (len(aPins) != len(bPins)) && (len(bPins) != 0) {
-		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins)))
-	}
+	// // allowing bPins to be nil since we might want to plug in those pins later
+	// if (len(aPins) != len(bPins)) && (len(bPins) != 0) {
+	// 	return nil, errors.New(fmt.Sprintf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins)))
+	// }
 
 	sel := &TwoToOneSelector{}
 
@@ -39,7 +39,7 @@ func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOn
 
 	return sel, nil
 }
-
+/*
 func (s *TwoToOneSelector) UpdateBPins(bPins []pwrEmitter) {
 
 	// TODO: validate bPins is same length as the aANDs
