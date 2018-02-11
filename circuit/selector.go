@@ -27,9 +27,7 @@ func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOn
 
 	for i := range aPins {
 		sel.aANDs = append(sel.aANDs, NewANDGate(NewInverter(signal), aPins[i]))
-
 		sel.bANDs = append(sel.bANDs, NewANDGate(signal, bPins[i]))
-
 		sel.Outs = append(sel.Outs, NewORGate(sel.aANDs[i], sel.bANDs[i]))
 	}
 

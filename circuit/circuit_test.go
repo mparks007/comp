@@ -1810,7 +1810,7 @@ func TestNBitLatch(t *testing.T) {
 			// Now set to ON to test that requested changes DID occur in the latches store
 
 			clkSwitch.Set(true)
-			time.Sleep(time.Millisecond * 75) // need to allow all the latches to settle down (transmit their new Q values)
+			time.Sleep(time.Millisecond * 100) // need to allow all the latches to settle down (transmit their new Q values)
 
 			for i, _ := range latch.Qs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
@@ -1931,40 +1931,66 @@ func TestTwoToOneSelector(t *testing.T) {
 	}
 }
 
-/*
 func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
-	// start with off switches
+	// start with off for A but on for B, but selecting A
 	aInSwitches, _ := NewNSwitchBank("000")
 	bInSwitches, _ := NewNSwitchBank("111")
 	selectBSwitch := NewSwitch(false)
 
+	// for use in a dynamic select statement (a case per selector output) and bool results per case
+	cases := make([]reflect.SelectCase, 3)
+	got := make([]atomic.Value, 3)
+
 	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
 
+	// built the case statements to deal with each selector output
+	for i, s := range sel.Outs {
+
+		ch := make(chan bool, 1)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+
+		s.WireUp(ch)
+	}
+
+	go func() {
+		for {
+			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+			chosenCase, caseValue, _ := reflect.Select(cases)
+			got[chosenCase].Store(caseValue.Bool())
+		}
+	}()
+
+	time.Sleep(time.Millisecond * 75)
+
 	// starting with selecting A, get A's state
-	for _, out := range sel.Outs {
-		if out.(*ORGate).GetIsPowered() {
-			t.Error("Expect false on all Outs of selector but got a true")
+
+	for i := 0; i < 3; i++ {
+		if got[i].Load().(bool) == true {
+			t.Error("Expecting false on all Outs of selector but got a true")
 		}
 	}
 
 	selectBSwitch.Set(true)
+	time.Sleep(time.Millisecond * 75)
 
 	// selecting B, get B's state
-	for _, out := range sel.Outs {
-		if !out.(*ORGate).GetIsPowered() {
-			t.Error("Expect true on all Outs of selector but got a true")
+	for i := 0; i < 3; i++ {
+		if got[i].Load().(bool) == false {
+			t.Error("Expecting true on all Outs of selector but got a false")
 		}
 	}
 
-	updateSwitches(aInSwitches, "101")
+	setSwitches(aInSwitches, "101")
+	time.Sleep(time.Millisecond * 75)
 
 	// still selecting B, get B's state, regardless of A's state changing
-	for _, out := range sel.Outs {
-		if !out.(*ORGate).GetIsPowered() {
-			t.Error("Expect true on all Outs of selector but got a true")
+	for i := 0; i < 3; i++ {
+		if got[i].Load().(bool) == false {
+			t.Error("Expecting true on all Outs of selector but got a false")
 		}
 	}
 }
+
 /*
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"

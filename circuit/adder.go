@@ -30,8 +30,8 @@ func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
 type FullAdder struct {
 	halfAdder1 *HalfAdder
 	halfAdder2 *HalfAdder
-	Sum   *XORGate
-	Carry *ORGate
+	Sum        *XORGate
+	Carry      *ORGate
 }
 
 func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
