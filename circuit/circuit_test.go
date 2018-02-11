@@ -18,8 +18,8 @@ import (
 // go test -run TestOscillator -count 100 -v (multi options)
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
 
-// updateSwitches will flip passed in switches to match a passed in bit pattern
-func updateSwitches(switchBank *NSwitchBank, bits string) {
+// setSwitches will flip passed in switches to match a passed in bit pattern
+func setSwitches(switchBank *NSwitchBank, bits string) {
 	for i, b := range bits {
 		switchBank.Switches[i].Set(b == '1')
 	}
@@ -424,7 +424,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 				want := tc.want[i]
 				if got != want {
-					t.Errorf("[As Switch] At want[index] %d, wanted %v but got %v", i, want, got)
+					t.Errorf("[As Switch] At want[index] %d, wanted %t but got %t", i, want, got)
 				}
 			}
 
@@ -437,7 +437,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf("[As PwrEmitter] At index %d, wanted %v but got %v", i, want, got)
+					t.Errorf("[As PwrEmitter] At index %d, wanted %t but got %t", i, want, got)
 				}
 			}
 		})
@@ -1128,8 +1128,8 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", tc.byte1, tc.byte2, tc.carryInPowered), func(t *testing.T) {
 
-			updateSwitches(addend1Switches, tc.byte1)
-			updateSwitches(addend2Switches, tc.byte2)
+			setSwitches(addend1Switches, tc.byte1)
+			setSwitches(addend2Switches, tc.byte2)
 			carryInSwitch.Set(tc.carryInPowered)
 
 			time.Sleep(time.Millisecond * 100)
@@ -1235,8 +1235,8 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", tc.bytes1, tc.bytes2, tc.carryInPowered), func(t *testing.T) {
 
-			updateSwitches(addend1Switches, tc.bytes1)
-			updateSwitches(addend2Switches, tc.bytes2)
+			setSwitches(addend1Switches, tc.bytes1)
+			setSwitches(addend2Switches, tc.bytes2)
 			carryInSwitch.Set(tc.carryInPowered)
 
 			time.Sleep(time.Millisecond * 250)
@@ -1472,8 +1472,8 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
 
-			updateSwitches(minuendwitches, tc.minuend)
-			updateSwitches(subtrahendSwitches, tc.subtrahend)
+			setSwitches(minuendwitches, tc.minuend)
+			setSwitches(subtrahendSwitches, tc.subtrahend)
 
 			time.Sleep(time.Millisecond * 150)
 
@@ -1789,7 +1789,7 @@ func TestNBitLatch(t *testing.T) {
 	priorWant := [8]bool{false, false, false, true, true, false, false, false}
 	for i := 0; i < 8; i++ {
 		if got := got[i].Load().(bool); got != priorWant[i] {
-			t.Errorf("Latch[%d] wanted (%v) but got (%v).\n", i, priorWant[i], got)
+			t.Errorf("Latch[%d] wanted (%t) but got (%t).\n", i, priorWant[i], got)
 		}
 	}
 
@@ -1799,11 +1799,11 @@ func TestNBitLatch(t *testing.T) {
 			// set to OFF to test that nothing will change in the latches store
 
 			clkSwitch.Set(false)
-			updateSwitches(latchSwitches, tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
+			setSwitches(latchSwitches, tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
 
 			for i, _ := range latch.Qs {
 				if got := got[i].Load().(bool); got != priorWant[i] {
-					t.Errorf("Latch[%d], with clkSwitch off, wanted %v but got %v", i, priorWant[i], got)
+					t.Errorf("Latch[%d], with clkSwitch off, wanted %t but got %t", i, priorWant[i], got)
 				}
 			}
 
@@ -1814,7 +1814,7 @@ func TestNBitLatch(t *testing.T) {
 
 			for i, _ := range latch.Qs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
-					t.Errorf("Latch[%d], with clkSwitch ON, wanted %v but got %v", i, tc.want[i], got)
+					t.Errorf("Latch[%d], with clkSwitch ON, wanted %t but got %t", i, tc.want[i], got)
 				}
 			}
 
@@ -1826,7 +1826,6 @@ func TestNBitLatch(t *testing.T) {
 	}
 }
 
-/*
 func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 	testCases := []struct {
 		byte1     string
@@ -1876,73 +1875,63 @@ func TestTwoToOneSelector(t *testing.T) {
 		{"110", "111", false, []bool{true, true, false}},
 	}
 
-	// start with off switches
-	aInSwitches, _ := NewNSwitchBank("000")
+	// start with these switches to verify uses A intially
+	aInSwitches, _ := NewNSwitchBank("111")
 	bInSwitches, _ := NewNSwitchBank("000")
 	selectBSwitch := NewSwitch(false)
 
+	// for use in a dynamic select statement (a case per selector output) and bool results per case
+	cases := make([]reflect.SelectCase, 3)
+	got := make([]atomic.Value, 3)
+
 	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("With aIn as %s and bIn as %s, selecting bIn (%t)", tc.aIn, tc.bIn, tc.selectB), func(t *testing.T) {
+	// built the case statements to deal with each selector output
+	for i, s := range sel.Outs {
 
-			updateSwitches(aInSwitches, tc.aIn)
-			updateSwitches(bInSwitches, tc.bIn)
+		ch := make(chan bool, 1)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+
+		s.WireUp(ch)
+	}
+
+	go func() {
+		for {
+			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+			chosenCase, caseValue, _ := reflect.Select(cases)
+			got[chosenCase].Store(caseValue.Bool())
+		}
+	}()
+
+	// let the above settle down before testing
+	time.Sleep(time.Millisecond * 75)
+
+	want := true
+	for i := 0; i < 3; i++ {
+		if got := got[i].Load().(bool); got != want {
+			t.Errorf("Selector Output[%d]: A(111), B(000), use B?(false).  Wanted (%t) but got (%v).\n", i, want, got)
+		}
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Stage[%d]: A(%s), B(%s), use B?(%t)", i, tc.aIn, tc.bIn, tc.selectB), func(t *testing.T) {
+
+			setSwitches(aInSwitches, tc.aIn)
+			setSwitches(bInSwitches, tc.bIn)
 			selectBSwitch.Set(tc.selectB)
 
-			for i, out := range sel.Outs {
-				got := out.(*ORGate).GetIsPowered()
+			time.Sleep(time.Millisecond * 75)
 
-				if got != tc.want[i] {
-					t.Errorf("At index %d, with signal %t, wanted %t but got %t", i, tc.selectB, tc.want[i], got)
+			for i, _ := range sel.Outs {
+				if got := got[i].Load().(bool); got != tc.want[i] {
+					t.Errorf("Selector Output[%d]: Wanted (%t) but got (%t).\n", i, tc.want[i], got)
 				}
 			}
 		})
 	}
 }
 
-func TestTwoToOneSelector_UpdateBPins(t *testing.T) {
-	// start with off switches
-	aInSwitches, _ := NewNSwitchBank("000")
-	bInSwitches, _ := NewNSwitchBank("111")
-	cInSwitches, _ := NewNSwitchBank("101")
-	selectBSwitch := NewSwitch(false)
-
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
-
-	// starting with selecting A, get A's state
-	for _, out := range sel.Outs {
-		if out.(*ORGate).GetIsPowered() {
-			t.Error("Expect false on all Outs of selector but got a true")
-		}
-	}
-
-	selectBSwitch.Set(true)
-
-	// selecting B, get B's state
-	for _, out := range sel.Outs {
-		if !out.(*ORGate).GetIsPowered() {
-			t.Error("Expect true on all Outs of selector but got a true")
-		}
-	}
-
-	sel.UpdateBPins(cInSwitches.AsPwrEmitters())
-
-	// now prove C switches took over the B side
-	want1 := true
-	want2 := false
-	want3 := true
-	if got := sel.Outs[0].(*ORGate).GetIsPowered(); got != want1 {
-		t.Errorf("Expect %t left bit, but got %t", want1, got)
-	}
-	if got := sel.Outs[1].(*ORGate).GetIsPowered(); got != want2 {
-		t.Errorf("Expect %t left bit, but got %t", want2, got)
-	}
-	if got := sel.Outs[2].(*ORGate).GetIsPowered(); got != want3 {
-		t.Errorf("Expect %t left bit, but got %t", want3, got)
-	}
-}
-
+/*
 func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	// start with off switches
 	aInSwitches, _ := NewNSwitchBank("000")
@@ -1976,7 +1965,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 		}
 	}
 }
-
+/*
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"
 
