@@ -1,6 +1,8 @@
 package circuit
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Half Adder
 // A and B in result in Sum and Carry out (doesn't handle carry in, needs full-adder)
@@ -89,7 +91,6 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 
 	return addr, nil
 }
-
 /*
 type ThreeNumberAdder struct {
 	latchStore    *NBitLatch
@@ -97,8 +98,8 @@ type ThreeNumberAdder struct {
 	adder         *NBitAdder
 	SaveToLatch   *Switch
 	ReadFromLatch *Switch
-	Sums          []pwrEmitter
-	CarryOut      pwrEmitter
+	Sums          []*XORGate
+	CarryOut      *ORGate
 }
 
 func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdder, error) {
@@ -111,7 +112,7 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 
 	// build the selector
 	addr.ReadFromLatch = NewSwitch(false)
-	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.AsPwrEmitters(), nil) // we don't have a latch store yet so cannot set bPins
+	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.AsPwrEmitters(), wirebank) // we don't have a latch store yet so cannot set bPins
 
 	// build the adder, handing it the selector for the B pins
 	addr.adder, _ = NewNBitAdder(aSwitchBank.AsPwrEmitters(), addr.selector.Outs, nil)
@@ -137,7 +138,7 @@ func (a *ThreeNumberAdder) AsAnswerString() string {
 func (a *ThreeNumberAdder) CarryOutAsBool() bool {
 	return a.adder.CarryOutAsBool()
 }
-
+/*
 type NNumberAdder struct {
 	latches  *NBitLatchWithClear
 	adder    *NBitAdder

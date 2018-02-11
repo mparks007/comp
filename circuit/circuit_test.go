@@ -21,7 +21,7 @@ import (
 // setSwitches will flip passed in switches to match a passed in bit pattern
 func setSwitches(switchBank *NSwitchBank, bits string) {
 	for i, b := range bits {
-		switchBank.Switches[i].Set(b == '1')
+		switchBank.Switches[i].(*Switch).Set(b == '1')
 	}
 }
 
@@ -417,19 +417,18 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				}
 			}()
 
-			for i := 0; i < len(sb.Switches); i++ {
+			// for i := 0; i < len(sb.Switches); i++ {
 
-				sb.Switches[i].WireUp(ch)
-				<-received
+			// 	sb.Switches[i].WireUp(ch)
+			// 	<-received
 
-				want := tc.want[i]
-				if got != want {
-					t.Errorf("[As Switch] At want[index] %d, wanted %t but got %t", i, want, got)
-				}
-			}
+			// 	want := tc.want[i]
+			// 	if got != want {
+			// 		t.Errorf("[As Switch] At want[index] %d, wanted %t but got %t", i, want, got)
+			// 	}
+			// }
 
-			// now try AsPwrEmitters
-			for i, pwr := range sb.AsPwrEmitters() {
+			for i, pwr := range sb.Switches {
 
 				pwr.(*Switch).WireUp(ch)
 				<-received
@@ -437,7 +436,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				want := tc.want[i]
 
 				if got != want {
-					t.Errorf("[As PwrEmitter] At index %d, wanted %t but got %t", i, want, got)
+					t.Errorf("At index %d, wanted %t but got %t", i, want, got)
 				}
 			}
 		})
@@ -1030,7 +1029,7 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 			addend1Switches, _ := NewNSwitchBank(tc.byte1)
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
 
-			addr, err := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), nil)
+			addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, nil)
 
 			if addr != nil {
 				t.Error("Did not expect an adder to be created, but got one")
@@ -1077,7 +1076,7 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	carryInSwitch := NewSwitch(false)
 
 	// create the adder based on those switches
-	addr, err := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
+	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1185,7 +1184,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	addend2Switches, _ := NewNSwitchBank("0000000000000000")
 	carryInSwitch := NewSwitch(false)
 
-	addr, err := NewNBitAdder(addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters(), carryInSwitch)
+	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1320,7 +1319,7 @@ func TestOnesCompliment(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Executing complementer against %s with compliment signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
 			bitSwitches, _ := NewNSwitchBank(tc.bits)
-			comp := NewOnesComplementer(bitSwitches.AsPwrEmitters(), NewSwitch(tc.signalIsPowered))
+			comp := NewOnesComplementer(bitSwitches.Switches, NewSwitch(tc.signalIsPowered))
 
 			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
@@ -1384,7 +1383,7 @@ func TestNBitSubtractor_BadInputLengths(t *testing.T) {
 			minuendSwitches, _ := NewNSwitchBank(tc.byte1)
 			subtrahendSwitches, _ := NewNSwitchBank(tc.byte2)
 
-			sub, err := NewNBitSubtractor(minuendSwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
+			sub, err := NewNBitSubtractor(minuendSwitches.Switches, subtrahendSwitches.Switches)
 
 			if sub != nil {
 				t.Error("Did not expect a Subtractor to be created, but got one")
@@ -1427,7 +1426,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 	minuendwitches, _ := NewNSwitchBank("00000000")
 	subtrahendSwitches, _ := NewNSwitchBank("00000000")
 
-	sub, _ := NewNBitSubtractor(minuendwitches.AsPwrEmitters(), subtrahendSwitches.AsPwrEmitters())
+	sub, _ := NewNBitSubtractor(minuendwitches.Switches, subtrahendSwitches.Switches)
 
 	if sub == nil {
 		t.Error("Expected an subtractor to return due to good inputs, but gotAnswer c nil one.")
@@ -1734,7 +1733,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 200)
+			time.Sleep(time.Millisecond * 275)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1760,7 +1759,7 @@ func TestNBitLatch(t *testing.T) {
 
 	latchSwitches, _ := NewNSwitchBank("00011000")
 	clkSwitch := NewSwitch(true)
-	latch := NewNBitLatch(clkSwitch, latchSwitches.AsPwrEmitters())
+	latch := NewNBitLatch(clkSwitch, latchSwitches.Switches)
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)
@@ -1841,7 +1840,7 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 			addend1Switches, _ := NewNSwitchBank(tc.byte1)
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
 
-			sel, err := NewTwoToOneSelector(nil, addend1Switches.AsPwrEmitters(), addend2Switches.AsPwrEmitters())
+			sel, err := NewTwoToOneSelector(nil, addend1Switches.Switches, addend2Switches.Switches)
 
 			if sel != nil {
 				t.Error("Did not expect a Selector to be created, but got one")
@@ -1884,7 +1883,7 @@ func TestTwoToOneSelector(t *testing.T) {
 	cases := make([]reflect.SelectCase, 3)
 	got := make([]atomic.Value, 3)
 
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches, bInSwitches.Switches)
 
 	// built the case statements to deal with each selector output
 	for i, s := range sel.Outs {
@@ -1941,7 +1940,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	cases := make([]reflect.SelectCase, 3)
 	got := make([]atomic.Value, 3)
 
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.AsPwrEmitters(), bInSwitches.AsPwrEmitters())
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches, bInSwitches.Switches)
 
 	// built the case statements to deal with each selector output
 	for i, s := range sel.Outs {

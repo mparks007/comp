@@ -67,3 +67,30 @@ func (w *Wire) Transmit(newState bool) bool {
 
 	return didTransmit
 }
+/*
+// NWireBank is a convenient way to get allow multiple wires to drop in as an array of emitters
+type NWireBank struct {
+	Wires []*Wire
+}
+
+// NewNSwitchBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
+func NewNSwitchBank(bits string) (*NSwitchBank, error) {
+
+	match, err := regexp.MatchString("^[01]+$", bits)
+	if err != nil {
+		return nil, err
+	}
+	if !match {
+		err = fmt.Errorf("Input not in binary format: \"%s\"", bits)
+		return nil, err
+	}
+
+	sb := &NSwitchBank{}
+
+	for _, bit := range bits {
+		sb.Switches = append(sb.Switches, NewSwitch(bit == '1'))
+	}
+
+	return sb, nil
+}
+*/

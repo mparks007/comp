@@ -55,7 +55,7 @@ func (s *Switch) Set(newState bool) {
 
 // NSwitchBank is a convenient way to get any number of power emitters from a string of 0/1s
 type NSwitchBank struct {
-	Switches []*Switch
+	Switches []pwrEmitter
 }
 
 // NewNSwitchBank takes a string of 0/1s and creates a variable length list of Switch structs initialized based on their off/on-ness
@@ -77,15 +77,4 @@ func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 	}
 
 	return sb, nil
-}
-
-// AsPwrEmitters will return pwrEmitter versions of the internal Switches
-func (s *NSwitchBank) AsPwrEmitters() []pwrEmitter {
-	pwrEmits := []pwrEmitter{}
-
-	for _, sw := range s.Switches {
-		pwrEmits = append(pwrEmits, sw)
-	}
-
-	return pwrEmits
 }
