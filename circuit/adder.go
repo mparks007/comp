@@ -129,7 +129,7 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 	// set adder sums to be the input to the loopback ribbon cable
 	loopRibbon.SetInputs(addr.adder.Sums)
 
-	// give the SetInputs inner go funcs time to spin up
+	// give the SetInputs inner go funcs time to spin up and get their states
 	time.Sleep(time.Millisecond * 10)
 
 	// refer to the appropriate adder innards for easier external access

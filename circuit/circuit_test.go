@@ -199,10 +199,10 @@ func TestRibbonCable(t *testing.T) {
 
 	rib := NewRibbonCable(2, 1)
 	inputs, _ := NewNSwitchBank("01")
-	//rib.SetInputs(inputs.Switches)
+	rib.SetInputs(inputs.Switches)
 
-	inputs.Switches[0].WireUp(rib.Wires[0].(*Wire).Input)
-	inputs.Switches[1].WireUp(rib.Wires[1].(*Wire).Input)
+	// before listening to the wires, need to give the switches time to tell the wires their state
+	time.Sleep(time.Millisecond * 15)
 
 	rib.Wires[0].(*Wire).WireUp(ch1)
 	rib.Wires[1].(*Wire).WireUp(ch2)
