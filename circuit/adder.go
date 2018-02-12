@@ -115,7 +115,7 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 	// set of wires that will lead from the adder outputs back up to the latch inputs
 	loopRibbon := NewRibbonCable(uint(len(aSwitchBank.Switches)), 10)
 
-	// build the latch, handing it the wires for the adder output
+	// build the latch, handing it the wires from the adder output
 	addr.SaveToLatch = NewSwitch(false)
 	addr.latchStore = NewNBitLatch(addr.SaveToLatch, loopRibbon.Wires)
 
@@ -124,7 +124,7 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bSwitchBank.Switches, addr.latchStore.Qs)
 
 	// build the adder, handing it the selector for the B pins
-	addr.adder, _ = NewNBitAdder(aSwitchBank.Switches, addr.selector.Outs, nil) // nil=no carry-in
+	addr.adder, _ = NewNBitAdder(aSwitchBank.Switches, addr.selector.Outs, NewSwitch(false)) // no carry-in
 
 	// set adder sums to be the input to the loopback ribbon cable
 	loopRibbon.SetInputs(addr.adder.Sums)
