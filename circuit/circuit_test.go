@@ -202,7 +202,7 @@ func TestRibbonCable(t *testing.T) {
 	rib.SetInputs(inputs.Switches)
 
 	// before listening to the wires, need to give the switches time to tell the wires their state
-	time.Sleep(time.Millisecond * 15)
+	time.Sleep(time.Millisecond * 50)
 
 	rib.Wires[0].(*Wire).WireUp(ch1)
 	rib.Wires[1].(*Wire).WireUp(ch2)
@@ -443,17 +443,6 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				}
 			}()
 
-			// for i := 0; i < len(sb.Switches); i++ {
-
-			// 	sb.Switches[i].WireUp(ch)
-			// 	<-received
-
-			// 	want := tc.want[i]
-			// 	if got != want {
-			// 		t.Errorf("[As Switch] At want[index] %d, wanted %t but got %t", i, want, got)
-			// 	}
-			// }
-
 			for i, pwr := range sb.Switches {
 
 				pwr.(*Switch).WireUp(ch)
@@ -624,6 +613,7 @@ func TestORGate(t *testing.T) {
 			got.Store(<-ch)
 		}
 	}()
+
 	gate.WireUp(ch)
 
 	time.Sleep(time.Millisecond * 10)
@@ -680,6 +670,7 @@ func TestNANDGate(t *testing.T) {
 			got.Store(<-ch)
 		}
 	}()
+
 	gate.WireUp(ch)
 
 	time.Sleep(time.Millisecond * 10)
@@ -752,7 +743,7 @@ func TestNORGate(t *testing.T) {
 			bSwitch.Set(tc.bInPowered)
 			cSwitch.Set(tc.cInPowered)
 
-			time.Sleep(time.Millisecond * 20)
+			time.Sleep(time.Millisecond * 50)
 
 			if got.Load().(bool) != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
@@ -1157,7 +1148,7 @@ func TestNBitAdder_EightBit(t *testing.T) {
 			setSwitches(addend2Switches, tc.byte2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 150)
 
 			// build a string based on each sum's state
 			gotAnswer := ""
@@ -1264,7 +1255,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 			setSwitches(addend2Switches, tc.bytes2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			time.Sleep(time.Millisecond * 250)
+			time.Sleep(time.Millisecond * 400)
 
 			// build a string based on each sum's state
 			gotAnswer := ""
@@ -1500,7 +1491,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 			setSwitches(minuendwitches, tc.minuend)
 			setSwitches(subtrahendSwitches, tc.subtrahend)
 
-			time.Sleep(time.Millisecond * 150)
+			time.Sleep(time.Millisecond * 300)
 
 			// build a string based on each bit's state
 			gotAnswer := ""
@@ -1658,7 +1649,7 @@ func TestRSFlipFlop(t *testing.T) {
 				sPinBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 50)
+			time.Sleep(time.Millisecond * 100)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1809,7 +1800,7 @@ func TestNBitLatch(t *testing.T) {
 	}()
 
 	// let the above settle down before testing
-	time.Sleep(time.Millisecond * 75)
+	time.Sleep(time.Millisecond * 100)
 
 	priorWant := [8]bool{false, false, false, true, true, false, false, false}
 	for i := 0; i < 8; i++ {
@@ -1835,7 +1826,7 @@ func TestNBitLatch(t *testing.T) {
 			// Now set to ON to test that requested changes DID occur in the latches store
 
 			clkSwitch.Set(true)
-			time.Sleep(time.Millisecond * 100) // need to allow all the latches to settle down (transmit their new Q values)
+			time.Sleep(time.Millisecond * 200) // need to allow all the latches to settle down (transmit their new Q values)
 
 			for i, _ := range latch.Qs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
@@ -2093,7 +2084,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 			setSwitches(aInSwitches, tc.aIn)
 			setSwitches(bInSwitches, tc.bIn)
 
-			time.Sleep(time.Millisecond * 75)
+			time.Sleep(time.Millisecond * 350)
 
 			// build a string based on each sum's state
 			gotAnswer := ""
@@ -2116,43 +2107,143 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	}
 }
 
-/*
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("00000001")
 	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
 
+	// setup the Sum results bool array (default all to false to match the initial switch states above)
+	var gotSums [8]atomic.Value
+	for i := 0; i < len(gotSums); i++ {
+		gotSums[i].Store(false)
+	}
+
+	// setup the channels for listening to channel changes (doing dynamic select-case vs. a stack of 8 channels)
+	cases := make([]reflect.SelectCase, len(addr.Sums)+1) // one for each sum, BUT a +1 to hold the CarryOut channel read
+
+	// setup a case for each sum
+	for i, sum := range addr.Sums {
+		ch := make(chan bool, 1)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+		sum.WireUp(ch)
+	}
+
+	// setup the single CarryOut result
+	var gotCarryOut atomic.Value
+
+	// add a case for the single CarryOut channel
+	chCarryOut := make(chan bool, 1)
+	cases[len(cases)-1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chCarryOut)}
+	addr.CarryOut.WireUp(chCarryOut)
+
+	go func() {
+		for {
+			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+			chosen, value, _ := reflect.Select(cases)
+
+			// if know the selected case was within the range of Sums, set the matching Sums bool array element
+			if chosen < len(cases)-1 {
+				gotSums[chosen].Store(value.Bool())
+			} else {
+				gotCarryOut.Store(value.Bool())
+			}
+		}
+	}()
+
+	// lots to settle above before validating results
+	time.Sleep(time.Millisecond * 100)
+
 	wantAnswer := "00000001"
 	wantCarry := false
 
-	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
+	// build a string based on each sum's state
+	gotAnswer := ""
+	for i := 0; i < len(gotSums); i++ {
+		if gotSums[i].Load().(bool) {
+			gotAnswer += "1"
+		} else {
+			gotAnswer += "0"
+		}
+	}
+
+	if gotAnswer != wantAnswer {
 		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
 	}
 
-	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
-		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
+	if gotCarryOut.Load().(bool) != wantCarry {
+		t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarryOut.Load().(bool))
 	}
 
 	addr.SaveToLatch.Set(true)
+	time.Sleep(time.Millisecond * 100)
 	addr.SaveToLatch.Set(false)
+
 	addr.ReadFromLatch.Set(true)
 
-	updateSwitches(aInSwitches, "00000010")
-	updateSwitches(bInSwitches, "00000000") // reset to prove we reference the 00000001 stored in the latch
+	setSwitches(aInSwitches, "00000010")
+	setSwitches(bInSwitches, "00000000") // reset to prove we reference the 00000001 stored in the latch
+
+	time.Sleep(time.Millisecond * 100)
 
 	wantAnswer = "00000011"
 	wantCarry = false
 
-	if gotAnswer := addr.AsAnswerString(); gotAnswer != wantAnswer {
+	// build a string based on each sum's state
+	gotAnswer = ""
+	for i := 0; i < len(gotSums); i++ {
+		if gotSums[i].Load().(bool) {
+			gotAnswer += "1"
+		} else {
+			gotAnswer += "0"
+		}
+	}
+
+	if gotAnswer != wantAnswer {
 		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
 	}
 
-	if gotCarry := addr.CarryOutAsBool(); gotCarry != wantCarry {
-		t.Errorf("Wanted carry %t, but %t", wantCarry, gotCarry)
+	if gotCarryOut.Load().(bool) != wantCarry {
+		t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarryOut.Load().(bool))
 	}
+
+	//////////////////
+	// lets see why it cannot do another add
+
+	// //addr.SaveToLatch.Set(true)
+	// time.Sleep(time.Millisecond * 100)
+	// //addr.SaveToLatch.Set(false)
+
+	// //addr.ReadFromLatch.Set(true)
+
+	// setSwitches(aInSwitches, "00000100")
+
+	// time.Sleep(time.Millisecond * 100)
+
+	// wantAnswer = "00000111"
+	// wantCarry = false
+
+	// // build a string based on each sum's state
+	// gotAnswer = ""
+	// for i := 0; i < len(gotSums); i++ {
+	// 	if gotSums[i].Load().(bool) {
+	// 		gotAnswer += "1"
+	// 	} else {
+	// 		gotAnswer += "0"
+	// 	}
+	// }
+
+	// if gotAnswer != wantAnswer {
+	// 	t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+	// }
+
+	// if gotCarryOut.Load().(bool) != wantCarry {
+	// 	t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarryOut.Load().(bool))
+	// }
+
 }
 
+/*
 func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	testCases := []struct {
 		clrIn    bool

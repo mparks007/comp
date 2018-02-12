@@ -140,14 +140,6 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 }
 
 /*
-func (a *ThreeNumberAdder) AsAnswerString() string {
-	return a.adder.AsAnswerString()
-}
-
-func (a *ThreeNumberAdder) CarryOutAsBool() bool {
-	return a.adder.CarryOutAsBool()
-}
-/*
 type NNumberAdder struct {
 	latches  *NBitLatchWithClear
 	adder    *NBitAdder
