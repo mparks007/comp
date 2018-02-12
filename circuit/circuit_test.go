@@ -2032,7 +2032,6 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	}
 }
 
-/*
 func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	testCases := []struct {
 		aIn          string
@@ -2050,22 +2049,73 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	bInSwitches, _ := NewNSwitchBank("00000000")
 	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
 
+	// setup the Sum results bool array (default all to false to match the initial switch states above)
+	var gotSums [8]atomic.Value
+	for i := 0; i < len(gotSums); i++ {
+		gotSums[i].Store(false)
+	}
+
+	// setup the channels for listening to channel changes (doing dynamic select-case vs. a stack of 8 channels)
+	cases := make([]reflect.SelectCase, len(addr.Sums)+1) // one for each sum, BUT a +1 to hold the CarryOut channel read
+
+	// setup a case for each sum
+	for i, sum := range addr.Sums {
+		ch := make(chan bool, 1)
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+		sum.WireUp(ch)
+	}
+
+	// setup the single CarryOut result
+	var gotCarryOut atomic.Value
+
+	// add a case for the single CarryOut channel
+	chCarryOut := make(chan bool, 1)
+	cases[len(cases)-1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chCarryOut)}
+	addr.CarryOut.WireUp(chCarryOut)
+
+	go func() {
+		for {
+			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
+			chosen, value, _ := reflect.Select(cases)
+
+			// if know the selected case was within the range of Sums, set the matching Sums bool array element
+			if chosen < len(cases)-1 {
+				gotSums[chosen].Store(value.Bool())
+			} else {
+				gotCarryOut.Store(value.Bool())
+			}
+		}
+	}()
+
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s", tc.aIn, tc.bIn), func(t *testing.T) {
 
-			updateSwitches(aInSwitches, tc.aIn)
-			updateSwitches(bInSwitches, tc.bIn)
+			setSwitches(aInSwitches, tc.aIn)
+			setSwitches(bInSwitches, tc.bIn)
 
-			if gotAnswer := addr.AsAnswerString(); gotAnswer != tc.wantAnswer {
+			time.Sleep(time.Millisecond * 75)
+
+			// build a string based on each sum's state
+			gotAnswer := ""
+			for i := 0; i < len(gotSums); i++ {
+				if gotSums[i].Load().(bool) {
+					gotAnswer += "1"
+				} else {
+					gotAnswer += "0"
+				}
+			}
+
+			if gotAnswer != tc.wantAnswer {
 				t.Errorf("Wanted answer %s but %s", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotCarry := addr.CarryOutAsBool(); gotCarry != tc.wantCarryOut {
-				t.Errorf("Wanted carry %t, but %t", tc.wantCarryOut, gotCarry)
+			if gotCarryOut.Load().(bool) != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gotCarryOut.Load().(bool))
 			}
 		})
 	}
 }
+
 /*
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
