@@ -2097,7 +2097,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 			}
 
 			if gotAnswer != tc.wantAnswer {
-				t.Errorf("Wanted answer %s but %s", tc.wantAnswer, gotAnswer)
+				t.Errorf("Wanted answer %s but got %s", tc.wantAnswer, gotAnswer)
 			}
 
 			if gotCarryOut.Load().(bool) != tc.wantCarryOut {
@@ -2109,7 +2109,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
-	aInSwitches, _ := NewNSwitchBank("00000000")
+	aInSwitches, _ := NewNSwitchBank("00000010")
 	bInSwitches, _ := NewNSwitchBank("00000001")
 	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
 
@@ -2152,9 +2152,9 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	}()
 
 	// lots to settle above before validating results
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 250)
 
-	wantAnswer := "00000001"
+	wantAnswer := "00000011" // 2 + 1 = 3
 	wantCarry := false
 
 	// build a string based on each sum's state
@@ -2168,7 +2168,7 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	}
 
 	if gotAnswer != wantAnswer {
-		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+		t.Errorf("Wanted answer %s but got %s", wantAnswer, gotAnswer)
 	}
 
 	if gotCarryOut.Load().(bool) != wantCarry {
@@ -2177,16 +2177,19 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	addr.SaveToLatch.Set(true)
 	time.Sleep(time.Millisecond * 100)
+
 	addr.SaveToLatch.Set(false)
-
-	addr.ReadFromLatch.Set(true)
-
-	setSwitches(aInSwitches, "00000010")
-	setSwitches(bInSwitches, "00000000") // reset to prove we reference the 00000001 stored in the latch
-
 	time.Sleep(time.Millisecond * 100)
 
-	wantAnswer = "00000011"
+	setSwitches(aInSwitches, "00000011")
+	time.Sleep(time.Millisecond * 100)
+
+	addr.ReadFromLatch.Set(true)
+	time.Sleep(time.Millisecond * 250)
+
+	addr.ReadFromLatch.Set(false)
+
+	wantAnswer = "00000110" // 3 + 3 = 6
 	wantCarry = false
 
 	// build a string based on each sum's state
@@ -2200,7 +2203,7 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	}
 
 	if gotAnswer != wantAnswer {
-		t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+		t.Errorf("Wanted answer %s but got %s", wantAnswer, gotAnswer)
 	}
 
 	if gotCarryOut.Load().(bool) != wantCarry {
@@ -2208,15 +2211,21 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	}
 
 	//////////////////
-	// lets see why it cannot do another add
+	// // lets see why it cannot do another add
 
-	// //addr.SaveToLatch.Set(true)
+	// addr.SaveToLatch.Set(true)
+
 	// time.Sleep(time.Millisecond * 100)
-	// //addr.SaveToLatch.Set(false)
 
-	// //addr.ReadFromLatch.Set(true)
+	// addr.SaveToLatch.Set(false)
 
-	// setSwitches(aInSwitches, "00000100")
+	// time.Sleep(time.Millisecond * 100)
+
+	// setSwitches(aInSwitches, "00000001")
+
+	// time.Sleep(time.Millisecond * 100)
+
+	// addr.ReadFromLatch.Set(true)
 
 	// time.Sleep(time.Millisecond * 100)
 
@@ -2234,7 +2243,7 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	// }
 
 	// if gotAnswer != wantAnswer {
-	// 	t.Errorf("Wanted answer %s but %s", wantAnswer, gotAnswer)
+	// 	t.Errorf("Wanted answer %s but got %s", wantAnswer, gotAnswer)
 	// }
 
 	// if gotCarryOut.Load().(bool) != wantCarry {
