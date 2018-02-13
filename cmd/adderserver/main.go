@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.concur.com/mparks/adder/svc"
+	"github.com/mparks007/comp/svc"
 )
 
 func main() {

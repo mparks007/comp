@@ -8,7 +8,7 @@ import (
 
 	"context"
 
-	"github.concur.com/mparks/adder/circuit"
+	"github.com/mparks007/comp/circuit"
 )
 
 var actionType = flag.String("action", "", "Type of action to take (battery/switch/relay/and/or/nand/nor/xor/invert/osc/select/halfadd/fulladd/add/3add/sub/comp/flipflop/levellatch/nbitlatch/freqdiv)")
@@ -25,7 +25,7 @@ func main() {
 	flag.Parse()
 
 	var err error
-	logger, err = circuit.NewMySqlLogger("mparks:dbadmin@/circuit", context.Background())
+	logger, err = circuit.NewMySqlLogger(context.Background(), "mparks:dbadmin@/circuit")
 	if err != nil {
 		fmt.Println("Error creating MySqlLogger:", err.Error())
 		return
