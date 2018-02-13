@@ -2218,32 +2218,32 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:true, dataIn:true, which causes Q on (QBar off)
-		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change regardless of dataIn
-		{false, false, true, true, false},  // clrIn off, clkIn off should cause no change regardless of dataIn
-		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn causes no change since same Q state as prior
-		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
-		{false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
-		{false, false, false, false, true}, // clrIn off, clkIn off should cause no change
-		{false, true, false, false, true},  // clrIn off, clkIn on again with same dataIn should cause no change
-		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn should cause Q on (QBar off)
-		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
-		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn should cause no change since same Q state as prior
-		{false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
-		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn causes Q on (QBar off)
-		{false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
-		{true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
-		{true, false, true, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
-		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {false, false, false, true, false}, // clrIn off, clkIn off should cause no change regardless of dataIn
+		// {false, false, true, true, false},  // clrIn off, clkIn off should cause no change regardless of dataIn
+		// {false, true, true, true, false},   // clrIn off, clkIn on with dataIn causes no change since same Q state as prior
+		// {false, false, false, true, false}, // clrIn off, clkIn off should cause no change
+		// {false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
+		// {false, false, false, false, true}, // clrIn off, clkIn off should cause no change
+		// {false, true, false, false, true},  // clrIn off, clkIn on again with same dataIn should cause no change
+		// {false, true, true, true, false},   // clrIn off, clkIn on with dataIn should cause Q on (QBar off)
+		// {false, false, false, true, false}, // clrIn off, clkIn off should cause no change
+		// {false, true, true, true, false},   // clrIn off, clkIn on with dataIn should cause no change since same Q state as prior
+		// {false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
+		// {false, true, true, true, false},   // clrIn off, clkIn on with dataIn causes Q on (QBar off)
+		// {false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, false, true, false, true},   // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		{true, true, true, false, true}, // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// // {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// // {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// // {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should be/go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should be/go off (QBar on)
 	}
 
 	testName := func(i int) string {
@@ -2309,7 +2309,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				clrBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 250)
+			time.Sleep(time.Millisecond * 100)
 
 			if tc.clkIn {
 				clkBattery.Charge()
