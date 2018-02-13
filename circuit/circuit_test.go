@@ -2177,17 +2177,12 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	addr.SaveToLatch.Set(true)
 	time.Sleep(time.Millisecond * 100)
-
 	addr.SaveToLatch.Set(false)
-	time.Sleep(time.Millisecond * 100)
 
 	setSwitches(aInSwitches, "00000011")
-	time.Sleep(time.Millisecond * 100)
 
 	addr.ReadFromLatch.Set(true)
 	time.Sleep(time.Millisecond * 250)
-
-	addr.ReadFromLatch.Set(false)
 
 	wantAnswer = "00000110" // 3 + 3 = 6
 	wantCarry = false
@@ -2210,46 +2205,9 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 		t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarryOut.Load().(bool))
 	}
 
-	//////////////////
-	// // lets see why it cannot do another add
-
-	// addr.SaveToLatch.Set(true)
-
-	// time.Sleep(time.Millisecond * 100)
-
-	// addr.SaveToLatch.Set(false)
-
-	// time.Sleep(time.Millisecond * 100)
-
-	// setSwitches(aInSwitches, "00000001")
-
-	// time.Sleep(time.Millisecond * 100)
-
-	// addr.ReadFromLatch.Set(true)
-
-	// time.Sleep(time.Millisecond * 100)
-
-	// wantAnswer = "00000111"
-	// wantCarry = false
-
-	// // build a string based on each sum's state
-	// gotAnswer = ""
-	// for i := 0; i < len(gotSums); i++ {
-	// 	if gotSums[i].Load().(bool) {
-	// 		gotAnswer += "1"
-	// 	} else {
-	// 		gotAnswer += "0"
-	// 	}
-	// }
-
-	// if gotAnswer != wantAnswer {
-	// 	t.Errorf("Wanted answer %s but got %s", wantAnswer, gotAnswer)
-	// }
-
-	// if gotCarryOut.Load().(bool) != wantCarry {
-	// 	t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarryOut.Load().(bool))
-	// }
-
+	// can't add a fourth number, since once Selector is on the B side, the data from the Latch (once SaveToLatch goes true again)
+	//     will send data at an unknown rate down to the adder, even if set SaveToLatch false.  Hard to get the timing just right
+	//     unless I can redo all the timings in the whole system to know exactly when a component has settled (vs. relying on pauses)
 }
 
 /*
