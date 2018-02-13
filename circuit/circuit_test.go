@@ -2210,7 +2210,6 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	//     unless I can redo all the timings in the whole system to know exactly when a component has settled (vs. relying on pauses)
 }
 
-/*
 func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	testCases := []struct {
 		clrIn    bool
@@ -2218,19 +2217,33 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		dataIn   bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latches will start with a default of clrIn:false, clkIn:true, dataIn:true, which causes Q on (QBar off)
+	}{ // construction of the latches will start with a default of clkIn:true, dataIn:true, which causes Q on (QBar off)
+		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change regardless of dataIn
+		{false, false, true, true, false},  // clrIn off, clkIn off should cause no change regardless of dataIn
+		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn causes no change since same Q state as prior
 		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
-		{false, false, true, true, false},  // clrIn off, clkIn off should cause no change
-		{false, true, true, true, false},   // clrIn off, clkIn with dataIn causes Q on (QBar off)
-		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
-		{false, true, false, false, true},  // clrIn off, clkIn with no dataIn causes Q off (QBar on)
+		{false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
 		{false, false, false, false, true}, // clrIn off, clkIn off should cause no change
-		{false, true, false, false, true},  // clrIn off, clkIn again with same dataIn should cause no change
-		{false, true, true, true, false},   // clrIn off, clkIn with dataIn should cause Q on (QBar off)
+		{false, true, false, false, true},  // clrIn off, clkIn on again with same dataIn should cause no change
+		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn should cause Q on (QBar off)
 		{false, false, false, true, false}, // clrIn off, clkIn off should cause no change
-		{true, false, true, false, true},   // clrIn on again should always cause Q off (QBar on)
-		{true, false, false, false, true},  // clrIn on should always cause Q off (QBar on)
-		{true, true, false, false, true},   // clrIn and clkOn should NOT panic since no data
+		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn should cause no change since same Q state as prior
+		{false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
+		{false, true, true, true, false},   // clrIn off, clkIn on with dataIn causes Q on (QBar off)
+		{false, true, false, false, true},  // clrIn off, clkIn on with no dataIn causes Q off (QBar on)
+		{true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
+		{true, false, true, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, false, false, false, true},  // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, true, false, true},    // clrIn on, nothing else should matter, Q should go off (QBar on)
+		// {true, true, false, false, true},   // clrIn on, nothing else should matter, Q should go off (QBar on)
 	}
 
 	testName := func(i int) string {
@@ -2239,7 +2252,6 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		var priorDataIn bool
 
 		if i == 0 {
-			// trues since starting with charged batteries when Newing thew Latch initially
 			priorClrIn = false
 			priorClkIn = true
 			priorDataIn = true
@@ -2254,11 +2266,39 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 
 	var clrBattery, clkBattery, dataBattery *Battery
 	clrBattery = NewBattery()
-	clrBattery.Discharge()
+	clrBattery.Discharge() // start without Clear to act like a normal RSFlipFlop initially
 	clkBattery = NewBattery()
 	dataBattery = NewBattery()
 
+	chQ := make(chan bool, 1)
+	chQBar := make(chan bool, 1)
+
 	latch := NewLevelTriggeredDTypeLatchWithClear(clrBattery, clkBattery, dataBattery)
+
+	var gotQ, gotQBar atomic.Value
+	go func() {
+		for {
+			select {
+			case newQ := <-chQ:
+				gotQ.Store(newQ)
+			case newQBar := <-chQBar:
+				gotQBar.Store(newQBar)
+			}
+		}
+	}()
+
+	latch.QBar.WireUp(chQBar)
+	latch.Q.WireUp(chQ)
+
+	time.Sleep(time.Millisecond * 75)
+
+	if gotQ.Load().(bool) != true {
+		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
+	}
+
+	if gotQBar.Load().(bool) != false {
+		t.Errorf("Wanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
+	}
 
 	for i, tc := range testCases {
 		t.Run(testName(i), func(t *testing.T) {
@@ -2269,11 +2309,15 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				clrBattery.Discharge()
 			}
 
+			time.Sleep(time.Millisecond * 250)
+
 			if tc.clkIn {
 				clkBattery.Charge()
 			} else {
 				clkBattery.Discharge()
 			}
+
+			time.Sleep(time.Millisecond * 100)
 
 			if tc.dataIn {
 				dataBattery.Charge()
@@ -2281,56 +2325,19 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
+			time.Sleep(time.Millisecond * 100)
+
+			if gotQ.Load().(bool) != tc.wantQ {
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
 			}
 
-			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
+			if gotQBar.Load().(bool) != tc.wantQBar {
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
 }
 
-func TestLevelTriggeredDTypeLatchWithClear_UpdatePins(t *testing.T) {
-
-	latch := NewLevelTriggeredDTypeLatchWithClear(NewSwitch(false), NewSwitch(true), nil)
-
-	want := false
-	if got := latch.Q.GetIsPowered(); got != want {
-		t.Errorf("With data as nil, wanted power %t but got %t", want, got)
-	}
-
-	latch.UpdateDataPin(NewSwitch(true))
-
-	want = true
-	if got := latch.Q.GetIsPowered(); got != want {
-		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
-	}
-
-	latch.UpdateDataPin(NewSwitch(false))
-
-	want = false
-	if got := latch.Q.GetIsPowered(); got != want {
-		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
-	}
-}
-
-/*
-func TestLevelTriggeredDTypeLatchWithClear_Panic(t *testing.T) {
-
-	want := "A Flip-Flop cannot have equivalent power status at both Q and QBar"
-
-	defer func() {
-		if got := recover(); got != want {
-			t.Errorf("Expected a panic of \"%s\" but got \"%s\"", want, got)
-		}
-	}()
-
-	// setting Clear and Clock and Data all true cause the inner RSFlipflop to be of invalid state
-	NewLevelTriggeredDTypeLatchWithClear(NewBattery(), NewBattery(), NewBattery())
-}
-*/
 /*
 func TestNBitLatchWithClear(t *testing.T) {
 	testCases := []struct {
@@ -2402,46 +2409,6 @@ func TestNBitLatchWithClear(t *testing.T) {
 				priorWant[i] = q.(*NORGate).GetIsPowered()
 			}
 		})
-	}
-}
-
-func TestNBitLatchWithClear_UpdatePins(t *testing.T) {
-
-	clkSwitch := NewSwitch(true)
-	latch := NewNBitLatchWithClear(NewSwitch(false), clkSwitch, make([]pwrEmitter, 2))
-
-	want := false
-	if got := latch.Qs[0].(*NORGate).GetIsPowered(); got != want {
-		t.Errorf("With data as nil, wanted Q 1 power %t but got %t", want, got)
-	}
-	if got := latch.Qs[1].(*NORGate).GetIsPowered(); got != want {
-		t.Errorf("With data as nil, wanted Q 2 power %t but got %t", want, got)
-	}
-
-	clkSwitch.Set(false)
-	latchSwitches, _ := NewNSwitchBank("11")
-	latch.UpdateDataPins(latchSwitches.AsPwrEmitters())
-	clkSwitch.Set(true)
-
-	want = true
-	if got := latch.Qs[0].(*NORGate).GetIsPowered(); got != want {
-		t.Errorf("With data 1 as an On switch, wanted Q 1 power %t but got %t", want, got)
-	}
-	if got := latch.Qs[1].(*NORGate).GetIsPowered(); got != want {
-		t.Errorf("With data 2 as an On switch, wanted Q 2 power %t but got %t", want, got)
-	}
-
-	clkSwitch.Set(false)
-	latchSwitches, _ = NewNSwitchBank("00")
-	latch.UpdateDataPins(latchSwitches.AsPwrEmitters())
-	clkSwitch.Set(true)
-
-	want = false
-	if got := latch.Qs[0].(*NORGate).GetIsPowered(); got != want {
-		t.Errorf("With data 1 as an Off switch, wanted Q 1 power %t but got %t", want, got)
-	}
-	if got := latch.Qs[1].(*NORGate).GetIsPowered(); got != want {
-		t.Errorf("With data 2 as an Off switch, wanted Q 2 power %t but got %t", want, got)
 	}
 }
 

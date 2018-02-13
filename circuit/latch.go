@@ -31,7 +31,7 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff.QBar = NewNamedNORGate("QBar", sPin, wireQOut)
 	fmt.Println("Wiring channel up to QBar")
 	ff.QBar.WireUp(wireQBarOut.Input)
-	
+
 	// give the WireUp's inner transmit time to wrap up
 	time.Sleep(time.Millisecond * 10)
 
@@ -39,7 +39,7 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff.Q = NewNamedNORGate("Q", rPin, wireQBarOut)
 	fmt.Println("Wiring channel up to Q")
 	ff.Q.WireUp(wireQOut.Input)
-	
+
 	// give the WireUp's inner transmit time to wrap up
 	time.Sleep(time.Millisecond * 10)
 
@@ -94,7 +94,6 @@ func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
 	return latch
 }
 
-/*
 // Level-triggered D-Type Latch With Clear ("Level" = clock high/low, "D" = data 0/1)
 
 // d clk clr   q  !q
@@ -130,11 +129,7 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 	return latch
 }
 
-func (l *LevelTriggeredDTypeLatchWithClear) UpdateDataPin(dataPin pwrEmitter) {
-	l.rAnd.UpdatePin(2, 2, NewInverter(dataPin))
-	l.sAnd.UpdatePin(2, 2, dataPin)
-}
-
+/*
 type NBitLatchWithClear struct {
 	latches []*LevelTriggeredDTypeLatchWithClear
 	Qs      []pwrEmitter
