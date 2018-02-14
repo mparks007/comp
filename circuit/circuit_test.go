@@ -1744,13 +1744,15 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 				clkBattery.Discharge()
 			}
 
+			time.Sleep(time.Millisecond * 200)
+
 			if tc.dataIn {
 				dataBattery.Charge()
 			} else {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 275)
+			time.Sleep(time.Millisecond * 200)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -2208,6 +2210,8 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	// can't add a fourth number, since once Selector is on the B side, the data from the Latch (once SaveToLatch goes true again)
 	//     will send data at an unknown rate down to the adder, even if set SaveToLatch false.  Hard to get the timing just right
 	//     unless I can redo all the timings in the whole system to know exactly when a component has settled (vs. relying on pauses)
+	//
+	//     OR....would an extra "barrier" latch between the current latch and the 2-1-Selector allow more control over the stages of the loopback? Hmmmm
 }
 
 func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
@@ -2224,12 +2228,12 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		{false, false, true, false, true},  // clrIn off, clkIn off, do nothing
 		{false, false, false, false, true}, // clrIn off, clkIn off, do nothing
 		{false, true, true, true, false},   // clrIn off, clkIn on, Q = data
-		{true, false, true, false, false},  // clrIn ON, Q always false, QBar only on if data is off
-		{true, true, true, false, false},   // clrIn ON, Q always false, QBar only on if data is off
-		{true, true, false, false, false},  // clrIn ON, Q always false, QBar only on if data is off
-		{true, false, true, false, false},  // clrIn ON, Q always false, QBar only on if data is off
-		{true, false, false, false, true},  // clrIn ON, Q always false, QBar only on if data is off
-		{true, true, true, false, false},   // clrIn ON, Q always false, QBar only on if data is off
+		{true, false, true, false, true},   // clrIn ON, Q always false, QBar will depend on if clock and data are both true
+		{true, true, true, false, false},   // clrIn ON, Q always false, QBar will depend on if clock and data are both true
+		{true, true, false, false, true},   // clrIn ON, Q always false, QBar will depend on if clock and data are both true
+		{true, false, true, false, true},   // clrIn ON, Q always false, QBar will depend on if clock and data are both true
+		{true, false, false, false, true},  // clrIn ON, Q always false, QBar will depend on if clock and data are both true
+		{true, true, true, false, false},   // clrIn ON, Q always false, QBar will depend on if clock and data are both true
 	}
 
 	testName := func(i int) string {
@@ -2276,14 +2280,14 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	time.Sleep(time.Millisecond * 75)
+	time.Sleep(time.Millisecond * 250)
 
 	if gotQ.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
+		t.Errorf("xWanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
 	}
 
 	if gotQBar.Load().(bool) != false {
-		t.Errorf("Wanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
+		t.Errorf("xWanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
 	}
 
 	for i, tc := range testCases {
@@ -2295,7 +2299,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				clrBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 250)
 
 			if tc.clkIn {
 				clkBattery.Charge()
@@ -2303,7 +2307,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				clkBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 250)
 
 			if tc.dataIn {
 				dataBattery.Charge()
@@ -2311,14 +2315,16 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 250)
+
+			// the overall pauses above must be longer than the special wire inside the latch, plus overhead for more latch settling down
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted power of %t at Q, but got %t.", i, tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted power of %t at QBar, but got %t.", i, tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}

@@ -120,7 +120,11 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 
 	latch.clrOR = NewORGate(clrPin, latch.rAnd)
 
-	latch.rs = NewRSFlipFLop(latch.clrOR, latch.sAnd)
+	wireSAndToQBarNor := NewWire(125) // need to ensure the Clear state resolves the QNor first, by slowing down the AND->QBarNor wire (using a "longer wire" between them)
+
+	latch.sAnd.WireUp(wireSAndToQBarNor.Input)
+
+	latch.rs = NewRSFlipFLop(latch.clrOR, wireSAndToQBarNor)
 
 	// refer to the inner-flipflop's outputs for easier external access
 	latch.Q = latch.rs.Q
