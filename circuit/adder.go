@@ -76,7 +76,7 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 		if i == len(addend1Pins)-1 {
 			full = NewFullAdder(addend1Pins[i], addend2Pins[i], carryInPin) // carry-in is the actual (potential) carry from an adjoining circuit
 		} else {
-			// [carry-in is the neighboring, more significant adder's carry-out]
+			// [carry-in is the neighboring, less significant adder's carry-out]
 			// since insert at the front of the slice, the neighbor is always the one at the front per the prior insert
 			full = NewFullAdder(addend1Pins[i], addend2Pins[i], addr.fullAdders[0].Carry)
 		}
@@ -140,11 +140,11 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 }
 
 type NNumberAdder struct {
-	latches  *NBitLatchWithClear
-	adder    *NBitAdder
-	Clear    *Switch
-	Add      *Switch
-	Sums     []pwrEmitter
+	latches *NBitLatchWithClear
+	adder   *NBitAdder
+	Clear   *Switch
+	Add     *Switch
+	Sums    []pwrEmitter
 }
 
 func NewNNumberAdder(switchBank *NSwitchBank) (*NNumberAdder, error) {

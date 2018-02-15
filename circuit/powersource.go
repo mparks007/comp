@@ -9,7 +9,13 @@ type pwrSource struct {
 	outChannels []chan bool
 	isPowered   bool
 	name        string
+	chDone      chan bool
 	mu          sync.Mutex // for isPowered usage
+}
+
+// Init will do initialization code for all pwrSource-based objects
+func (p *pwrSource) Init() {
+	p.chDone = make(chan bool, 1)
 }
 
 // WireUp allows a circuit to subscribe to the power source
@@ -50,4 +56,9 @@ func (p *pwrSource) Transmit(newState bool) bool {
 	}
 
 	return didTransmit
+}
+
+// Quit allows for looped go funcs to exit
+func (p *pwrSource) Quit() {
+	p.chDone <- true
 }

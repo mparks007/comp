@@ -13,6 +13,7 @@ type Relay struct {
 	aInCh        chan bool
 	bInCh        chan bool
 	name         string
+	chDone       chan bool
 }
 
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
@@ -21,6 +22,7 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 
 	rel.aInCh = make(chan bool, 1)
 	rel.bInCh = make(chan bool, 1)
+	rel.chDone = make(chan bool, 1)
 
 	// default to false, as if boolean defaults
 	rel.aInIsPowered.Store(false)
@@ -61,15 +63,29 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	// doing aIn and bIn go funcs independently since power could be changing on either one at the "same" time
 	go func() {
 		for {
-			receiveA()
+			select {
+			case <-rel.chDone:
+				return
+			default:
+				receiveA()
+			}
 		}
 	}()
 	go func() {
 		for {
-			receiveB()
+			select {
+			case <-rel.chDone:
+				return
+			default:
+				receiveB()
+			}
 		}
 	}()
 
 	return rel
 }
 
+// Quit allows for looped go funcs to exit
+func (r *Relay) Quit() {
+	r.chDone <- true
+}
