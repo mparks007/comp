@@ -2341,10 +2341,10 @@ func TestNBitLatchWithClear(t *testing.T) {
 		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
 	}
 
-	latchSwitches, _ := NewNSwitchBank("00000000")
+	dataSwitches, _ := NewNSwitchBank("00000000")
 	clrSwitch := NewSwitch(false)
 	clkSwitch := NewSwitch(false)
-	latch := NewNBitLatchWithClear(clrSwitch, clkSwitch, latchSwitches.Switches)
+	latch := NewNBitLatchWithClear(clrSwitch, clkSwitch, dataSwitches.Switches)
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)
@@ -2380,12 +2380,13 @@ func TestNBitLatchWithClear(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Stage#%d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
 
-			// set to OFF to test that nothing will change in the latches store
-
+			// reset the Clear from the prior run (asserts at the bottom of this loop)
 			clrSwitch.Set(false)
+
+			// set to OFF to test that nothing will change in the latches store
 			clkSwitch.Set(false)
-			setSwitches(latchSwitches, tc.input)
-			time.Sleep(time.Millisecond * 800) // need to allow all the latches to settle down (transmit their new Q values)
+			setSwitches(dataSwitches, tc.input)
+			time.Sleep(time.Millisecond * 100)
 
 			for i := 0; i < 8; i++ {
 				if got := got[i].Load().(bool); got != priorWant[i] {
@@ -2394,9 +2395,8 @@ func TestNBitLatchWithClear(t *testing.T) {
 			}
 
 			// Now set to ON to test that requested changes did occur in the latches store
-
 			clkSwitch.Set(true)
-			time.Sleep(time.Millisecond * 800) // need to allow all the latches to settle down (transmit their new Q values)
+			time.Sleep(time.Millisecond * 250)
 
 			for i, _ := range latch.Qs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
@@ -2404,22 +2404,21 @@ func TestNBitLatchWithClear(t *testing.T) {
 				}
 			}
 
-			// Now Clear the latches
-
-			clrSwitch.Set(true)
-			time.Sleep(time.Millisecond * 800) // need to allow all the latches to settle down (transmit their new Q values)
-
 			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top of the loop) proves it didn't change (aka matches prior)
+			for i, _ := range latch.Qs {
+				priorWant[i] = got[i].Load().(bool)
+			}
+
+			// Now Clear the latches
+			clrSwitch.Set(true)
+			time.Sleep(time.Millisecond * 250) // need to allow Clear some time to force all Qs off
+
+			// clear should have set all Qs to off
 			want := false
 			for i, _ := range latch.Qs {
 				if got := got[i].Load().(bool); got != want {
 					t.Errorf("Latch[%d], with clrSwitch ON, wanted %t but got %t", i, want, got)
 				}
-			}
-
-			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (ie matches prior)
-			for i, _ := range latch.Qs {
-				priorWant[i] = got[i].Load().(bool)
 			}
 		})
 	}
