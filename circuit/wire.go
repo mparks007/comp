@@ -13,6 +13,7 @@ type Wire struct {
 	outChannels []chan bool
 	isPowered   bool
 	name        string
+	chDone      chan bool
 	mu          sync.Mutex // for isPowered usage
 }
 
@@ -25,17 +26,27 @@ func NewNamedWire(name string, length uint) *Wire {
 	wire.length = length
 	wire.name = name
 	wire.Input = make(chan bool, 1)
+	wire.chDone = make(chan bool, 1)
 
 	// spin up the func that will allow the wire's input to be wired up to something, then send to output as necessary
 	go func() {
 		for {
-			state := <-wire.Input
-			fmt.Printf("Transmit of %s, %t\n", wire.name, state)
-			wire.Transmit(state)
+			select {
+			case state := <-wire.Input:
+				fmt.Printf("Transmit of %s, %t\n", wire.name, state)
+				wire.Transmit(state)
+			case <-wire.chDone:
+				return
+			}
 		}
 	}()
 
 	return wire
+}
+
+// Quit allows any 'for' loops inside go funcs to exit
+func (w *Wire) Quit() {
+	w.chDone <- true
 }
 
 // WireUp allows a circuit to subscribe to the power source
@@ -96,6 +107,13 @@ func NewRibbonCable(width, len uint) *RibbonCable {
 	}
 
 	return rib
+}
+
+// Quit allows the quitting of all the wires in the ribbon cable
+func (r *RibbonCable) Quit() {
+	for i, _ := range r.Wires {
+		r.Wires[i].(*Wire).Quit()
+	}
 }
 
 func (r *RibbonCable) SetInputs(wires []pwrEmitter) {

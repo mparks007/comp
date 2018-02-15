@@ -31,6 +31,7 @@ func TestPwrSource(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	pwr := &pwrSource{}
+	pwr.Init()
 
 	// two wire ups to prove both will get called
 	pwr.WireUp(ch1)
@@ -75,6 +76,7 @@ func TestWire_NoDelay(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	wire := NewWire(0)
+	defer wire.Quit()
 
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
@@ -132,6 +134,7 @@ func TestWire_WithDelay(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	wire := NewWire(wireLen)
+	defer wire.Quit()
 
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
@@ -198,6 +201,8 @@ func TestRibbonCable(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	rib := NewRibbonCable(2, 1)
+	defer rib.Quit()
+
 	inputs, _ := NewNSwitchBank("01")
 	rib.SetInputs(inputs.Switches)
 
@@ -274,6 +279,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 	pin2Battery = NewBattery()
 
 	rel := NewRelay(pin1Battery, pin2Battery)
+	defer rel.Quit()
 
 	var gotOpenOut, gotClosedOut atomic.Value
 	go func() {

@@ -57,8 +57,3 @@ func (p *pwrSource) Transmit(newState bool) bool {
 
 	return didTransmit
 }
-
-// Quit allows for looped go funcs to exit
-func (p *pwrSource) Quit() {
-	p.chDone <- true
-}

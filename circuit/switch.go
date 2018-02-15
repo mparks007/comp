@@ -16,6 +16,8 @@ type Switch struct {
 // NewSwitch creates a new Switch struct with its initial state based on the passed in initialization value
 func NewSwitch(init bool) *Switch {
 	sw := &Switch{}
+	sw.Init()
+
 	sw.ch = make(chan bool, 1)
 
 	// setup the battery-based relay pin that will be used to toggle on/off of the switch (see Set(bool) method)
@@ -37,11 +39,22 @@ func NewSwitch(init bool) *Switch {
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-sw.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return sw
+}
+
+// Quit allows any 'for' loops inside go funcs to exit
+func (s *Switch) Quit() {
+	s.chDone <- true
+	s.relay.Quit()
 }
 
 // Set method on a Switch will toggle the state of the underlying battery to activate/deactivate the internal relay
