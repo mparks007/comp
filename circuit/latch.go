@@ -135,7 +135,7 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 
 type NBitLatchWithClear struct {
 	latches []*LevelTriggeredDTypeLatchWithClear
-	Qs      []*NORGate
+	Qs      []pwrEmitter
 }
 
 func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatchWithClear {

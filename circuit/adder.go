@@ -139,49 +139,31 @@ func NewThreeNumberAdder(aSwitchBank, bSwitchBank *NSwitchBank) (*ThreeNumberAdd
 	return addr, nil
 }
 
-/*
 type NNumberAdder struct {
 	latches  *NBitLatchWithClear
 	adder    *NBitAdder
 	Clear    *Switch
 	Add      *Switch
 	Sums     []pwrEmitter
-	CarryOut pwrEmitter
 }
 
 func NewNNumberAdder(switchBank *NSwitchBank) (*NNumberAdder, error) {
 
 	addr := &NNumberAdder{}
 
-	// build the latch
 	addr.Clear = NewSwitch(false)
 	addr.Add = NewSwitch(false)
-	addr.latches = NewNBitLatchWithClear(addr.Clear, addr.Add, make([]pwrEmitter, len(switchBank.Switches))) // we don't have an adder yet so cannot set data pins correctly yet (but I need SOMETHING in to make the inner components!)
 
-	// build the adder, handing it the selector for the B pins
-	addr.adder, _ = NewNBitAdder(switchBank.AsPwrEmitters(), addr.latches.Qs, nil)
+	loopRibbon := NewRibbonCable(uint(len(switchBank.Switches)), 10)
 
-	// now refresh the latch's inputs with the adder's output
-	addr.latches.UpdateDataPins(addr.adder.Sums)
+	addr.adder, _ = NewNBitAdder(switchBank.Switches, loopRibbon.Wires, nil)
+
+	addr.latches = NewNBitLatchWithClear(addr.Clear, addr.Add, addr.adder.Sums)
+
+	loopRibbon.SetInputs(addr.latches.Qs)
 
 	// refer to the appropriate adder innards for easier external access
 	addr.Sums = addr.latches.Qs
 
 	return addr, nil
 }
-
-func (a *NNumberAdder) AsAnswerString() string {
-	answer := ""
-
-	for _, q := range a.latches.Qs {
-
-		if q.(*NORGate).GetIsPowered() {
-			answer += "1"
-		} else {
-			answer += "0"
-		}
-	}
-
-	return answer
-}
-*/

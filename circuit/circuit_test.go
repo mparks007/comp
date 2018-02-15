@@ -2424,7 +2424,6 @@ func TestNBitLatchWithClear(t *testing.T) {
 	}
 }
 
-/*
 // TestNNumberAdder is trying to simulate a feedback loop that has no bounds so it is expected to stack overlow
 //     runtime: goroutine stack exceeds 1000000000-byte limit
 //     fatal error: stack overflow
@@ -2462,7 +2461,7 @@ func TestNNumberAdder(t *testing.T) {
 		t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
 	}
 }
-*/
+
 /*
 func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
