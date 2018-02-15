@@ -133,10 +133,9 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 	return latch
 }
 
-/*
 type NBitLatchWithClear struct {
 	latches []*LevelTriggeredDTypeLatchWithClear
-	Qs      []pwrEmitter
+	Qs      []*NORGate
 }
 
 func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatchWithClear {
@@ -151,16 +150,7 @@ func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter)
 
 	return latch
 }
-
-func (l *NBitLatchWithClear) UpdateDataPins(dataPins []pwrEmitter) {
-
-	// TODO: validate dataPins is same length as the latches slice
-
-	for i, latch := range l.latches {
-		latch.UpdateDataPin(dataPins[i])
-	}
-}
-
+/*
 // Edge-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
 // d clk   q  !q
