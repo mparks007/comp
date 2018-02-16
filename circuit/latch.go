@@ -28,7 +28,7 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	wireQBarOut := NewWire(10)
 
 	fmt.Println("Creating QBar NOR")
-	ff.QBar = NewNamedNORGate("QBar", sPin, wireQOut)
+	ff.QBar = NewNORGate(sPin, wireQOut)
 	fmt.Println("Wiring channel up to QBar")
 	ff.QBar.WireUp(wireQBarOut.Input)
 
@@ -36,7 +36,7 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	time.Sleep(time.Millisecond * 10)
 
 	fmt.Println("\nCreating Q NOR")
-	ff.Q = NewNamedNORGate("Q", rPin, wireQBarOut)
+	ff.Q = NewNORGate(rPin, wireQBarOut)
 	fmt.Println("Wiring channel up to Q")
 	ff.Q.WireUp(wireQOut.Input)
 

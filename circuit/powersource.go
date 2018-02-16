@@ -9,7 +9,6 @@ import (
 type pwrSource struct {
 	outChannels []chan bool
 	isPowered   bool
-	name        string
 	chDone      chan bool
 	mu          sync.Mutex // to protect isPowered
 }

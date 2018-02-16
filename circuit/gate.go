@@ -1,11 +1,11 @@
 package circuit
 
 import (
-	"fmt"
 	"reflect"
 )
 
 // ANDGate is a standard AND logic gate
+//	Wired like a NOR gate, but wired up to the CLOSED outs of each relay.
 //
 // Truth Table
 // in in out
@@ -65,7 +65,7 @@ func (g *ANDGate) Shutdown() {
 }
 
 // ORGate is a standard OR logic gate.
-//	Wired like a NAND gate but wired up to the CLOSED outs of each relay.
+//	Wired like a NAND gate, but wired up to the CLOSED outs of each relay.
 //
 // Truth Table
 // in in out
@@ -146,20 +146,22 @@ func (g *ORGate) Shutdown() {
 	g.chDone <- true
 }
 
-// NAND
-// 0 0 1
-// 1 0 1
-// 0 1 1
-// 1 1 0
-
-// just like an OR Gate but wired up to the OPEN outs of each relay
-
+// NANDGate is a standard NAND (Not-AND) logic gate.
+//	Wired like an OR gate, but wired up to the OPEN outs of each relay.
+//
+// Truth Table
+// in in out
+// 0  0   1
+// 1  0   1
+// 0  1   1
+// 1  1   0
 type NANDGate struct {
 	relays []*Relay
 	states []bool
 	pwrSource
 }
 
+// NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
 func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	gate := &NANDGate{}
 
@@ -199,39 +201,50 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 		}
 	}
 
-	// calling transmit explicitly for each case to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	// calling transmit explicitly for each case to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
 	for range cases {
 		transmit()
 	}
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-gate.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return gate
 }
 
-// NOR
-// 0 0 1
-// 1 0 0
-// 0 1 0
-// 1 1 0
+// Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
+func (g *NANDGate) Shutdown() {
+	for i, _ := range g.relays {
+		g.relays[i].Shutdown()
+	}
+	g.chDone <- true
+}
 
-// just like an AND Gate but wired up to the OPEN out of the last relay
-
+// NORGate is a standard NOR (Not-OR) logic gate.
+//	Wired like an AND gate, but wired up to the OPEN outs of each relay.
+//
+// Truth Table
+// in in out
+// 0  0   1
+// 1  0   0
+// 0  1   0
+// 1  1   0
 type NORGate struct {
 	relays []*Relay
 	ch     chan bool
 	pwrSource
 }
 
+// NewNORGate will return a NOR gate whose inputs are set by the passed in pins
 func NewNORGate(pins ...pwrEmitter) *NORGate {
-	return NewNamedNORGate("", pins...)
-}
-
-func NewNamedNORGate(name string, pins ...pwrEmitter) *NORGate {
 	gate := &NORGate{}
 	gate.ch = make(chan bool, 1)
 
@@ -247,35 +260,42 @@ func NewNamedNORGate(name string, pins ...pwrEmitter) *NORGate {
 	gate.relays[len(pins)-1].OpenOut.WireUp(gate.ch)
 
 	transmit := func() {
-		state := <-gate.ch
-		fmt.Printf("Transmit of (%s) NOR, value %t\n", name, state)
-		gate.Transmit(state)
-		// if gate.Transmit(state) {
-		// 	fmt.Printf("State did change for (%s) NOR, transmitted\n", name)
-		// } else {
-		// 	fmt.Printf("State did not change for (%s) NOR, skipped the transmit\n", name)
-		// }
+		gate.Transmit(<-gate.ch)
 	}
 
-	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	fmt.Printf("Pre-Ctor-exit Transmit of (%s)\n", name)
+	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
 	transmit()
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-gate.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return gate
 }
 
-// XOR
-// 0 0 0
-// 1 0 1
-// 0 1 1
-// 1 1 0
+// Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
+func (g *NORGate) Shutdown() {
+	for i, _ := range g.relays {
+		g.relays[i].Shutdown()
+	}
+	g.chDone <- true
+}
 
+// XORGate is a standard XOR (Exclusive-OR) logic gate.
+//
+// Truth Table
+// in in out
+// 0  0   0
+// 1  0   1
+// 0  1   1
+// 1  1   0
 type XORGate struct {
 	orGate   *ORGate
 	nandGate *NANDGate
@@ -284,6 +304,7 @@ type XORGate struct {
 	pwrSource
 }
 
+// NewXORGate will return an XOR gate whose inputs are set by the passed in pins
 func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 	gate := &XORGate{}
 	gate.ch = make(chan bool, 1)
@@ -299,35 +320,54 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 		gate.Transmit(<-gate.ch)
 	}
 
-	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
 	transmit()
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-gate.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return gate
 }
 
-// XNOR (aka equivalence gate) (using Inverter on an XOR gate)
-// 0 0 1
-// 1 0 0
-// 0 1 0
-// 1 1 1
+// Shutdown will allow the go funcs, which are handling listen/transmit on each sub-gate and the gate itself, to exit
+func (g *XORGate) Shutdown() {
+	g.andGate.Shutdown()
+	g.nandGate.Shutdown()
+	g.orGate.Shutdown()
+	g.chDone <- true
+}
 
+// XNORGate is a standard XNOR (Exclusive-Not-OR) logic gate (aka equivalence gate).
+// 	The approach to the circuit is simplified by just using an Inverter on an XOR gate.
+//
+// Truth Table
+// in in out
+// 0  0   1
+// 1  0   0
+// 0  1   0
+// 1  1   1
 type XNORGate struct {
 	inverter *Inverter
+	xorGate  *XORGate
 	ch       chan bool
 	pwrSource
 }
 
+// NewXNORGate will return an XNOR gate whose inputs are set by the passed in pins
 func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 	gate := &XNORGate{}
 	gate.ch = make(chan bool, 1)
 
-	gate.inverter = NewInverter(NewXORGate(pin1, pin2))
+	gate.xorGate = NewXORGate(pin1, pin2) // having to make one as a named object so it can be Shutdown later (vs. just feeding NewXORGate(pin1, pin2) into NewInverter())
+	gate.inverter = NewInverter(gate.xorGate)
 
 	// in this approach to an XNOR (vs. building it with a combination of other gates), the Inverter owns the final answer
 	gate.inverter.WireUp(gate.ch)
@@ -336,14 +376,26 @@ func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 		gate.Transmit(<-gate.ch)
 	}
 
-	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
 	transmit()
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-gate.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return gate
+}
+
+// Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component and the gate itself, to exit
+func (g *XNORGate) Shutdown() {
+	g.xorGate.Shutdown()
+	g.inverter.Shutdown()
+	g.chDone <- true
 }
