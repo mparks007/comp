@@ -76,13 +76,13 @@ func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggered
 	return latch
 }
 
-type NBitLatch struct {
+type NBitLevelTriggeredDTypeLatch struct {
 	latches []*LevelTriggeredDTypeLatch
 	Qs      []pwrEmitter
 }
 
-func NewNBitLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatch {
-	latch := &NBitLatch{}
+func NewNBitLevelTriggeredDTypeLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLevelTriggeredDTypeLatch {
+	latch := &NBitLevelTriggeredDTypeLatch{}
 
 	for _, dataInPin := range dataInPins {
 		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkInPin, dataInPin))
@@ -133,13 +133,13 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 	return latch
 }
 
-type NBitLatchWithClear struct {
+type NBitLevelTriggeredDTypeLatchWithClear struct {
 	latches []*LevelTriggeredDTypeLatchWithClear
 	Qs      []pwrEmitter
 }
 
-func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLatchWithClear {
-	latch := &NBitLatchWithClear{}
+func NewNBitLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLevelTriggeredDTypeLatchWithClear {
+	latch := &NBitLevelTriggeredDTypeLatchWithClear{}
 
 	for _, dataInPin := range dataInPins {
 		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin))
@@ -150,6 +150,7 @@ func NewNBitLatchWithClear(clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter)
 
 	return latch
 }
+
 /*
 // Edge-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
 
@@ -191,61 +192,7 @@ func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDT
 
 	return latch
 }
-
-func (l *EdgeTriggeredDTypeLatch) UpdateDataPin(dataPin pwrEmitter) {
-	l.lRAnd.UpdatePin(2, 2, dataPin)
-	l.lSAnd.UpdatePin(2, 2, NewInverter(dataPin))
-}
-
-func NewSynchronizedEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
-	latch := &EdgeTriggeredDTypeLatch{}
-
-	// for this to work, the clock wiring up has to be done against the right-side flipflop aspects FIRST
-	latch.rRAnd = NewSynchronizedANDGate(clkInPin, nil)
-	latch.rSAnd = NewSynchronizedANDGate(clkInPin, nil)
-	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
-
-	latch.lRAnd = NewSynchronizedANDGate(NewInverter(clkInPin), dataInPin)
-	latch.lSAnd = NewSynchronizedANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
-	latch.lRS = NewRSFlipFLop(latch.lRAnd, latch.lSAnd)
-
-	latch.rRAnd.UpdatePin(2, 2, latch.lRS.Q)
-	latch.rSAnd.UpdatePin(2, 2, latch.lRS.QBar)
-
-	// refer to the inner-right-flipflop's outputs for easier external access
-	latch.Q = latch.rRS.Q
-	latch.QBar = latch.rRS.QBar
-
-	return latch
-}
-
-func (l *EdgeTriggeredDTypeLatch) StateDump(label string) string {
-
-	var state = ""
-
-	if len(label) > 0 {
-		state += fmt.Sprintf("** BEGIN %s DUMP **\n", label)
-	}
-
-	state += fmt.Sprintf("Left_R_AND:    %t\n", l.lRAnd.GetIsPowered())
-	state += fmt.Sprintf("Left_S_AND:    %t\n", l.lSAnd.GetIsPowered())
-	state += fmt.Sprintf("Left_RS_Q:     %t\n", l.lRS.Q.GetIsPowered())
-	state += fmt.Sprintf("Left_RS_QBar:  %t\n", l.lRS.QBar.GetIsPowered())
-
-	state += fmt.Sprintf("Right_R_AND:   %t\n", l.rRAnd.GetIsPowered())
-	state += fmt.Sprintf("Right_S_AND:   %t\n", l.rSAnd.GetIsPowered())
-	state += fmt.Sprintf("Right_RS_Q:    %t\n", l.rRS.Q.GetIsPowered())
-	state += fmt.Sprintf("Right_RS_QBar: %t", l.rRS.QBar.GetIsPowered())
-
-	if len(label) > 0 {
-		state += fmt.Sprintf("\n** END %s DUMP **", label)
-	}
-
-	return state
-}
-
-// Frequency Divider
-
+/*
 type FrequencyDivider struct {
 	latch *EdgeTriggeredDTypeLatch
 	Q     *NORGate
@@ -265,6 +212,7 @@ func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
 	return freqDiv
 }
 
+/*
 type NBitRippleCounter struct {
 	freqDivs []*FrequencyDivider
 	Qs       []*NORGate
@@ -290,20 +238,5 @@ func NewNBitRippleCounter(oscillator pwrEmitter, size int) *NBitRippleCounter {
 	}
 
 	return counter
-}
-
-func (c *NBitRippleCounter) AsAnswerString() string {
-	answer := ""
-
-	for _, q := range c.Qs {
-
-		if q.GetIsPowered() {
-			answer += "1"
-		} else {
-			answer += "0"
-		}
-	}
-
-	return answer
 }
 */

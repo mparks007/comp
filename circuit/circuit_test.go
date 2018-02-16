@@ -878,6 +878,7 @@ func TestInverter(t *testing.T) {
 
 	pin1Battery := NewBattery()
 	inv := NewInverter(pin1Battery)
+	defer inv.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -922,9 +923,13 @@ func TestHalfAdder(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(false)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(false)
+	defer bSwitch.Shutdown()
 
 	half := NewHalfAdder(aSwitch, bSwitch)
+	defer half.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
 	chSum := make(chan bool, 1)
@@ -992,10 +997,16 @@ func TestFullAdder(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(false)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(false)
+	defer bSwitch.Shutdown()
+
 	cSwitch := NewSwitch(false)
+	defer cSwitch.Shutdown()
 
 	full := NewFullAdder(aSwitch, bSwitch, cSwitch)
+	defer full.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
 	chSum := make(chan bool, 1)
@@ -1794,7 +1805,7 @@ func TestNBitLatch(t *testing.T) {
 
 	latchSwitches, _ := NewNSwitchBank("00011000")
 	clkSwitch := NewSwitch(true)
-	latch := NewNBitLatch(clkSwitch, latchSwitches.Switches)
+	latch := NewNBitLevelTriggeredDTypeLatch(clkSwitch, latchSwitches.Switches)
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)
@@ -2031,7 +2042,7 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("0000")
 
-	addr, err := NewThreeNumberAdder(aInSwitches, bInSwitches)
+	addr, err := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
 
 	if addr != nil {
 		t.Error("Did not expect an adder back but got one.")
@@ -2056,7 +2067,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
 	bInSwitches, _ := NewNSwitchBank("00000000")
-	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
+	addr, _ := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
 	var gotSums [8]atomic.Value
@@ -2128,8 +2139,13 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000010")
+	defer aInSwitches.Shutdown()
+
 	bInSwitches, _ := NewNSwitchBank("00000001")
-	addr, _ := NewThreeNumberAdder(aInSwitches, bInSwitches)
+	defer bInSwitches.Shutdown()
+
+	addr, _ := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
+	defer addr.Shutdown()
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
 	var gotSums [8]atomic.Value
@@ -2360,7 +2376,7 @@ func TestNBitLatchWithClear(t *testing.T) {
 	dataSwitches, _ := NewNSwitchBank("00000000")
 	clrSwitch := NewSwitch(false)
 	clkSwitch := NewSwitch(false)
-	latch := NewNBitLatchWithClear(clrSwitch, clkSwitch, dataSwitches.Switches)
+	latch := NewNBitLevelTriggeredDTypeLatchWithClear(clrSwitch, clkSwitch, dataSwitches.Switches)
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)

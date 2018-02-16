@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql" // don't reference directly, but just via "mysql" in the Open call
+	_ "github.com/go-sql-driver/mysql" // don't reference directly, but just via "mysql" in the sql.Open call
 )
 
 type MySqlLogger struct {

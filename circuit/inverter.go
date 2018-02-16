@@ -1,17 +1,22 @@
 package circuit
 
-// Inverter
-// 0 -> 1
-// 1 -> 0
-
+// Inverter is a standard circuit that inverts the power state of the input
+//
+// Truth Table
+// in out
+// 0   1
+// 1   0
 type Inverter struct {
 	relay *Relay
 	ch    chan bool
 	pwrSource
 }
 
+// NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's power state
 func NewInverter(pin pwrEmitter) *Inverter {
 	inv := &Inverter{}
+	inv.Init()
+	
 	inv.ch = make(chan bool, 1)
 
 	inv.relay = NewRelay(NewBattery(), pin)
@@ -40,6 +45,7 @@ func NewInverter(pin pwrEmitter) *Inverter {
 	return inv
 }
 
+// Shutdown will allow the go funcs, which are handling listen/transmit on the inner relay and the inverter itself, to exit
 func (inv *Inverter) Shutdown() {
 	inv.relay.Shutdown()
 	inv.chDone <- true

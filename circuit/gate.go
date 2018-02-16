@@ -22,6 +22,8 @@ type ANDGate struct {
 // NewANDGate will return an AND gate whose inputs are set by the passed in pins
 func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	gate := &ANDGate{}
+	gate.Init()
+
 	gate.ch = make(chan bool, 1)
 
 	for i, pin := range pins {
@@ -82,6 +84,7 @@ type ORGate struct {
 // NewORGate will return an OR gate whose inputs are set by the passed in pins
 func NewORGate(pins ...pwrEmitter) *ORGate {
 	gate := &ORGate{}
+	gate.Init()
 
 	// for use in a dynamic select statement (a case per pin) and bool results per case
 	cases := make([]reflect.SelectCase, len(pins))
@@ -164,6 +167,7 @@ type NANDGate struct {
 // NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
 func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	gate := &NANDGate{}
+	gate.Init()
 
 	// for use in a dynamic select statement (a case per pin) and bool results per case
 	cases := make([]reflect.SelectCase, len(pins))
@@ -246,6 +250,8 @@ type NORGate struct {
 // NewNORGate will return a NOR gate whose inputs are set by the passed in pins
 func NewNORGate(pins ...pwrEmitter) *NORGate {
 	gate := &NORGate{}
+	gate.Init()
+
 	gate.ch = make(chan bool, 1)
 
 	for i, pin := range pins {
@@ -307,6 +313,8 @@ type XORGate struct {
 // NewXORGate will return an XOR gate whose inputs are set by the passed in pins
 func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 	gate := &XORGate{}
+	gate.Init()
+
 	gate.ch = make(chan bool, 1)
 
 	gate.orGate = NewORGate(pin1, pin2)
@@ -364,6 +372,8 @@ type XNORGate struct {
 // NewXNORGate will return an XNOR gate whose inputs are set by the passed in pins
 func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 	gate := &XNORGate{}
+	gate.Init()
+
 	gate.ch = make(chan bool, 1)
 
 	gate.xorGate = NewXORGate(pin1, pin2) // having to make one as a named object so it can be Shutdown later (vs. just feeding NewXORGate(pin1, pin2) into NewInverter())
