@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 )
 
+// Relay is the core circuit used to contruct logic gates
 type Relay struct {
 	aInIsPowered atomic.Value
 	bInIsPowered atomic.Value
@@ -17,6 +18,7 @@ type Relay struct {
 	chBDone      chan bool
 }
 
+// NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	rel := &Relay{}
 	m := &sync.Mutex{}
@@ -58,7 +60,7 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 		transmit()
 	}
 
-	// calling these two receive methods explicitly to ensure the 'answers' for the relay outputs, post UpdatePin calls above, have settled BEFORE returning and letting things wire up to them
+	// calling these two receive methods explicitly to ensure the 'answers' for the relay outputs, post WireUp calls above, have settled BEFORE returning and letting things wire up to them
 	receiveA()
 	receiveB()
 
@@ -87,8 +89,8 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	return rel
 }
 
-// Quit allows any 'for' loops inside go funcs to exit
-func (r *Relay) Quit() {
+// Shutdown will allow the go funcs, which are handling listen/transmit, to exit
+func (r *Relay) Shutdown() {
 	r.chADone <- true
 	r.chBDone <- true
 }

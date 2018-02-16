@@ -24,8 +24,8 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
 	fmt.Println("Creating loopback wires")
-	wireQOut := NewNamedWire("wireQOut", 10)
-	wireQBarOut := NewNamedWire("wireQBarOut", 10)
+	wireQOut := NewWire(10)
+	wireQBarOut := NewWire(10)
 
 	fmt.Println("Creating QBar NOR")
 	ff.QBar = NewNamedNORGate("QBar", sPin, wireQOut)

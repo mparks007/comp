@@ -14,3 +14,9 @@ func NewOnesComplementer(pins []pwrEmitter, signal pwrEmitter) *OnesComplementer
 
 	return comp
 }
+
+func (o *OnesComplementer) Shutdown() {
+	// for i, _ := range o.Complements {
+	// 	o.Complements[i].(*XORGate).Shutdown()
+	// }
+}

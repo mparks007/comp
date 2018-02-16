@@ -4,13 +4,14 @@ import (
 	"sync"
 )
 
-// pwrSource is the basic means for which a component can store its own state and transmit that state to its subscribers
+// pwrSource is the core of non-wire components which can store their own state and transmit that state to other components that have wired up to them
+//	Most components embed pwrSource.
 type pwrSource struct {
 	outChannels []chan bool
 	isPowered   bool
 	name        string
 	chDone      chan bool
-	mu          sync.Mutex // for isPowered usage
+	mu          sync.Mutex // to protect isPowered
 }
 
 // Init will do initialization code for all pwrSource-based objects
@@ -18,27 +19,29 @@ func (p *pwrSource) Init() {
 	p.chDone = make(chan bool, 1)
 }
 
-// WireUp allows a circuit to subscribe to the power source
+// WireUp allows another component to subscribe to the power source (via the passed in channel) in order to be told of power state changes
 func (p *pwrSource) WireUp(ch chan bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	p.outChannels = append(p.outChannels, ch)
 
-	// go ahead and transmit to the new subscriber
+	// go ahead and transmit to the new subscriber immediately as if just connecting to a potentially hot current
 	ch <- p.isPowered
 }
 
-// Transmit will push out the state of things (IF state changed) to each subscriber
-func (p *pwrSource) Transmit(newState bool) bool {
+// Transmit will push out the power source's new power state (IF state changed) to each wired up component
+func (p *pwrSource) Transmit(newState bool) {
 	p.mu.Lock()
-	var didTransmit = false
 
 	if p.isPowered != newState {
 		p.isPowered = newState
-		didTransmit = true
 
-		wg := &sync.WaitGroup{} // must use this to ensure we finish blasting bools out to subscribers before we just barrel along in the code
+		// WHY DO I NEED TO SYNC THESE CHANNEL PUSHES?
+		// WHY DO I NEED TO SYNC THESE CHANNEL PUSHES?
+		// WHY DO I NEED TO SYNC THESE CHANNEL PUSHES?
+
+		wg := &sync.WaitGroup{} // will use this to ensure we finish letting all wired up components know of the state change before we move along
 
 		for _, ch := range p.outChannels {
 			wg.Add(1)
@@ -54,6 +57,4 @@ func (p *pwrSource) Transmit(newState bool) bool {
 	} else {
 		p.mu.Unlock() // must unlock since we may not have a state change (not using defer unlock due to the Unlock/Wait comment above)
 	}
-
-	return didTransmit
 }

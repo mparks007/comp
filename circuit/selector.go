@@ -33,3 +33,12 @@ func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOn
 
 	return sel, nil
 }
+
+func (s *TwoToOneSelector) Shutdown() {
+	for i, _ := range s.aANDs {
+		fmt.Println("TwoToOneSelector shutdown")
+		s.aANDs[i].Shutdown()
+		s.bANDs[i].Shutdown()
+		s.Outs[i].(*ORGate).Shutdown()
+	}
+}

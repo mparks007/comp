@@ -76,7 +76,7 @@ func TestWire_NoDelay(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	wire := NewWire(0)
-	defer wire.Quit()
+	defer wire.Shutdown()
 
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
@@ -134,7 +134,7 @@ func TestWire_WithDelay(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	wire := NewWire(wireLen)
-	defer wire.Quit()
+	defer wire.Shutdown()
 
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
@@ -201,9 +201,11 @@ func TestRibbonCable(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	rib := NewRibbonCable(2, 1)
-	defer rib.Quit()
+	defer rib.Shutdown()
 
 	inputs, _ := NewNSwitchBank("01")
+	defer inputs.Shutdown()
+
 	rib.SetInputs(inputs.Switches)
 
 	// before listening to the wires, need to give the switches time to tell the wires their state
@@ -279,7 +281,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 	pin2Battery = NewBattery()
 
 	rel := NewRelay(pin1Battery, pin2Battery)
-	defer rel.Quit()
+	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
 	go func() {
@@ -337,6 +339,7 @@ func TestSwitch(t *testing.T) {
 	receivedCh := make(chan struct{})
 
 	sw := NewSwitch(false)
+	defer sw.Shutdown()
 
 	go func() {
 		for {
@@ -401,6 +404,7 @@ func TestNewNSwitchBank_BadInputs(t *testing.T) {
 
 			if sb != nil {
 				t.Error("Didn't expected a Switch Bank back but got one.")
+				sb.Shutdown()
 			}
 
 			tc.wantError += "\"" + tc.input + "\""
@@ -438,6 +442,8 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
+			} else {
+				defer sb.Shutdown()
 			}
 
 			var got bool
@@ -484,9 +490,13 @@ func TestRelay_WithSwitches(t *testing.T) {
 	closedCh := make(chan bool, 1)
 
 	aSwitch := NewSwitch(true)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(true)
+	defer bSwitch.Shutdown()
 
 	rel := NewRelay(aSwitch, bSwitch)
+	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
 	go func() {

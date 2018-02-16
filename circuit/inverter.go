@@ -23,14 +23,24 @@ func NewInverter(pin pwrEmitter) *Inverter {
 		inv.Transmit(<-inv.ch)
 	}
 
-	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
 	transmit()
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-inv.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return inv
+}
+
+func (inv *Inverter) Shutdown() {
+	inv.relay.Shutdown()
+	inv.chDone <- true
 }

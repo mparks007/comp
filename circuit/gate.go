@@ -5,18 +5,21 @@ import (
 	"reflect"
 )
 
-// AND
-// 0 0 0
-// 1 0 0
-// 0 1 0
-// 1 1 1
-
+// ANDGate is a standard AND logic gate
+//
+// Truth Table
+// in in out
+// 0  0   0
+// 1  0   0
+// 0  1   0
+// 1  1   1
 type ANDGate struct {
 	relays []*Relay
 	ch     chan bool
 	pwrSource
 }
 
+// NewANDGate will return an AND gate whose inputs are set by the passed in pins
 func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	gate := &ANDGate{}
 	gate.ch = make(chan bool, 1)
@@ -36,32 +39,47 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 		gate.Transmit(<-gate.ch)
 	}
 
-	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
 	transmit()
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-gate.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return gate
 }
 
-// OR
-// 0 0 0
-// 1 0 1
-// 0 1 1
-// 1 1 1
+// Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
+func (g *ANDGate) Shutdown() {
+	for i, _ := range g.relays {
+		g.relays[i].Shutdown()
+	}
+	g.chDone <- true
+}
 
-// just like a NAND Gate but wired up to the CLOSED outs of each relay
-
+// ORGate is a standard OR logic gate.
+//	Wired like a NAND gate but wired up to the CLOSED outs of each relay.
+//
+// Truth Table
+// in in out
+// 0  0   0
+// 1  0   1
+// 0  1   1
+// 1  1   1
 type ORGate struct {
 	relays []*Relay
 	states []bool
 	pwrSource
 }
 
+// NewORGate will return an OR gate whose inputs are set by the passed in pins
 func NewORGate(pins ...pwrEmitter) *ORGate {
 	gate := &ORGate{}
 
@@ -101,18 +119,31 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 		}
 	}
 
-	// calling transmit explicitly for each case to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
+	// calling transmit explicitly for each case to ensure the 'answer' for the output, post WireUps above, has settled BEFORE returning and letting things wire up to it
 	for range cases {
 		transmit()
 	}
 
 	go func() {
 		for {
-			transmit()
+			select {
+			case <-gate.chDone:
+				return
+			default:
+				transmit()
+			}
 		}
 	}()
 
 	return gate
+}
+
+// Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
+func (g *ORGate) Shutdown() {
+	for i, _ := range g.relays {
+		g.relays[i].Shutdown()
+	}
+	g.chDone <- true
 }
 
 // NAND
@@ -218,11 +249,12 @@ func NewNamedNORGate(name string, pins ...pwrEmitter) *NORGate {
 	transmit := func() {
 		state := <-gate.ch
 		fmt.Printf("Transmit of (%s) NOR, value %t\n", name, state)
-		if gate.Transmit(state) {
-			fmt.Printf("State did change for (%s) NOR, transmitted\n", name)
-		} else {
-			fmt.Printf("State did not change for (%s) NOR, skipped the transmit\n", name)
-		}
+		gate.Transmit(state)
+		// if gate.Transmit(state) {
+		// 	fmt.Printf("State did change for (%s) NOR, transmitted\n", name)
+		// } else {
+		// 	fmt.Printf("State did not change for (%s) NOR, skipped the transmit\n", name)
+		// }
 	}
 
 	// calling transmit explicitly to ensure the 'answer' for the gate output, post WireUp above, has settled BEFORE returning and letting things wire up to it
