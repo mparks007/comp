@@ -191,7 +191,7 @@ func (a *ThreeNumberAdder) Shutdown() {
 	a.carryIn.Shutdown()
 	a.selector.Shutdown()
 	a.ReadFromLatch.Shutdown()
-	// TODO: a.latchStore.Shutdown() // can uncomment when I have latch.go setup with Shutdowns
+	a.latchStore.Shutdown()
 	a.SaveToLatch.Shutdown()
 	a.loopRibbon.Shutdown()
 }
@@ -238,7 +238,7 @@ func NewNNumberAdder(inputs []pwrEmitter) (*NNumberAdder, error) {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
 func (a *NNumberAdder) Shutdown() {
-	// TODO: a.latches.Shutdown()  // can uncomment when I have latch.go setup with Shutdowns
+	a.latches.Shutdown()
 	a.adder.Shutdown()
 	a.loopRibbon.Shutdown()
 	a.Add.Shutdown()

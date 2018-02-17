@@ -18,14 +18,14 @@ import (
 // go test -run TestOscillator -count 100 -v (multi options)
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
 
-// setSwitches will flip passed in switches to match a passed in bit pattern
+// setSwitches will flip the switches of a SwitchBank to match a passed in bits string
 func setSwitches(switchBank *NSwitchBank, bits string) {
 	for i, b := range bits {
 		switchBank.Switches[i].(*Switch).Set(b == '1')
 	}
 }
 
-func TestPwrSource(t *testing.T) {
+func TestPwrsource(t *testing.T) {
 	var want, got1, got2 bool
 	ch1 := make(chan bool, 1)
 	ch2 := make(chan bool, 1)
@@ -118,7 +118,7 @@ func TestWire_NoDelay(t *testing.T) {
 	want = false
 	wire.Transmit(want)
 
-	// these would deadlock since nothing would actually transmit (how to test this fact?)
+	// the following would deadlock since nothing would actually transmit (how to test this fact?)
 	//if got1 = <-ch1; got1 != want {
 	//	t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
 	//}
@@ -442,9 +442,9 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
-			} else {
-				defer sb.Shutdown()
 			}
+
+			defer sb.Shutdown()
 
 			var got bool
 			ch := make(chan bool, 1)
@@ -559,10 +559,16 @@ func TestANDGate(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(true)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(true)
+	defer bSwitch.Shutdown()
+
 	cSwitch := NewSwitch(true)
+	defer cSwitch.Shutdown()
 
 	gate := NewANDGate(aSwitch, bSwitch, cSwitch)
+	defer gate.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -616,10 +622,16 @@ func TestORGate(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(true)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(false)
+	defer bSwitch.Shutdown()
+
 	cSwitch := NewSwitch(true)
+	defer cSwitch.Shutdown()
 
 	gate := NewORGate(aSwitch, bSwitch, cSwitch)
+	defer gate.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -673,10 +685,16 @@ func TestNANDGate(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(true)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(false)
+	defer bSwitch.Shutdown()
+
 	cSwitch := NewSwitch(true)
+	defer cSwitch.Shutdown()
 
 	gate := NewNANDGate(aSwitch, bSwitch, cSwitch)
+	defer gate.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -730,10 +748,16 @@ func TestNORGate(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(true)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(true)
+	defer bSwitch.Shutdown()
+
 	cSwitch := NewSwitch(true)
+	defer cSwitch.Shutdown()
 
 	gate := NewNORGate(aSwitch, bSwitch, cSwitch)
+	defer gate.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -781,9 +805,13 @@ func TestXORGate(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(false)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(false)
+	defer bSwitch.Shutdown()
 
 	gate := NewXORGate(aSwitch, bSwitch)
+	defer gate.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -830,9 +858,13 @@ func TestXNORGate(t *testing.T) {
 	}
 
 	aSwitch := NewSwitch(false)
+	defer aSwitch.Shutdown()
+
 	bSwitch := NewSwitch(false)
+	defer bSwitch.Shutdown()
 
 	gate := NewXNORGate(aSwitch, bSwitch)
+	defer gate.Shutdown()
 
 	var got atomic.Value
 	ch := make(chan bool, 1)
@@ -1071,12 +1103,16 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
 			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+			defer addend1Switches.Shutdown()
+
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+			defer addend2Switches.Shutdown()
 
 			addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, nil)
 
 			if addr != nil {
 				t.Error("Did not expect an adder to be created, but got one")
+				addr.Shutdown()
 			}
 
 			if err == nil {
@@ -1116,8 +1152,13 @@ func TestNBitAdder_EightBit(t *testing.T) {
 
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("00000000")
+	defer addend1Switches.Shutdown()
+
 	addend2Switches, _ := NewNSwitchBank("00000000")
+	defer addend2Switches.Shutdown()
+
 	carryInSwitch := NewSwitch(false)
+	defer carryInSwitch.Shutdown()
 
 	// create the adder based on those switches
 	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
@@ -1129,6 +1170,8 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	if addr == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
 	}
+
+	defer addr.Shutdown()
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
 	var gotSums [8]atomic.Value
@@ -1225,8 +1268,13 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 
 	// start with off switches
 	addend1Switches, _ := NewNSwitchBank("0000000000000000")
+	defer addend1Switches.Shutdown()
+
 	addend2Switches, _ := NewNSwitchBank("0000000000000000")
+	defer addend2Switches.Shutdown()
+
 	carryInSwitch := NewSwitch(false)
+	defer carryInSwitch.Shutdown()
 
 	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
 
@@ -1237,6 +1285,8 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	if addr == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
 	}
+
+	defer addr.Shutdown()
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
 	var gotSums [16]atomic.Value
@@ -1363,11 +1413,15 @@ func TestOnesCompliment(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Executing complementer against %s with compliment signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
 			bitSwitches, _ := NewNSwitchBank(tc.bits)
+			defer bitSwitches.Shutdown()
+
 			comp := NewOnesComplementer(bitSwitches.Switches, NewSwitch(tc.signalIsPowered))
 
 			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
 			}
+
+			defer comp.Shutdown()
 
 			// setup the Compliments results bool array (default all to false)
 			gotCompliments := make([]atomic.Value, len(tc.bits))
@@ -1425,12 +1479,16 @@ func TestNBitSubtractor_BadInputLengths(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
 			minuendSwitches, _ := NewNSwitchBank(tc.byte1)
+			defer minuendSwitches.Shutdown()
+
 			subtrahendSwitches, _ := NewNSwitchBank(tc.byte2)
+			defer subtrahendSwitches.Shutdown()
 
 			sub, err := NewNBitSubtractor(minuendSwitches.Switches, subtrahendSwitches.Switches)
 
 			if sub != nil {
 				t.Error("Did not expect a Subtractor to be created, but got one")
+				sub.Shutdown()
 			}
 
 			if err == nil {
@@ -1468,13 +1526,18 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 
 	// start with off switches
 	minuendwitches, _ := NewNSwitchBank("00000000")
+	defer minuendwitches.Shutdown()
+
 	subtrahendSwitches, _ := NewNSwitchBank("00000000")
+	defer subtrahendSwitches.Shutdown()
 
 	sub, _ := NewNBitSubtractor(minuendwitches.Switches, subtrahendSwitches.Switches)
 
 	if sub == nil {
 		t.Error("Expected an subtractor to return due to good inputs, but gotAnswer c nil one.")
 	}
+
+	defer sub.Shutdown()
 
 	// setup the Differences results bool array (default all to false to match the initial switch states above)
 	var gotDifferences [8]atomic.Value
@@ -1557,6 +1620,7 @@ func TestOscillator(t *testing.T) {
 		t.Run(fmt.Sprintf("Oscillating at %d hertz, immediate start (%t)", tc.oscHertz, tc.initState), func(t *testing.T) {
 
 			osc := NewOscillator(tc.initState)
+			defer osc.Stop()
 
 			var gotResults atomic.Value
 			ch := make(chan bool, 1)
@@ -1578,8 +1642,6 @@ func TestOscillator(t *testing.T) {
 			osc.Oscillate(tc.oscHertz)
 
 			time.Sleep(time.Second * 3)
-
-			osc.Stop()
 
 			if !strings.HasPrefix(gotResults.Load().(string), tc.wantResults) {
 				t.Errorf("Wanted results of at least %s but got %s.", tc.wantResults, gotResults.Load().(string))
@@ -1636,6 +1698,7 @@ func TestRSFlipFlop(t *testing.T) {
 
 	// starting with no input signals (R and S are off)
 	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
+	defer ff.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
 	go func() {
@@ -1652,7 +1715,7 @@ func TestRSFlipFlop(t *testing.T) {
 	ff.QBar.WireUp(chQBar)
 	ff.Q.WireUp(chQ)
 
-	time.Sleep(time.Millisecond * 10)
+	time.Sleep(time.Millisecond * 125)
 
 	if gotQ.Load().(bool) != false {
 		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
@@ -1676,7 +1739,7 @@ func TestRSFlipFlop(t *testing.T) {
 				sPinBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 250)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1736,6 +1799,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 
 	// starting with true input signals (Clk and Data are on)
 	latch := NewLevelTriggeredDTypeLatch(clkBattery, dataBattery)
+	defer latch.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
 	go func() {
@@ -1792,7 +1856,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	}
 }
 
-func TestNBitLatch(t *testing.T) {
+func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  [8]bool
@@ -1804,8 +1868,13 @@ func TestNBitLatch(t *testing.T) {
 	}
 
 	latchSwitches, _ := NewNSwitchBank("00011000")
+	defer latchSwitches.Shutdown()
+
 	clkSwitch := NewSwitch(true)
+	defer clkSwitch.Shutdown()
+
 	latch := NewNBitLevelTriggeredDTypeLatch(clkSwitch, latchSwitches.Switches)
+	defer latch.Shutdown()
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)
@@ -1884,12 +1953,16 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
 			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+			defer addend1Switches.Shutdown()
+
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+			defer addend2Switches.Shutdown()
 
 			sel, err := NewTwoToOneSelector(nil, addend1Switches.Switches, addend2Switches.Switches)
 
 			if sel != nil {
 				t.Error("Did not expect a Selector to be created, but got one")
+				sel.Shutdown()
 			}
 
 			if err == nil {
@@ -1922,14 +1995,20 @@ func TestTwoToOneSelector(t *testing.T) {
 
 	// start with these switches to verify uses A intially
 	aInSwitches, _ := NewNSwitchBank("111")
+	defer aInSwitches.Shutdown()
+
 	bInSwitches, _ := NewNSwitchBank("000")
+	defer bInSwitches.Shutdown()
+
 	selectBSwitch := NewSwitch(false)
+	defer selectBSwitch.Shutdown()
 
 	// for use in a dynamic select statement (a case per selector output) and bool results per case
 	cases := make([]reflect.SelectCase, 3)
 	got := make([]atomic.Value, 3)
 
 	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches, bInSwitches.Switches)
+	defer sel.Shutdown()
 
 	// built the case statements to deal with each selector output
 	for i, s := range sel.Outs {
@@ -1979,14 +2058,20 @@ func TestTwoToOneSelector(t *testing.T) {
 func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	// start with off for A but on for B, but selecting A
 	aInSwitches, _ := NewNSwitchBank("000")
+	defer aInSwitches.Shutdown()
+
 	bInSwitches, _ := NewNSwitchBank("111")
+	defer bInSwitches.Shutdown()
+
 	selectBSwitch := NewSwitch(false)
+	defer selectBSwitch.Shutdown()
 
 	// for use in a dynamic select statement (a case per selector output) and bool results per case
 	cases := make([]reflect.SelectCase, 3)
 	got := make([]atomic.Value, 3)
 
 	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches, bInSwitches.Switches)
+	defer sel.Shutdown()
 
 	// built the case statements to deal with each selector output
 	for i, s := range sel.Outs {
@@ -2040,13 +2125,18 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
+	defer aInSwitches.Shutdown()
+
 	bInSwitches, _ := NewNSwitchBank("0000")
+	defer bInSwitches.Shutdown()
 
 	addr, err := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
 
 	if addr != nil {
 		t.Error("Did not expect an adder back but got one.")
+		addr.Shutdown()
 	}
+
 	if err != nil && err.Error() != wantError {
 		t.Errorf("Wanted error %s, but got %v", wantError, err.Error())
 	}
@@ -2066,8 +2156,13 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	}
 
 	aInSwitches, _ := NewNSwitchBank("00000000")
+	defer aInSwitches.Shutdown()
+
 	bInSwitches, _ := NewNSwitchBank("00000000")
+	defer bInSwitches.Shutdown()
+
 	addr, _ := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
+	defer addr.Shutdown()
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
 	var gotSums [8]atomic.Value
@@ -2296,6 +2391,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	chQBar := make(chan bool, 1)
 
 	latch := NewLevelTriggeredDTypeLatchWithClear(clrBattery, clkBattery, dataBattery)
+	defer latch.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
 	go func() {
@@ -2312,7 +2408,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	time.Sleep(time.Millisecond * 250)
+	time.Sleep(time.Millisecond * 200)
 
 	if gotQ.Load().(bool) != true {
 		t.Errorf("xWanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
@@ -2331,7 +2427,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				clrBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 250)
+			time.Sleep(time.Millisecond * 200)
 
 			if tc.clkIn {
 				clkBattery.Charge()
@@ -2339,7 +2435,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				clkBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 250)
+			time.Sleep(time.Millisecond * 200)
 
 			if tc.dataIn {
 				dataBattery.Charge()
@@ -2347,9 +2443,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 				dataBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 250)
-
-			// the overall pauses above must be longer than the special wire inside the latch, plus overhead for more latch settling down
+			time.Sleep(time.Millisecond * 200)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -2362,7 +2456,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	}
 }
 
-func TestNBitLatchWithClear(t *testing.T) {
+func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	testCases := []struct {
 		input string
 		want  [8]bool
@@ -2374,9 +2468,16 @@ func TestNBitLatchWithClear(t *testing.T) {
 	}
 
 	dataSwitches, _ := NewNSwitchBank("00000000")
+	defer dataSwitches.Shutdown()
+
 	clrSwitch := NewSwitch(false)
+	defer clrSwitch.Shutdown()
+
 	clkSwitch := NewSwitch(false)
+	defer clkSwitch.Shutdown()
+
 	latch := NewNBitLevelTriggeredDTypeLatchWithClear(clrSwitch, clkSwitch, dataSwitches.Switches)
+	defer latch.Shutdown()
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
 	cases := make([]reflect.SelectCase, 8)
