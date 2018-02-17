@@ -23,8 +23,8 @@ type RSFlipFlop struct {
 func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
-	ff.wireQOut = NewWire(10)
-	ff.wireQBarOut = NewWire(10)
+	ff.wireQOut = NewWire(0)
+	ff.wireQBarOut = NewWire(0)
 
 	ff.QBar = NewNORGate(sPin, ff.wireQOut)
 	ff.QBar.WireUp(ff.wireQBarOut.Input)
@@ -152,7 +152,7 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 	latch.sAnd.WireUp(wireSAndToQBarNor.Input)
 
 	latch.rs = NewRSFlipFLop(latch.clrOR, wireSAndToQBarNor)
-	//latch.rs = NewRSFlipFLop(latch.clrOR, latch.sAnd)
+	//latch.rs = NewRSFlipFLop(latch.clrOR, latch.sAnd) // if remove wires (for pause), this line makes the correct latch
 
 	// refer to the inner-flipflop's outputs for easier external access
 	latch.Q = latch.rs.Q
@@ -249,7 +249,7 @@ type FrequencyDivider struct {
 func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
 	freqDiv := &FrequencyDivider{}
 
-	freqDiv.latch = NewSynchronizedEdgeTriggeredDTypeLatch(oscillator, nil)
+	freqDiv.latch = NewEdgeTriggeredDTypeLatch(oscillator, nil)
 	freqDiv.latch.UpdateDataPin(freqDiv.latch.QBar)
 
 	// refer to the inner-right-flipflop's outputs for easier external access

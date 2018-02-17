@@ -1733,13 +1733,14 @@ func TestRSFlipFlop(t *testing.T) {
 			} else {
 				rPinBattery.Discharge()
 			}
+
 			if tc.sPinIsPowered {
 				sPinBattery.Charge()
 			} else {
 				sPinBattery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 250)
+			time.Sleep(time.Millisecond * 125)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1913,6 +1914,8 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 			// set to OFF to test that nothing will change in the latches store
 
 			clkSwitch.Set(false)
+			time.Sleep(time.Millisecond * 125)
+
 			setSwitches(latchSwitches, tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
 
 			for i, _ := range latch.Qs {
@@ -2557,10 +2560,10 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	}
 }
 
+/*
 // TestNNumberAdder is trying to simulate a feedback loop that has no bounds so it is expected to stack overlow
 //     runtime: goroutine stack exceeds 1000000000-byte limit
 //     fatal error: stack overflow
-/*
 func TestNNumberAdder(t *testing.T) {
 
 	switches, _ := NewNSwitchBank("00000001")
@@ -2670,38 +2673,6 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
 			}
 		})
-	}
-}
-
-func TestEdgeTriggeredDTypeLatch_UpdatePins(t *testing.T) {
-
-	clkSwitch := NewSwitch(false)
-	latch := NewEdgeTriggeredDTypeLatch(clkSwitch, nil)
-	clkSwitch.Set(true)
-
-	want := false
-	if got := latch.Q.GetIsPowered(); got != want {
-		t.Errorf("With data as nil, wanted power %t but got %t", want, got)
-	}
-
-	latch.UpdateDataPin(NewSwitch(true))
-
-	clkSwitch.Set(false)
-	clkSwitch.Set(true)
-
-	want = true
-	if got := latch.Q.GetIsPowered(); got != want {
-		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
-	}
-
-	latch.UpdateDataPin(NewSwitch(false))
-
-	clkSwitch.Set(false)
-	clkSwitch.Set(true)
-
-	want = false
-	if got := latch.Q.GetIsPowered(); got != want {
-		t.Errorf("With data as an On switch, wanted power %t but got %t", want, got)
 	}
 }
 
@@ -2826,38 +2797,5 @@ func TestFrequencyDivider2(t *testing.T) {
 	sw1.Set(false)
 	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
 
-}
-
-func TestNBitRippleCounter_AsAnswerString(t *testing.T) {
-	//	var gotQBarResults string
-
-	osc := NewOscillator(false)
-	counter := NewNBitRippleCounter(osc, 8)
-	fmt.Println(counter.AsAnswerString())
-	//sw := NewSwitch(false)
-	//counter := NewNBitRippleCounter(sw, 2)
-
-	//fmt.Println("Wire up")
-	//counter.Qs[len(counter.Qs)-1].WireUp(func(bool) {
-	//	fmt.Println(counter.AsAnswerString())
-	//})
-fmt.Println("Oscillate")
-	osc.Oscillate(3)
-	count := 0
-	osc.WireUp(func(state bool) {
-		if state {
-			count += 1
-			fmt.Println(count)
-			//fmt.Println(counter.AsAnswerString())
-		}
-	})
-
-	time.Sleep(time.Second * 8)
-	osc.Stop()
-
-	want := "00000110"
-	if got := counter.AsAnswerString(); !strings.HasPrefix(got, want) {
-		//t.Errorf("Wanted results %s but got %s.", want, got)
-	}
 }
 */
