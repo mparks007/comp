@@ -422,23 +422,27 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		want  []bool
 	}{
 		{"0", []bool{false}},
-		{"1", []bool{true}},
-		{"101", []bool{true, false, true}},
-		{"00000000", []bool{false, false, false, false, false, false, false, false}},
-		{"11111111", []bool{true, true, true, true, true, true, true, true}},
-		{"10101010", []bool{true, false, true, false, true, false, true, false}},
-		{"10000001", []bool{true, false, false, false, false, false, false, true}},
-		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
-		{"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
-		{"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
-		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
+		// {"1", []bool{true}},
+		// {"101", []bool{true, false, true}},
+		// {"00000000", []bool{false, false, false, false, false, false, false, false}},
+		// {"11111111", []bool{true, true, true, true, true, true, true, true}},
+		// {"10101010", []bool{true, false, true, false, true, false, true, false}},
+		// {"10000001", []bool{true, false, false, false, false, false, false, true}},
+		// {"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
+		// {"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
+		// {"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
+		// {"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
 	}
 
 	received := make(chan struct{})
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
+			fmt.Printf("Setting switches to %s\n", tc.input)
+			
 			sb, err := NewNSwitchBank(tc.input)
+
+			time.Sleep(time.Millisecond * 10)
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
@@ -446,11 +450,11 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 			defer sb.Shutdown()
 
-			var got bool
+			var got atomic.Value
 			ch := make(chan bool, 1)
 			go func() {
 				for {
-					got = <-ch
+					got.Store(<-ch)
 					received <- struct{}{}
 				}
 			}()
@@ -462,8 +466,8 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 				want := tc.want[i]
 
-				if got != want {
-					t.Errorf("At index %d, wanted %t but got %t", i, want, got)
+				if got.Load().(bool) != want {
+					t.Errorf("At index %d, wanted %t but got %t", i, want, got.Load().(bool))
 				}
 			}
 		})
@@ -2561,7 +2565,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 }
 
 /*
-// TestNNumberAdder is trying to simulate a feedback loop that has no bounds so it is expected to stack overlow
+// TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
 //     runtime: goroutine stack exceeds 1000000000-byte limit
 //     fatal error: stack overflow
 func TestNNumberAdder(t *testing.T) {

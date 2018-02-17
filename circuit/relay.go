@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -13,7 +14,6 @@ type Relay struct {
 	ClosedOut    pwrSource
 	aInCh        chan bool
 	bInCh        chan bool
-	name         string
 	chADone      chan bool
 	chBDone      chan bool
 }
@@ -61,14 +61,19 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	}
 
 	// calling these two receive methods explicitly to ensure the 'answers' for the relay outputs, post WireUp calls above, have settled BEFORE returning and letting things wire up to them
-	receiveA()
-	receiveB()
+	//receiveA()
+	//receiveB()
+	// ORRRRR...try to wait for settle by using a and b channels here with close statement at the end?
+	chAReady := make(chan bool, 1)
+	chBReady := make(chan bool, 1)
 
 	// doing aIn and bIn go funcs independently since power could be changing on either one at the "same" time
 	go func() {
+		<-chAReady
 		for {
 			select {
 			case <-rel.chADone:
+				fmt.Println("Returning from A gofunc inside relay")
 				return
 			default:
 				receiveA()
@@ -76,9 +81,11 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 		}
 	}()
 	go func() {
+		<-chBReady
 		for {
 			select {
 			case <-rel.chBDone:
+				fmt.Println("Returning from B gofunc inside relay")
 				return
 			default:
 				receiveB()
@@ -86,11 +93,18 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 		}
 	}()
 
+	close(chAReady)
+	close(chBReady)
+
 	return rel
 }
 
 // Shutdown will allow the go funcs, which are handling listen/transmit, to exit
 func (r *Relay) Shutdown() {
+	fmt.Println("Shutting down A inside relay")
 	r.chADone <- true
+				close(r.aInCh)
+	fmt.Println("Shutting down B inside relay")
 	r.chBDone <- true
+				close(r.bInCh)
 }

@@ -7,10 +7,10 @@ import (
 // pwrSource is the core of non-wire components which can store their own state and transmit that state to other components that have wired up to them
 //	Most components embed pwrSource.
 type pwrSource struct {
-	outChannels []chan bool
-	isPowered   bool
-	chDone      chan bool
-	mu          sync.Mutex // to protect isPowered
+	outChannels []chan bool // hold list of other components that are wired up to this one
+	isPowered   bool        // core state flag to know of the components current state
+	chDone      chan bool   // shutdown channel
+	mu          sync.Mutex  // to protect isPowered and outChannels
 }
 
 // Init will do initialization code for all pwrSource-based objects
@@ -25,13 +25,14 @@ func (p *pwrSource) WireUp(ch chan bool) {
 
 	p.outChannels = append(p.outChannels, ch)
 
-	// go ahead and transmit to the new subscriber immediately as if just connecting to a potentially hot current
+	// go ahead and transmit to the new subscriber immediately as if something just connected to the pwrsource's potentially hot current
 	ch <- p.isPowered
 }
 
 // Transmit will push out the power source's new power state (IF state changed) to each wired up component
 func (p *pwrSource) Transmit(newState bool) {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 
 	if p.isPowered != newState {
 		p.isPowered = newState
@@ -50,10 +51,10 @@ func (p *pwrSource) Transmit(newState bool) {
 			}(ch)
 		}
 
-		p.mu.Unlock() // wanted to explicitly unlock before the Wait ("block") since we are DONE with the locked fields at this point (is why no defer used)
+	//	p.mu.Unlock() // wanted to explicitly unlock before the Wait ("block") since we are DONE with the locked fields at this point (is why no defer used)
 		wg.Wait()
 
 	} else {
-		p.mu.Unlock() // must unlock since we may not have a state change (not using defer unlock due to the Unlock/Wait comment above)
+	//	p.mu.Unlock() // must unlock since we may not have a state change (not using defer unlock due to the Unlock/Wait comment above)
 	}
 }
