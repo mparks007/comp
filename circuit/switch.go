@@ -106,7 +106,7 @@ func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each switch, to exit
 func (sb *NSwitchBank) Shutdown() {
-	for i, _ := range sb.Switches {
+	for i := range sb.Switches {
 		fmt.Println("Shutting down switch from bank")
 		sb.Switches[i].(*Switch).Shutdown()
 	}

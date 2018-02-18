@@ -1,7 +1,6 @@
 package circuit
 
 import (
-	"errors"
 	"fmt"
 	"time"
 )
@@ -123,7 +122,7 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each full adder, to exit
 func (a *NBitAdder) Shutdown() {
-	for i, _ := range a.fullAdders {
+	for i := range a.fullAdders {
 		a.fullAdders[i].Shutdown()
 	}
 }
@@ -152,7 +151,7 @@ type ThreeNumberAdder struct {
 func NewThreeNumberAdder(aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, error) {
 
 	if len(aInputs) != len(bInputs) {
-		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. Addend1 len: %d, Addend2 len: %d", len(aInputs), len(bInputs)))
+		return nil, fmt.Errorf("Mismatched input lengths. Addend1 len: %d, Addend2 len: %d", len(aInputs), len(bInputs))
 	}
 
 	addr := &ThreeNumberAdder{}
@@ -173,7 +172,7 @@ func NewThreeNumberAdder(aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, erro
 	addr.adder, _ = NewNBitAdder(aInputs, addr.selector.Outs, addr.carryIn)
 
 	// set adder sums to be the input to the loopback ribbon cable
-	addr.loopRibbon.SetInputs(addr.adder.Sums)
+	addr.loopRibbon.SetInputs(addr.adder.Sums...)
 
 	// give the SetInputs inner go funcs time to spin up and get their states
 	time.Sleep(time.Millisecond * 10)
@@ -228,7 +227,7 @@ func NewNNumberAdder(inputs []pwrEmitter) (*NNumberAdder, error) {
 
 	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(addr.Clear, addr.Add, addr.adder.Sums)
 
-	addr.loopRibbon.SetInputs(addr.latches.Qs)
+	addr.loopRibbon.SetInputs(addr.latches.Qs...)
 
 	// refer to the appropriate adder innards for easier external access
 	addr.Sums = addr.latches.Qs

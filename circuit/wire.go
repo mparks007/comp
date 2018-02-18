@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -8,12 +9,12 @@ import (
 // Wire is a component connector, which will transmit between source and listeners (with an optional pause to simulate wire length)
 //	Most loop-back based compoound components will use a wire for the looping aspect.
 type Wire struct {
-	length      uint
-	Input       chan bool
-	outChannels []chan bool
-	isPowered   bool
-	chDone      chan bool
-	mu          sync.Mutex // to protect isPowered
+	length      uint        // will pause for this many milliseconds to simulate resistance of wire due to length
+	Input       chan bool   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
+	outChannels []chan bool // hold list of other components that are wired up to this one
+	isPowered   bool        // core state flag to track the components current state
+	chDone      chan bool   // shutdown channel for the input listening loop
+	mu          sync.Mutex  // to protect isPowered and outChannels
 }
 
 // NewWire creates a wire of a specified length (delay)
@@ -30,6 +31,7 @@ func NewWire(length uint) *Wire {
 			case state := <-wire.Input:
 				wire.Transmit(state)
 			case <-wire.chDone:
+				fmt.Println("DEBUG: Bailing from Wire go func loop")
 				return
 			}
 		}
@@ -50,13 +52,15 @@ func (w *Wire) WireUp(ch chan bool) {
 
 	w.outChannels = append(w.outChannels, ch)
 
-	// go ahead and transmit to the new subscriber immediately as if just connecting to a potentially hot current
+	// go ahead and transmit to the new subscriber immediately as if something just connected to the wire's potentially hot current
 	ch <- w.isPowered
+//	time.Sleep(time.Millisecond * 10)
 }
 
 // Transmit will push out the wire's new power state (IF state changed) to each wired up component
 func (w *Wire) Transmit(newState bool) {
 	w.mu.Lock()
+	defer w.mu.Unlock()
 
 	if w.isPowered != newState {
 		w.isPowered = newState
@@ -65,22 +69,20 @@ func (w *Wire) Transmit(newState bool) {
 		// WHY DO I NEED TO SYNC THESE CHANNEL PUSHES?
 		// WHY DO I NEED TO SYNC THESE CHANNEL PUSHES?
 
-		wg := &sync.WaitGroup{} // will use this to ensure we finish letting all wired up components know of the state change before we move along
+		wg := &sync.WaitGroup{} // will use this to ensure we finish firing off the state change to all wired up components (unknown how concurrent this will actually be, but trying a bit)
 
 		for _, ch := range w.outChannels {
 			wg.Add(1)
 			go func(ch chan bool) {
-				time.Sleep(time.Millisecond * time.Duration(w.length))
+				if w.length > 0 {
+					time.Sleep(time.Millisecond * time.Duration(w.length))
+				}
 				ch <- w.isPowered
 				wg.Done()
 			}(ch)
 		}
 
-		w.mu.Unlock() // wanted to explicitly unlock before the Wait ("block") since we are DONE with the locked fields at this point (is why no defer used)
 		wg.Wait()
-
-	} else {
-		w.mu.Unlock() // must unlock since we may not have a state change (not using defer unlock due to the Unlock/Wait comment above)
 	}
 }
 
@@ -103,14 +105,15 @@ func NewRibbonCable(width, len uint) *RibbonCable {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each wire, to exit
 func (r *RibbonCable) Shutdown() {
-	for i, _ := range r.Wires {
+	fmt.Println("DEBUG: About to shutdown wires in ribbon cable")
+	for i := range r.Wires {
 		r.Wires[i].(*Wire).Shutdown()
 	}
 }
 
 // SetInputs allows each wire to listen to an independent component that can transmit power
-func (r *RibbonCable) SetInputs(wires []pwrEmitter) {
-	for i, pwr := range wires {
+func (r *RibbonCable) SetInputs(pwrInputs ...pwrEmitter) {
+	for i, pwr := range pwrInputs {
 		pwr.WireUp((r.Wires[i]).(*Wire).Input)
 	}
 }

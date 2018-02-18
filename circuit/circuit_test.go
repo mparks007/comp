@@ -31,7 +31,6 @@ func TestPwrsource(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	pwr := &pwrSource{}
-	pwr.Init()
 
 	// two wire ups to prove both will get called
 	pwr.WireUp(ch1)
@@ -39,7 +38,7 @@ func TestPwrsource(t *testing.T) {
 
 	want = false
 
-	// test default state
+	// test default state (unpowered)
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
 	}
@@ -58,7 +57,7 @@ func TestPwrsource(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
 	}
 
-	// test loss of power transmit
+	// test transmit loss of power
 	want = false
 	pwr.Transmit(want)
 
@@ -67,6 +66,21 @@ func TestPwrsource(t *testing.T) {
 	}
 	if got2 = <-ch2; got2 != want {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	}
+
+	// test transmitting same state as last time (should skip it)
+	pwr.Transmit(want)
+
+	select {
+	case <-ch1:
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
+	case <-time.After(time.Millisecond * 5):
+	}
+
+	select {
+	case <-ch2:
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
+	case <-time.After(time.Millisecond * 5):
 	}
 }
 
@@ -84,7 +98,7 @@ func TestWire_NoDelay(t *testing.T) {
 
 	want = false
 
-	// test default state
+	// test default state (unpowered)
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
 	}
@@ -103,7 +117,7 @@ func TestWire_NoDelay(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
 	}
 
-	// test loss of power transmit
+	// test transmit loss of power
 	want = false
 	wire.Transmit(want)
 
@@ -114,17 +128,20 @@ func TestWire_NoDelay(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
 	}
 
-	// test transmitting same state as last time
-	want = false
+	// test transmitting same state as last time (should skip it)
 	wire.Transmit(want)
 
-	// the following would deadlock since nothing would actually transmit (how to test this fact?)
-	//if got1 = <-ch1; got1 != want {
-	//	t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
-	//}
-	//if got2 = <-ch2; got2 != want {
-	//	t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
-	//}
+	select {
+	case <-ch1:
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
+	case <-time.After(time.Millisecond * 5):
+	}
+
+	select {
+	case <-ch2:
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
+	case <-time.After(time.Millisecond * 5):
+	}
 }
 
 func TestWire_WithDelay(t *testing.T) {
@@ -142,7 +159,7 @@ func TestWire_WithDelay(t *testing.T) {
 
 	want = false
 
-	// test default state
+	// test default state (unpowered)
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
 	}
@@ -150,12 +167,11 @@ func TestWire_WithDelay(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
 	}
 
-	// mark time
-	start := time.Now()
-
 	// test power transmit
 	want = true
+	start := time.Now()
 	wire.Transmit(want)
+	end := time.Now()
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -165,19 +181,17 @@ func TestWire_WithDelay(t *testing.T) {
 	}
 
 	// validate wire delay
-	end := time.Now()
-	gotDuration := end.Sub(start) + time.Millisecond + 1 // adding in just a little more to avoid timing edge case
+	gotDuration := end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
 	wantDuration := time.Millisecond * time.Duration(wireLen)
 	if gotDuration < wantDuration {
 		t.Errorf("Wire power on transmit time should have been %v but was %v", wantDuration, gotDuration)
 	}
 
-	// mark time
-	start = time.Now()
-
 	// test loss of power transmit
 	want = false
+	start = time.Now()
 	wire.Transmit(want)
+	end = time.Now()
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -187,11 +201,25 @@ func TestWire_WithDelay(t *testing.T) {
 	}
 
 	// validate wire delay
-	end = time.Now()
-	gotDuration = end.Sub(start) + time.Millisecond*1 // adding in just a little more to avoid timing edge case
+	gotDuration = end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
 	wantDuration = time.Millisecond * time.Duration(wireLen)
 	if gotDuration < wantDuration {
 		t.Errorf("Wire power off transmit time should have been %v but was %v", wantDuration, gotDuration)
+	}
+
+	// test transmitting same state as last time (should skip it)
+	wire.Transmit(want)
+
+	select {
+	case <-ch1:
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
+	case <-time.After(time.Millisecond * 5):
+	}
+
+	select {
+	case <-ch2:
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
+	case <-time.After(time.Millisecond * 5):
 	}
 }
 
@@ -200,16 +228,15 @@ func TestRibbonCable(t *testing.T) {
 	ch1 := make(chan bool, 1)
 	ch2 := make(chan bool, 1)
 
-	rib := NewRibbonCable(2, 1)
+	rib := NewRibbonCable(2, 0)
 	defer rib.Shutdown()
 
-	inputs, _ := NewNSwitchBank("01")
-	defer inputs.Shutdown()
+	deadBattery := &Battery{}
+	deadBattery.Discharge()
+	rib.SetInputs(deadBattery, NewBattery())
 
-	rib.SetInputs(inputs.Switches)
-
-	// before listening to the wires, need to give the switches time to tell the wires their state
-	time.Sleep(time.Millisecond * 50)
+	// why must I pause here
+	time.Sleep(time.Millisecond * 25)
 
 	rib.Wires[0].(*Wire).WireUp(ch1)
 	rib.Wires[1].(*Wire).WireUp(ch2)
@@ -230,12 +257,10 @@ func TestBattery(t *testing.T) {
 	ch := make(chan bool, 1)
 
 	bat := NewBattery()
-
 	bat.WireUp(ch)
-
 	want = true
 
-	// test default state
+	// test default battery state (powered)
 	if got = <-ch; got != want {
 		t.Errorf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got)
 	}
@@ -245,15 +270,15 @@ func TestBattery(t *testing.T) {
 	want = false
 
 	if got = <-ch; got != want {
-		t.Errorf("With a discharged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got)
+		t.Errorf("With a discharged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got)
 	}
 
-	// test added power
+	// test re-added power
 	bat.Charge()
 	want = true
 
 	if got = <-ch; got != want {
-		t.Errorf("With a charged battery, wanted the subscriber'l IsPowered to be %t but got %t", want, got)
+		t.Errorf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got)
 	}
 }
 
@@ -276,6 +301,8 @@ func TestRelay_WithBatteries(t *testing.T) {
 	var pin1Battery, pin2Battery *Battery
 	openCh := make(chan bool, 1)
 	closedCh := make(chan bool, 1)
+	rA := make(chan bool, 1)
+	rB := make(chan bool, 1)
 
 	pin1Battery = NewBattery()
 	pin2Battery = NewBattery()
@@ -289,15 +316,18 @@ func TestRelay_WithBatteries(t *testing.T) {
 			select {
 			case newOpen := <-openCh:
 				gotOpenOut.Store(newOpen)
+				rA <- true
 			case newClosed := <-closedCh:
 				gotClosedOut.Store(newClosed)
+				<-rB
 			}
 		}
 	}()
 
 	rel.OpenOut.WireUp(openCh)
 	rel.ClosedOut.WireUp(closedCh)
-	time.Sleep(time.Millisecond * 10)
+
+	//time.Sleep(time.Millisecond * 10)
 
 	if gotOpenOut.Load().(bool) != false {
 		t.Error("Wanted no power at the open position but got some")
@@ -422,27 +452,23 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		want  []bool
 	}{
 		{"0", []bool{false}},
-		// {"1", []bool{true}},
-		// {"101", []bool{true, false, true}},
-		// {"00000000", []bool{false, false, false, false, false, false, false, false}},
-		// {"11111111", []bool{true, true, true, true, true, true, true, true}},
-		// {"10101010", []bool{true, false, true, false, true, false, true, false}},
-		// {"10000001", []bool{true, false, false, false, false, false, false, true}},
-		// {"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
-		// {"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
-		// {"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
-		// {"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
+		{"1", []bool{true}},
+		{"101", []bool{true, false, true}},
+		{"00000000", []bool{false, false, false, false, false, false, false, false}},
+		{"11111111", []bool{true, true, true, true, true, true, true, true}},
+		{"10101010", []bool{true, false, true, false, true, false, true, false}},
+		{"10000001", []bool{true, false, false, false, false, false, false, true}},
+		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
+		{"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
+		{"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
+		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
 	}
 
-	received := make(chan struct{})
+	received := make(chan struct{}, 1)
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
-			fmt.Printf("Setting switches to %s\n", tc.input)
-			
 			sb, err := NewNSwitchBank(tc.input)
-
-			time.Sleep(time.Millisecond * 10)
 
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
@@ -466,6 +492,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 
 				want := tc.want[i]
 
+				// how can I NOT have a real bool here since the <-received should have waited until the bool got stored in the go func for loop!
 				if got.Load().(bool) != want {
 					t.Errorf("At index %d, wanted %t but got %t", i, want, got.Load().(bool))
 				}
@@ -1922,7 +1949,7 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 
 			setSwitches(latchSwitches, tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
 
-			for i, _ := range latch.Qs {
+			for i := range latch.Qs {
 				if got := got[i].Load().(bool); got != priorWant[i] {
 					t.Errorf("Latch[%d], with clkSwitch off, wanted %t but got %t", i, priorWant[i], got)
 				}
@@ -1933,14 +1960,14 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 			clkSwitch.Set(true)
 			time.Sleep(time.Millisecond * 200) // need to allow all the latches to settle down (transmit their new Q values)
 
-			for i, _ := range latch.Qs {
+			for i := range latch.Qs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
 					t.Errorf("Latch[%d], with clkSwitch ON, wanted %t but got %t", i, tc.want[i], got)
 				}
 			}
 
 			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (ie matches prior)
-			for i, _ := range latch.Qs {
+			for i := range latch.Qs {
 				priorWant[i] = got[i].Load().(bool)
 			}
 		})
@@ -2053,7 +2080,7 @@ func TestTwoToOneSelector(t *testing.T) {
 
 			time.Sleep(time.Millisecond * 75)
 
-			for i, _ := range sel.Outs {
+			for i := range sel.Outs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
 					t.Errorf("Selector Output[%d]: Wanted (%t) but got (%t).\n", i, tc.want[i], got)
 				}
@@ -2538,14 +2565,14 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			clkSwitch.Set(true)
 			time.Sleep(time.Millisecond * 250)
 
-			for i, _ := range latch.Qs {
+			for i := range latch.Qs {
 				if got := got[i].Load().(bool); got != tc.want[i] {
 					t.Errorf("Latch[%d], with clkSwitch ON, wanted %t but got %t", i, tc.want[i], got)
 				}
 			}
 
 			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top of the loop) proves it didn't change (aka matches prior)
-			for i, _ := range latch.Qs {
+			for i := range latch.Qs {
 				priorWant[i] = got[i].Load().(bool)
 			}
 
@@ -2555,7 +2582,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 
 			// clear should have set all Qs to off
 			want := false
-			for i, _ := range latch.Qs {
+			for i := range latch.Qs {
 				if got := got[i].Load().(bool); got != want {
 					t.Errorf("Latch[%d], with clrSwitch ON, wanted %t but got %t", i, want, got)
 				}

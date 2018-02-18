@@ -1,7 +1,6 @@
 package circuit
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -25,7 +24,7 @@ type TwoToOneSelector struct {
 func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
 
 	if len(aPins) != len(bPins) {
-		return nil, errors.New(fmt.Sprintf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins)))
+		return nil, fmt.Errorf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins))
 	}
 
 	sel := &TwoToOneSelector{}
@@ -42,7 +41,7 @@ func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOn
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
 func (s *TwoToOneSelector) Shutdown() {
-	for i, _ := range s.aANDs {
+	for i := range s.aANDs {
 		s.Outs[i].(*ORGate).Shutdown()
 		s.bANDs[i].Shutdown()
 		s.aANDs[i].Shutdown()

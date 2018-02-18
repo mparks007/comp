@@ -111,7 +111,7 @@ func NewNBitLevelTriggeredDTypeLatch(clkInPin pwrEmitter, dataInPins []pwrEmitte
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each latch, to exit
 func (l *NBitLevelTriggeredDTypeLatch) Shutdown() {
-	for i, _ := range l.latches {
+	for i := range l.latches {
 		l.latches[i].Shutdown()
 	}
 }
@@ -193,7 +193,7 @@ func NewNBitLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin pwrEmitter, dataI
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each latch, to exit
 func (l *NBitLevelTriggeredDTypeLatchWithClear) Shutdown() {
-	for i, _ := range l.latches {
+	for i := range l.latches {
 		l.latches[i].Shutdown()
 	}
 }
