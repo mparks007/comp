@@ -87,7 +87,7 @@ func TestPwrsource(t *testing.T) {
 	case <-time.After(time.Millisecond * 5):
 	}
 }
-
+/*
 func TestWire_NoDelay(t *testing.T) {
 	var want, got1, got2 bool
 	ch1 := make(chan bool, 1)
@@ -142,6 +142,10 @@ func TestWire_NoDelay(t *testing.T) {
 	case <-ch1:
 		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
 	case <-time.After(time.Millisecond * 5):
+		// default should work here instead of this time thing
+		// default should work here instead of this time thing
+		// default should work here instead of this time thing
+		// default should work here instead of this time thing
 	}
 
 	select {

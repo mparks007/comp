@@ -55,7 +55,6 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 
 	// doing aIn and bIn go funcs independently since power could be changing on either one at the "same" time
 	go func() {
-		//		<-chAReady
 		for {
 			select {
 			case aState := <-rel.aInCh:
@@ -68,7 +67,6 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 		}
 	}()
 	go func() {
-		//		<-chBReady
 		for {
 			select {
 			case bState := <-rel.bInCh:
@@ -83,7 +81,8 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 
 	pin1.WireUp(rel.aInCh)
 	pin2.WireUp(rel.bInCh)
-	pin1.WaitForTransmit() // add this to interface?  let IT do the <-chTransmitted stuff?
+
+	//pin1.WaitForTransmit() // add this to interface?  let this method do the <-chTransmitted stuff vs raw code?
 	//<-pin2.chTransmitted
 
 	// receiveA := func() {

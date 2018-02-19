@@ -116,7 +116,7 @@ func (r *RibbonCable) SetInputs(pwrInputs ...pwrEmitter) {
 	for i, pwr := range pwrInputs {
 		pwr.WireUp((r.Wires[i]).(*Wire).Input)
 
-		// wait for each wire to transmit to any subscribers
+		// wait for each wire to transmit to any subscribers (or skip due to no state change)
 		<-(r.Wires[i]).(*Wire).chTransmitted
 	}
 }

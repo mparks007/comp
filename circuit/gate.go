@@ -37,20 +37,22 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	// for an AND, the last relay in the chain is the final answer (from CLOSED out)
 	gate.relays[len(pins)-1].ClosedOut.WireUp(gate.ch)
 
-	transmit := func() {
-		gate.Transmit(<-gate.ch)
-	}
+	// transmit := func() {
+	// 	gate.Transmit(<-gate.ch)
+	// }
 
 	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	transmit()
+	gate.Transmit(<-gate.ch)
 
 	go func() {
 		for {
 			select {
 			case <-gate.chStop:
 				return
-			default:
-				transmit()
+			case e := <-gate.ch:
+				gate.Transmit(state)
+				e.wg.Done()
+
 			}
 		}
 	}()
