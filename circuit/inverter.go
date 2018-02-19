@@ -1,5 +1,5 @@
 package circuit
-
+/*
 // Inverter is a standard circuit that inverts the power state of the input
 //
 // Truth Table
@@ -50,3 +50,4 @@ func (inv *Inverter) Shutdown() {
 	inv.relay.Shutdown()
 	inv.chStop <- true
 }
+*/

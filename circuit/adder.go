@@ -1,10 +1,11 @@
 package circuit
 
 import (
-	"fmt"
-	"time"
+	// "fmt"
+	// "time"
 )
 
+/*
 // HalfAdder is a standard Half Adder circuit
 //	A and B inputs result in Sum and Carry outputs (as normal, this circuit doesn't handle a carry in (needs FullAdder for that)
 //
@@ -243,3 +244,4 @@ func (a *NNumberAdder) Shutdown() {
 	a.Add.Shutdown()
 	a.Clear.Shutdown()
 }
+*/

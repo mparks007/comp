@@ -1,5 +1,5 @@
 package circuit
-
+/*
 import (
 	"reflect"
 )
@@ -411,3 +411,4 @@ func (g *XNORGate) Shutdown() {
 	g.inverter.Shutdown()
 	g.chStop <- true
 }
+*/

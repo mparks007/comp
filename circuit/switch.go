@@ -1,5 +1,5 @@
 package circuit
-
+/*
 import (
 	"fmt"
 	"regexp"
@@ -107,3 +107,4 @@ func (sb *NSwitchBank) Shutdown() {
 		sb.Switches[i].(*Switch).Shutdown()
 	}
 }
+*/

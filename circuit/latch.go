@@ -1,7 +1,8 @@
 package circuit
 
-import "time"
+//import "time"
 
+/*
 // RSFlipFlop (Reset-Set) Flip-Flop is a standard flipflop circuit controlled by Set and Reset to output power at Q or "QBar" (QBar being opposite of Q)
 // 	...or is this an SR (Set-Reset) Flip-Flop, or is this just an RS Latch?  SR Latch?  No matter for my purposes thus far...
 //  This circuit is core to more complicated FlipFops/Latches to make even further complicated components (memory, counters, more?)

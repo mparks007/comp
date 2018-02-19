@@ -1,5 +1,6 @@
 package circuit
 
+/*
 import (
 	"fmt"
 	"sync"
@@ -116,3 +117,4 @@ func (r *Relay) Shutdown() {
 	r.chBStop <- true
 	//close(r.bInCh)
 }
+*/

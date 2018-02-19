@@ -1,9 +1,6 @@
 package circuit
 
 import (
-	"fmt"
-	"reflect"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -19,19 +16,37 @@ import (
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
 
 // setSwitches will flip the switches of a SwitchBank to match a passed in bits string
-func setSwitches(switchBank *NSwitchBank, bits string) {
-	for i, b := range bits {
-		switchBank.Switches[i].(*Switch).Set(b == '1')
-	}
-}
+// func setSwitches(switchBank *NSwitchBank, bits string) {
+// 	for i, b := range bits {
+// 		switchBank.Switches[i].(*Switch).Set(b == '1')
+// 	}
+// }
 
 func TestPwrsource(t *testing.T) {
-	var want, got1, got2 bool
-	ch1 := make(chan bool, 1)
-	ch2 := make(chan bool, 1)
-
+	var want bool
+	var got1, got2 atomic.Value
+	chStop := make(chan bool, 1)
+	ch1 := make(chan Electron, 1)
+	ch2 := make(chan Electron, 1)
+	
 	pwr := &pwrSource{}
 	pwr.Init()
+
+	go func() {
+		for {
+			select {
+			case e1 := <-ch1:
+				got1.Store(e1.powerState)
+				e1.wg.Done()
+			case e2 := <-ch2:
+				got2.Store(e2.powerState)
+				e2.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
 
 	// two wire ups to prove both will get called
 	pwr.WireUp(ch1)
@@ -40,62 +55,77 @@ func TestPwrsource(t *testing.T) {
 	want = false
 
 	// test default state (unpowered)
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test power transmit
 	want = true
 	pwr.Transmit(want)
-	<-pwr.chTransmitted
 
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test transmit loss of power
 	want = false
 	pwr.Transmit(want)
-	<-pwr.chTransmitted
 
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test transmitting same state as last time (should skip it)
 	pwr.Transmit(want)
-	<-pwr.chTransmitted
 
 	select {
 	case <-ch1:
 		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
-	case <-time.After(time.Millisecond * 5):
+	default:
 	}
 
 	select {
 	case <-ch2:
 		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
-	case <-time.After(time.Millisecond * 5):
+	default:
 	}
 }
-/*
+
 func TestWire_NoDelay(t *testing.T) {
-	var want, got1, got2 bool
-	ch1 := make(chan bool, 1)
-	ch2 := make(chan bool, 1)
+	var want bool
+	var got1, got2 atomic.Value
+	chStop := make(chan bool, 1)
+	ch1 := make(chan Electron, 1)
+	ch2 := make(chan Electron, 1)
 
 	wire := NewWire(0)
 	defer wire.Shutdown()
 
+	go func() {
+		for {
+			select {
+			case e1 := <-ch1:
+				got1.Store(e1.powerState)
+				e1.wg.Done()
+			case e2 := <-ch2:
+				got2.Store(e2.powerState)
+				e2.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
 	wire.WireUp(ch2)
@@ -103,66 +133,77 @@ func TestWire_NoDelay(t *testing.T) {
 	want = false
 
 	// test default state (unpowered)
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test power transmit
 	want = true
 	wire.Transmit(want)
-	<-wire.chTransmitted
 
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test transmit loss of power
 	want = false
 	wire.Transmit(want)
-	<-wire.chTransmitted
 
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test transmitting same state as last time (should skip it)
 	wire.Transmit(want)
-	<-wire.chTransmitted
 
 	select {
 	case <-ch1:
 		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
-	case <-time.After(time.Millisecond * 5):
-		// default should work here instead of this time thing
-		// default should work here instead of this time thing
-		// default should work here instead of this time thing
-		// default should work here instead of this time thing
+	default:
 	}
 
 	select {
 	case <-ch2:
 		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
-	case <-time.After(time.Millisecond * 5):
+	default:
 	}
 }
 
 func TestWire_WithDelay(t *testing.T) {
-	var want, got1, got2 bool
+	var want bool
+	var got1, got2 atomic.Value
 	var wireLen uint = 100
-	ch1 := make(chan bool, 1)
-	ch2 := make(chan bool, 1)
+	chStop := make(chan bool, 1)
+	ch1 := make(chan Electron, 1)
+	ch2 := make(chan Electron, 1)
 
 	wire := NewWire(wireLen)
 	defer wire.Shutdown()
+
+	go func() {
+		for {
+			select {
+			case e1 := <-ch1:
+				got1.Store(e1.powerState)
+				e1.wg.Done()
+			case e2 := <-ch2:
+				got2.Store(e2.powerState)
+				e2.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
 
 	// two wire ups to prove both will get called
 	wire.WireUp(ch1)
@@ -171,25 +212,25 @@ func TestWire_WithDelay(t *testing.T) {
 	want = false
 
 	// test default state (unpowered)
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// test power transmit
 	want = true
+
 	start := time.Now()
 	wire.Transmit(want)
 	end := time.Now()
-	<-wire.chTransmitted
 
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// validate wire delay
@@ -201,16 +242,16 @@ func TestWire_WithDelay(t *testing.T) {
 
 	// test loss of power transmit
 	want = false
+
 	start = time.Now()
 	wire.Transmit(want)
 	end = time.Now()
-	<-wire.chTransmitted
 
-	if got1 = <-ch1; got1 != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
 	}
-	if got2 = <-ch2; got2 != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2)
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
 	// validate wire delay
@@ -222,77 +263,110 @@ func TestWire_WithDelay(t *testing.T) {
 
 	// test transmitting same state as last time (should skip it)
 	wire.Transmit(want)
-	<-wire.chTransmitted
 
 	select {
 	case <-ch1:
 		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
-	case <-time.After(time.Millisecond * 5):
+	default:
 	}
 
 	select {
 	case <-ch2:
 		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
-	case <-time.After(time.Millisecond * 5):
+	default:
 	}
 }
 
 func TestRibbonCable(t *testing.T) {
-	var want, got bool
-	ch1 := make(chan bool, 1)
-	ch2 := make(chan bool, 1)
+	var want bool
+	var got1, got2 atomic.Value
+	chStop := make(chan bool, 1)
+	ch1 := make(chan Electron, 1)
+	ch2 := make(chan Electron, 1)
 
 	rib := NewRibbonCable(2, 0)
 	defer rib.Shutdown()
 
 	rib.SetInputs(NewBattery(false), NewBattery(true))
 
+	go func() {
+		for {
+			select {
+			case e1 := <-ch1:
+				got1.Store(e1.powerState)
+				e1.wg.Done()
+			case e2 := <-ch2:
+				got2.Store(e2.powerState)
+				e2.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
 	rib.Wires[0].(*Wire).WireUp(ch1)
 	rib.Wires[1].(*Wire).WireUp(ch2)
 
+	// the first wire in the ribbon cable had a dead battery
 	want = false
-	if got = <-ch1; got != want {
-		t.Errorf("Left Switch off, wanted the wire to see power as %t but got %t", want, got)
+	if got1.Load().(bool) != want {
+		t.Errorf("Left Switch off, wanted the wire to see power as %t but got %t", want, got1.Load().(bool))
 	}
 
+	// the first wire in the ribbon cable had a live battery
 	want = true
-	if got = <-ch2; got != want {
-		t.Errorf("Right Switch on, wanted the wire to see power as %t but got %t", want, got)
+	if got2.Load().(bool) != want {
+		t.Errorf("Right Switch on, wanted the wire to see power as %t but got %t", want, got2.Load().(bool))
 	}
 }
 
 func TestBattery(t *testing.T) {
-	var want, got bool
-	ch := make(chan bool, 1)
+	var want bool
+	var got atomic.Value
+	chStop := make(chan bool, 1)
+	ch := make(chan Electron, 1)
 
 	bat := NewBattery(true)
+
+	go func() {
+		for {
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
 	bat.WireUp(ch)
 	want = true
 
 	// test default battery state (powered)
-	if got = <-ch; got != want {
-		t.Errorf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got)
+	if got.Load().(bool) != want {
+		t.Errorf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
 	}
 
 	// test loss of power
 	bat.Discharge()
-	<-bat.chTransmitted
 	want = false
 
-	if got = <-ch; got != want {
-		t.Errorf("With a discharged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got)
+	if got.Load().(bool) != want {
+		t.Errorf("With a discharged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got.Load().(bool))
 	}
 
 	// test re-added power
 	bat.Charge()
-	<-bat.chTransmitted
 	want = true
 
-	if got = <-ch; got != want {
-		t.Errorf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got)
+	if got.Load().(bool) != want {
+		t.Errorf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got.Load().(bool))
 	}
 }
-
+/*
 func TestRelay_WithBatteries(t *testing.T) {
 	testCases := []struct {
 		aInPowered   bool
@@ -371,7 +445,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 		})
 	}
 }
-
+/*
 func TestSwitch(t *testing.T) {
 	var got, want bool
 	ch := make(chan bool, 1)
@@ -1429,7 +1503,7 @@ func BenchmarkNBitAdder_SixteenBit_AsAnswerString(b *testing.B) {
 	}
 }
 */
-
+/*
 func TestOnesCompliment(t *testing.T) {
 
 	testCases := []struct {

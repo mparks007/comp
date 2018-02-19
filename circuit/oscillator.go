@@ -1,10 +1,10 @@
 package circuit
 
 import (
-	"sync"
-	"time"
+	// "sync"
+	// "time"
 )
-
+/*
 // Oscillator is a circuit which attempts to simulate a crystal-driven frequency oscillation signal (not exact unfortunately)
 type Oscillator struct {
 	stopCh chan bool
@@ -57,3 +57,4 @@ func (o *Oscillator) Stop() {
 		o.stopCh <- true
 	}
 }
+*/

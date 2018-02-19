@@ -9,13 +9,12 @@ import (
 // Wire is a component connector, which will transmit between source and listeners (with an optional pause to simulate wire length)
 //	Most loop-back based compoound components will use a wire for the looping aspect.
 type Wire struct {
-	length        uint        // will pause for this many milliseconds to simulate resistance of wire due to length
-	Input         chan bool   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
-	outChannels   []chan bool // hold list of other components that are wired up to this one
-	isPowered     bool        // core state flag to track the components current state
-	chStop        chan bool   // listen/transmit loop shutdown channel
-	chTransmitted chan bool   // to track when the transmit loop has finished sending state to all subscribers
-	mu            sync.Mutex  // to protect isPowered and outChannels
+	length      uint            // will pause for this many milliseconds to simulate resistance of wire due to length
+	Input       chan Electron       // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
+	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
+	isPowered   bool            // core state flag to track the components current state
+	chStop      chan bool       // listen/transmit loop shutdown channel
+	mu          sync.Mutex      // to protect isPowered and outChannels
 }
 
 // NewWire creates a wire of a specified length (delay)
@@ -23,16 +22,16 @@ func NewWire(length uint) *Wire {
 	wire := &Wire{}
 
 	wire.length = length
-	wire.Input = make(chan bool, 1)
+	wire.Input = make(chan Electron, 1)
 	wire.chStop = make(chan bool, 1)
-	wire.chTransmitted = make(chan bool, 1)
 
 	// spin up the func that will allow the wire's input to be sent as output
 	go func() {
 		for {
 			select {
-			case state := <-wire.Input:
-				wire.Transmit(state)
+			case e := <-wire.Input:
+				wire.Transmit(e.powerState)
+				e.wg.Done()
 			case <-wire.chStop:
 				fmt.Println("DEBUG: Bailing from Wire go func loop")
 				return
@@ -49,41 +48,43 @@ func (w *Wire) Shutdown() {
 }
 
 // WireUp allows another component to subscribe to the wire (via the passed in channel) in order to be told of power state changes
-func (w *Wire) WireUp(ch chan bool) {
+func (w *Wire) WireUp(ch chan Electron) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	w.outChannels = append(w.outChannels, ch)
 
 	// go ahead and transmit to the new subscriber immediately as if something just connected to the wire's potentially hot current
-	ch <- w.isPowered
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	ch <- Electron{powerState: w.isPowered, wg: wg}
+	wg.Wait()
 }
 
 // Transmit will push out the wire's new power state (IF state changed) to each wired up component
-func (w *Wire) Transmit(newState bool) {
+func (w *Wire) Transmit(newPowerState bool) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.isPowered != newState {
-		w.isPowered = newState
+	if w.isPowered != newPowerState {
+		w.isPowered = newPowerState
 
 		wg := &sync.WaitGroup{} // will use this to ensure we finish firing off the state change to all wired up components (unknown how concurrent this will actually be, but trying a bit)
 
+		e := Electron{powerState: newPowerState, wg: wg} // for now, will share the same electron object across all listeners (though the wg.Add(1) will still allow each listener to call their own Done)
+
 		for _, ch := range w.outChannels {
 			wg.Add(1)
-			go func(ch chan bool) {
+			go func(ch chan Electron) {
 				if w.length > 0 {
 					time.Sleep(time.Millisecond * time.Duration(w.length)) // simulate resistance due to "length" of wire
 				}
-				ch <- w.isPowered
-				wg.Done()
+				ch <- e
 			}(ch)
 		}
 
 		wg.Wait()
 	}
-	fmt.Println("w.chTransmitted <- true")
-	w.chTransmitted <- true
 }
 
 // RibbonCable is a convenient way to allow multiple wires to drop in as slice of pwrEmitters (for receiving/transmitting power)
@@ -115,8 +116,5 @@ func (r *RibbonCable) Shutdown() {
 func (r *RibbonCable) SetInputs(pwrInputs ...pwrEmitter) {
 	for i, pwr := range pwrInputs {
 		pwr.WireUp((r.Wires[i]).(*Wire).Input)
-
-		// wait for each wire to transmit to any subscribers (or skip due to no state change)
-		<-(r.Wires[i]).(*Wire).chTransmitted
 	}
 }
