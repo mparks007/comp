@@ -231,23 +231,28 @@ func TestRibbonCable(t *testing.T) {
 	rib := NewRibbonCable(2, 0)
 	defer rib.Shutdown()
 
+	// go test -race -run TestRibbonCable -cpu=1,2,4 -count 50
+
 	deadBattery := &Battery{}
 	deadBattery.Discharge()
+	time.Sleep(time.Millisecond * 250) // and for long run, like -count 100, needed to pause here to give the battery a change to discharge before setting it as an input
 	rib.SetInputs(deadBattery, NewBattery())
 
-	// why must I pause here
-	time.Sleep(time.Millisecond * 25)
+	time.Sleep(time.Millisecond * 25) // if pause here, don't need extra <-ch2 later since the battery finishes the push of true before the WireUp(ch2)
 
 	rib.Wires[0].(*Wire).WireUp(ch1)
-	rib.Wires[1].(*Wire).WireUp(ch2)
+	rib.Wires[1].(*Wire).WireUp(ch2) // this wireup line happens faster (returning false) than the live battery in rib.SetInputs() can tell the wire it shoudld actually return true
 
 	want = false
-	if got = <-ch1; got != want {
+	got = <-ch1
+	if got != want {
 		t.Errorf("Left Switch off, wanted the wire to see power as %t but got %t", want, got)
 	}
 
 	want = true
-	if got = <-ch2; got != want {
+	//<-ch2       // to eat the initial false (battery hadn't the time to say true) [need this if removed pause above]
+	got = <-ch2 // to get the correct true (after the battery had a chance to say true)
+	if got != want {
 		t.Errorf("Right Switch on, wanted the wire to see power as %t but got %t", want, got)
 	}
 }
