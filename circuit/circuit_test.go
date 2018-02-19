@@ -235,7 +235,9 @@ func TestRibbonCable(t *testing.T) {
 
 	deadBattery := &Battery{}
 	deadBattery.Discharge()
-	time.Sleep(time.Millisecond * 250) // and for long run, like -count 100, needed to pause here to give the battery a change to discharge before setting it as an input
+
+	time.Sleep(time.Millisecond * 250) // and for long run, like -count 50, sometimes hangs somewhere, sooooo needed to pause here to give the battery a chance to discharge before sending it to SetInputs()
+
 	rib.SetInputs(deadBattery, NewBattery())
 
 	time.Sleep(time.Millisecond * 25) // if pause here, don't need extra <-ch2 later since the battery finishes the push of true before the WireUp(ch2)
