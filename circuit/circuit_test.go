@@ -31,6 +31,7 @@ func TestPwrsource(t *testing.T) {
 	ch2 := make(chan bool, 1)
 
 	pwr := &pwrSource{}
+	pwr.Init()
 
 	// two wire ups to prove both will get called
 	pwr.WireUp(ch1)
@@ -49,6 +50,7 @@ func TestPwrsource(t *testing.T) {
 	// test power transmit
 	want = true
 	pwr.Transmit(want)
+	<-pwr.chTransmitted
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -60,6 +62,7 @@ func TestPwrsource(t *testing.T) {
 	// test transmit loss of power
 	want = false
 	pwr.Transmit(want)
+	<-pwr.chTransmitted
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -70,6 +73,7 @@ func TestPwrsource(t *testing.T) {
 
 	// test transmitting same state as last time (should skip it)
 	pwr.Transmit(want)
+	<-pwr.chTransmitted
 
 	select {
 	case <-ch1:
@@ -109,6 +113,7 @@ func TestWire_NoDelay(t *testing.T) {
 	// test power transmit
 	want = true
 	wire.Transmit(want)
+	<-wire.chTransmitted
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -120,6 +125,7 @@ func TestWire_NoDelay(t *testing.T) {
 	// test transmit loss of power
 	want = false
 	wire.Transmit(want)
+	<-wire.chTransmitted
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -130,6 +136,7 @@ func TestWire_NoDelay(t *testing.T) {
 
 	// test transmitting same state as last time (should skip it)
 	wire.Transmit(want)
+	<-wire.chTransmitted
 
 	select {
 	case <-ch1:
@@ -172,6 +179,7 @@ func TestWire_WithDelay(t *testing.T) {
 	start := time.Now()
 	wire.Transmit(want)
 	end := time.Now()
+	<-wire.chTransmitted
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -192,6 +200,7 @@ func TestWire_WithDelay(t *testing.T) {
 	start = time.Now()
 	wire.Transmit(want)
 	end = time.Now()
+	<-wire.chTransmitted
 
 	if got1 = <-ch1; got1 != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1)
@@ -209,6 +218,7 @@ func TestWire_WithDelay(t *testing.T) {
 
 	// test transmitting same state as last time (should skip it)
 	wire.Transmit(want)
+	<-wire.chTransmitted
 
 	select {
 	case <-ch1:
@@ -231,30 +241,18 @@ func TestRibbonCable(t *testing.T) {
 	rib := NewRibbonCable(2, 0)
 	defer rib.Shutdown()
 
-	// go test -race -run TestRibbonCable -cpu=1,2,4 -count 50
-
-	deadBattery := &Battery{}
-	deadBattery.Discharge()
-
-	time.Sleep(time.Millisecond * 250) // and for long run, like -count 50, sometimes hangs somewhere, sooooo needed to pause here to give the battery a chance to discharge before sending it to SetInputs()
-
-	rib.SetInputs(deadBattery, NewBattery())
-
-	time.Sleep(time.Millisecond * 25) // if pause here, don't need extra <-ch2 later since the battery finishes the push of true before the WireUp(ch2)
+	rib.SetInputs(NewBattery(false), NewBattery(true))
 
 	rib.Wires[0].(*Wire).WireUp(ch1)
-	rib.Wires[1].(*Wire).WireUp(ch2) // this wireup line happens faster (returning false) than the live battery in rib.SetInputs() can tell the wire it shoudld actually return true
+	rib.Wires[1].(*Wire).WireUp(ch2)
 
 	want = false
-	got = <-ch1
-	if got != want {
+	if got = <-ch1; got != want {
 		t.Errorf("Left Switch off, wanted the wire to see power as %t but got %t", want, got)
 	}
 
 	want = true
-	//<-ch2       // to eat the initial false (battery hadn't the time to say true) [need this if removed pause above]
-	got = <-ch2 // to get the correct true (after the battery had a chance to say true)
-	if got != want {
+	if got = <-ch2; got != want {
 		t.Errorf("Right Switch on, wanted the wire to see power as %t but got %t", want, got)
 	}
 }
@@ -263,7 +261,7 @@ func TestBattery(t *testing.T) {
 	var want, got bool
 	ch := make(chan bool, 1)
 
-	bat := NewBattery()
+	bat := NewBattery(true)
 	bat.WireUp(ch)
 	want = true
 
@@ -311,8 +309,8 @@ func TestRelay_WithBatteries(t *testing.T) {
 	rA := make(chan bool, 1)
 	rB := make(chan bool, 1)
 
-	pin1Battery = NewBattery()
-	pin2Battery = NewBattery()
+	pin1Battery = NewBattery(true)
+	pin2Battery = NewBattery(true)
 
 	rel := NewRelay(pin1Battery, pin2Battery)
 	defer rel.Shutdown()
@@ -946,7 +944,7 @@ func TestInverter(t *testing.T) {
 		{false, true},
 	}
 
-	pin1Battery := NewBattery()
+	pin1Battery := NewBattery(true)
 	inv := NewInverter(pin1Battery)
 	defer inv.Shutdown()
 
@@ -1726,10 +1724,8 @@ func TestRSFlipFlop(t *testing.T) {
 	}
 
 	var rPinBattery, sPinBattery *Battery
-	rPinBattery = NewBattery()
-	sPinBattery = NewBattery()
-	rPinBattery.Discharge()
-	sPinBattery.Discharge()
+	rPinBattery = NewBattery(false)
+	sPinBattery = NewBattery(false)
 
 	chQ := make(chan bool, 1)
 	chQBar := make(chan bool, 1)
@@ -1830,8 +1826,8 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	}
 
 	var clkBattery, dataBattery *Battery
-	clkBattery = NewBattery()
-	dataBattery = NewBattery()
+	clkBattery = NewBattery(true)
+	dataBattery = NewBattery(true)
 
 	chQ := make(chan bool, 1)
 	chQBar := make(chan bool, 1)
@@ -2423,10 +2419,9 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	}
 
 	var clrBattery, clkBattery, dataBattery *Battery
-	clrBattery = NewBattery()
-	clrBattery.Discharge() // start without Clear to act like a normal RSFlipFlop initially
-	clkBattery = NewBattery()
-	dataBattery = NewBattery()
+	clrBattery = NewBattery(false)
+	clkBattery = NewBattery(true)
+	dataBattery = NewBattery(true)
 
 	chQ := make(chan bool, 1)
 	chQBar := make(chan bool, 1)
@@ -2672,10 +2667,8 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	}
 
 	var clkBattery, dataBattery *Battery
-	clkBattery = NewBattery()
-	dataBattery = NewBattery()
-	clkBattery.Discharge()
-	dataBattery.Discharge()
+	clkBattery = NewBattery(false)
+	dataBattery = NewBattery(false)
 
 	latch := NewEdgeTriggeredDTypeLatch(clkBattery, dataBattery)
 

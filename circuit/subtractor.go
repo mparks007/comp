@@ -20,8 +20,8 @@ func NewNBitSubtractor(minuendPins, subtrahendPins []pwrEmitter) (*NBitSubtracto
 	}
 
 	sub := &NBitSubtractor{}
-	sub.comp = NewOnesComplementer(subtrahendPins, NewBattery())                 // the Battery ensures the complimenter is "On"
-	sub.adder, _ = NewNBitAdder(minuendPins, sub.comp.Complements, NewBattery()) // the added Battery is the "+1" to make the "twos compliment"
+	sub.comp = NewOnesComplementer(subtrahendPins, NewBattery(true))                 // the Battery ensures the complimenter is "On"
+	sub.adder, _ = NewNBitAdder(minuendPins, sub.comp.Complements, NewBattery(true)) // the added Battery is the "+1" to make the "twos compliment"
 
 	// use some better field names for easier external access
 	sub.Differences = sub.adder.Sums

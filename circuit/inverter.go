@@ -16,10 +16,10 @@ type Inverter struct {
 func NewInverter(pin pwrEmitter) *Inverter {
 	inv := &Inverter{}
 	inv.Init()
-	
+
 	inv.ch = make(chan bool, 1)
 
-	inv.relay = NewRelay(NewBattery(), pin)
+	inv.relay = NewRelay(NewBattery(true), pin)
 
 	// in an Inverter, the Open Out is what gets the flipped state (the "answer")
 	inv.relay.OpenOut.WireUp(inv.ch)
@@ -34,7 +34,7 @@ func NewInverter(pin pwrEmitter) *Inverter {
 	go func() {
 		for {
 			select {
-			case <-inv.chDone:
+			case <-inv.chStop:
 				return
 			default:
 				transmit()
@@ -48,5 +48,5 @@ func NewInverter(pin pwrEmitter) *Inverter {
 // Shutdown will allow the go funcs, which are handling listen/transmit on the inner relay and the inverter itself, to exit
 func (inv *Inverter) Shutdown() {
 	inv.relay.Shutdown()
-	inv.chDone <- true
+	inv.chStop <- true
 }

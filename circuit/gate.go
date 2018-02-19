@@ -28,7 +28,7 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 
 	for i, pin := range pins {
 		if i == 0 {
-			gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
+			gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
 		} else {
 			gate.relays = append(gate.relays, NewRelay(&gate.relays[i-1].ClosedOut, pin))
 		}
@@ -47,7 +47,7 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 	go func() {
 		for {
 			select {
-			case <-gate.chDone:
+			case <-gate.chStop:
 				return
 			default:
 				transmit()
@@ -63,7 +63,7 @@ func (g *ANDGate) Shutdown() {
 	for i := range g.relays {
 		g.relays[i].Shutdown()
 	}
-	g.chDone <- true
+	g.chStop <- true
 }
 
 // ORGate is a standard OR logic gate.
@@ -92,7 +92,7 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 
 	// build a relay, channel, and case statement to deal with each input pin
 	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
+		gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
 
 		ch := make(chan bool, 1)
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
@@ -130,7 +130,7 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 	go func() {
 		for {
 			select {
-			case <-gate.chDone:
+			case <-gate.chStop:
 				return
 			default:
 				transmit()
@@ -146,7 +146,7 @@ func (g *ORGate) Shutdown() {
 	for i := range g.relays {
 		g.relays[i].Shutdown()
 	}
-	g.chDone <- true
+	g.chStop <- true
 }
 
 // NANDGate is a standard NAND (Not-AND) logic gate.
@@ -175,7 +175,7 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 
 	// build a relay, channel, and case statement to deal with each input pin
 	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
+		gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
 
 		ch := make(chan bool, 1)
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
@@ -213,7 +213,7 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	go func() {
 		for {
 			select {
-			case <-gate.chDone:
+			case <-gate.chStop:
 				return
 			default:
 				transmit()
@@ -229,7 +229,7 @@ func (g *NANDGate) Shutdown() {
 	for i := range g.relays {
 		g.relays[i].Shutdown()
 	}
-	g.chDone <- true
+	g.chStop <- true
 }
 
 // NORGate is a standard NOR (Not-OR) logic gate.
@@ -256,7 +256,7 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 
 	for i, pin := range pins {
 		if i == 0 {
-			gate.relays = append(gate.relays, NewRelay(NewBattery(), pin))
+			gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
 		} else {
 			gate.relays = append(gate.relays, NewRelay(&gate.relays[i-1].OpenOut, pin))
 		}
@@ -275,7 +275,7 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 	go func() {
 		for {
 			select {
-			case <-gate.chDone:
+			case <-gate.chStop:
 				return
 			default:
 				transmit()
@@ -291,7 +291,7 @@ func (g *NORGate) Shutdown() {
 	for i := range g.relays {
 		g.relays[i].Shutdown()
 	}
-	g.chDone <- true
+	g.chStop <- true
 }
 
 // XORGate is a standard XOR (Exclusive-OR) logic gate.
@@ -334,7 +334,7 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 	go func() {
 		for {
 			select {
-			case <-gate.chDone:
+			case <-gate.chStop:
 				return
 			default:
 				transmit()
@@ -350,7 +350,7 @@ func (g *XORGate) Shutdown() {
 	g.andGate.Shutdown()
 	g.nandGate.Shutdown()
 	g.orGate.Shutdown()
-	g.chDone <- true
+	g.chStop <- true
 }
 
 // XNORGate is a standard XNOR (Exclusive-Not-OR) logic gate (aka equivalence gate).
@@ -392,7 +392,7 @@ func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 	go func() {
 		for {
 			select {
-			case <-gate.chDone:
+			case <-gate.chStop:
 				return
 			default:
 				transmit()
@@ -407,5 +407,5 @@ func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 func (g *XNORGate) Shutdown() {
 	g.xorGate.Shutdown()
 	g.inverter.Shutdown()
-	g.chDone <- true
+	g.chStop <- true
 }

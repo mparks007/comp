@@ -14,18 +14,14 @@ type Switch struct {
 }
 
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value
-func NewSwitch(startAsOn bool) *Switch {
+func NewSwitch(startState bool) *Switch {
 	sw := &Switch{}
 	sw.Init()
 
 	sw.chState = make(chan bool, 1)
 
-	sw.pin2Battery = NewBattery()
-	if !startAsOn {
-		sw.pin2Battery.Discharge()
-	}
 	// setup the battery-based relay pins which will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.relay = NewRelay(NewBattery(), sw.pin2Battery)
+	sw.relay = NewRelay(NewBattery(true), NewBattery(startState))
 
 	// a switch acts like a relay, where Closed Out on the relay is the switch's power "answer"
 	sw.relay.ClosedOut.WireUp(sw.chState)
@@ -44,7 +40,7 @@ func NewSwitch(startAsOn bool) *Switch {
 		// first := true
 		for {
 			select {
-			case <-sw.chDone:
+			case <-sw.chStop:
 				return
 			default:
 				transmit()
@@ -66,7 +62,7 @@ func (s *Switch) Shutdown() {
 	fmt.Println("Shutting down relay in switch")
 	s.relay.Shutdown()
 	fmt.Println("Shutting down switch itself")
-	s.chDone <- true
+	s.chStop <- true
 }
 
 // Set will toggle the power state of the underlying battery to activate/deactivate the internal relay, and therefore the switch's output power state

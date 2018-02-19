@@ -5,10 +5,11 @@ type Battery struct {
 	pwrSource
 }
 
-// NewBattery will return a battery which defaults to charged (on)
-func NewBattery() *Battery {
+// NewBattery will return a battery whose initial state is based on the passed in initialization value
+func NewBattery(startState bool) *Battery {
 	bat := &Battery{}
-	bat.isPowered = true
+	bat.Init()
+	bat.isPowered = startState
 	return bat
 }
 
