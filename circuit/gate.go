@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync/atomic"
 )
 
@@ -220,6 +221,7 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 		for {
 			select {
 			case e := <-chState:
+				fmt.Printf("NOR (%v): <-chState:  e.powerState=%t\n", gate, e.powerState)
 				gate.Transmit(e.powerState)
 				e.wg.Done()
 			case <-gate.chStop:

@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -29,6 +30,7 @@ func NewWire(length uint) *Wire {
 		for {
 			select {
 			case e := <-wire.Input:
+				fmt.Printf("Wire (%v): <-wire.Input:  e.powerState=%t\n", wire, e.powerState)
 				wire.Transmit(e.powerState)
 				e.wg.Done()
 			case <-wire.chStop:

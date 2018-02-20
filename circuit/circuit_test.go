@@ -1794,7 +1794,7 @@ func TestOscillator(t *testing.T) {
 		})
 	}
 }
-
+*/
 func TestRSFlipFlop(t *testing.T) {
 	testCases := []struct {
 		rPinIsPowered bool
@@ -1802,19 +1802,19 @@ func TestRSFlipFlop(t *testing.T) {
 		wantQ         bool
 		wantQBar      bool
 	}{ // construction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Q off)
-		{false, false, false, true}, // Un-Set should change nother
-		{false, true, true, false},  // Set causes Q on (QBar off)
-		{false, true, true, false},  // Set again should change nothing
-		{false, false, true, false}, // Un-Set should remember prior
-		{false, false, true, false}, // Un-Set again should change nothing
-		{true, false, false, true},  // Reset causes Q off (QBar on)
-		{true, false, false, true},  // Reset again should change nothing
-		{false, false, false, true}, // Un-Reset should remember prior
-		{true, false, false, true},  // Un-Reset again should change nothing
-		{false, true, true, false},  // Set causes Q on (QBar off)
-		{true, false, false, true},  // Reset causes Q off (QBar on)
-		{false, true, true, false},  // Set causes Q on (QBar off)
-		{false, false, true, false}, // Un-Set again should change nothing
+		// {false, false, false, true}, // Un-Set should change nothing
+		{false, true, true, false}, // Set causes Q on (QBar off)
+		// {false, true, true, false},  // Set again should change nothing
+		//  {false, false, true, false}, // Un-Set should remember prior
+		//  {false, false, true, false}, // Un-Set again should change nothing
+		//  {true, false, false, true},  // Reset causes Q off (QBar on)
+		//  {true, false, false, true},  // Reset again should change nothing
+		//  {false, false, false, true}, // Un-Reset should remember prior
+		//  {true, false, false, true},  // Un-Reset again should change nothing
+		// {false, true, true, false},  // Set causes Q on (QBar off)
+		// {true, false, false, true},  // Reset causes Q off (QBar on)
+		// {false, true, true, false},  // Set causes Q on (QBar off)
+		// {false, false, true, false}, // Un-Set again should change nothing
 	}
 
 	testName := func(i int) string {
@@ -1836,29 +1836,44 @@ func TestRSFlipFlop(t *testing.T) {
 	rPinBattery = NewBattery(false)
 	sPinBattery = NewBattery(false)
 
-	chQ := make(chan bool, 1)
-	chQBar := make(chan bool, 1)
-
 	// starting with no input signals (R and S are off)
 	ff := NewRSFlipFLop(rPinBattery, sPinBattery)
 	defer ff.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
+	chQ := make(chan Electron, 1)
+	chQBar := make(chan Electron, 1)
+	chStopQ := make(chan bool, 1)
+	chStopQBar := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case newQ := <-chQ:
-				gotQ.Store(newQ)
-			case newQBar := <-chQBar:
-				gotQBar.Store(newQBar)
+			case eQBar := <-chQBar:
+				fmt.Printf("Test func: <-chQBar:  eQBar.powerState=%t\n", eQBar.powerState)
+				gotQBar.Store(eQBar.powerState)
+				eQBar.wg.Done()
+			case <-chStopQBar:
+				return
 			}
 		}
 	}()
+	defer func() { chStopQBar <- true }()
+	go func() {
+		for {
+			select {
+			case eQ := <-chQ:
+				fmt.Printf("Test func: <-chQ:  eQ.powerState=%t\n", eQ.powerState)
+				gotQ.Store(eQ.powerState)
+				eQ.wg.Done()
+			case <-chStopQ:
+				return
+			}
+		}
+	}()
+	defer func() { chStopQ <- true }()
 
 	ff.QBar.WireUp(chQBar)
 	ff.Q.WireUp(chQ)
-
-	time.Sleep(time.Millisecond * 125)
 
 	if gotQ.Load().(bool) != false {
 		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
@@ -1872,18 +1887,20 @@ func TestRSFlipFlop(t *testing.T) {
 		t.Run(testName(i), func(t *testing.T) {
 
 			if tc.rPinIsPowered {
+				fmt.Println("rPinBattery.Charge()")
 				rPinBattery.Charge()
 			} else {
+				fmt.Println("rPinBattery.Discharge()")
 				rPinBattery.Discharge()
 			}
 
 			if tc.sPinIsPowered {
+				fmt.Println("sPinBattery.Charge()")
 				sPinBattery.Charge()
 			} else {
+				fmt.Println("sPinBattery.Discharge()")
 				sPinBattery.Discharge()
 			}
-
-			time.Sleep(time.Millisecond * 125)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -1896,6 +1913,7 @@ func TestRSFlipFlop(t *testing.T) {
 	}
 }
 
+/*
 func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
 		clkIn    bool
