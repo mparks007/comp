@@ -9,7 +9,6 @@ import (
 type Switch struct {
 	relay       *Relay        // innards of the switch are using a relay to control on/off
 	pin2Battery *Battery      // switch on/off is controlled by charging/discharging this battery
-	chState     chan Electron // to listen to controlling relay for swtich state answer
 	pwrSource                 // switch gains all that is pwrSource too
 }
 
@@ -18,16 +17,15 @@ func NewSwitch(startState bool) *Switch {
 	sw := &Switch{}
 	sw.Init()
 
-	sw.chState = make(chan Electron, 1)
-
 	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
 	sw.pin2Battery = NewBattery(startState)
 	sw.relay = NewRelay(NewBattery(true), sw.pin2Battery)
 
+	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
-			case e := <-sw.chState:
+			case e := <-chState:
 				sw.Transmit(e.powerState)
 				e.wg.Done()
 			case <-sw.chStop:
@@ -37,7 +35,7 @@ func NewSwitch(startState bool) *Switch {
 	}()
 
 	// a switch acts like a relay, where Closed Out on the relay is the switch's power "answer"
-	sw.relay.ClosedOut.WireUp(sw.chState)
+	sw.relay.ClosedOut.WireUp(chState)
 
 	return sw
 }
