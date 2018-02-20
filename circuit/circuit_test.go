@@ -550,7 +550,22 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
 	}
 
-	// not super pretty, but creating and throwing away lots of things to make it easier to just do this in this loop
+	var got atomic.Value
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
 			sb, err := NewNSwitchBank(tc.input)
@@ -559,22 +574,6 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 				t.Error("Unexpected error: " + err.Error())
 			}
 			defer sb.Shutdown()
-
-			var got atomic.Value
-			ch := make(chan Electron, 1)
-			chStop := make(chan bool, 1)
-			go func() {
-				for {
-					select {
-					case e := <-ch:
-						got.Store(e.powerState)
-						e.wg.Done()
-					case <-chStop:
-						return
-					}
-				}
-			}()
-			defer func() { chStop <- true }()
 
 			// will just check one switch at a time vs. trying to get some full answer in one go from the bank
 			for i, pwr := range sb.Switches {
@@ -860,7 +859,6 @@ func TestNANDGate(t *testing.T) {
 	}
 }
 
-/*
 func TestNORGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
@@ -892,17 +890,22 @@ func TestNORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan bool, 1)
-
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 	go func() {
 		for {
-			got.Store(<-ch)
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	gate.WireUp(ch)
-
-	time.Sleep(time.Millisecond * 10)
 
 	if got.Load().(bool) != false {
 		t.Error("Wanted no power on the gate but got some")
@@ -914,8 +917,6 @@ func TestNORGate(t *testing.T) {
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
 			cSwitch.Set(tc.cInPowered)
-
-			time.Sleep(time.Millisecond * 50)
 
 			if got.Load().(bool) != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
@@ -946,17 +947,22 @@ func TestXORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan bool, 1)
-
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 	go func() {
 		for {
-			got.Store(<-ch)
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	gate.WireUp(ch)
-
-	time.Sleep(time.Millisecond * 10)
 
 	if got.Load().(bool) != false {
 		t.Error("Wanted no power on the gate but got some")
@@ -967,8 +973,6 @@ func TestXORGate(t *testing.T) {
 
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
-
-			time.Sleep(time.Millisecond * 20)
 
 			if got.Load().(bool) != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
@@ -999,17 +1003,22 @@ func TestXNORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan bool, 1)
-
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 	go func() {
 		for {
-			got.Store(<-ch)
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	gate.WireUp(ch)
-
-	time.Sleep(time.Millisecond * 10)
 
 	if got.Load().(bool) != true {
 		t.Error("Wanted power on the gate but got none")
@@ -1020,8 +1029,6 @@ func TestXNORGate(t *testing.T) {
 
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
-
-			time.Sleep(time.Millisecond * 20)
 
 			if got.Load().(bool) != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
@@ -1045,13 +1052,20 @@ func TestInverter(t *testing.T) {
 	defer inv.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan bool, 1)
-
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 	go func() {
 		for {
-			got.Store(<-ch)
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	inv.WireUp(ch)
 
@@ -1064,8 +1078,6 @@ func TestInverter(t *testing.T) {
 				pin1Battery.Discharge()
 			}
 
-			time.Sleep(time.Millisecond * 10)
-
 			if got.Load().(bool) != tc.wantOut {
 				t.Errorf("Input power was %t so wanted it inverted to %t but got %t", tc.inPowered, tc.wantOut, got.Load().(bool))
 			}
@@ -1073,6 +1085,7 @@ func TestInverter(t *testing.T) {
 	}
 }
 
+/*
 func TestHalfAdder(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool

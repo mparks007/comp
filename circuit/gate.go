@@ -1,7 +1,11 @@
 package circuit
 
+import (
+	"sync/atomic"
+)
+
 // ANDGate is a standard AND logic gate
-//	Wired like a NOR gate, but wired up to the CLOSED outs of each relay.
+//	Wired like a NOR gate, but each relay is chained via the CLOSED out
 //
 // Truth Table
 // in in out
@@ -11,7 +15,7 @@ package circuit
 // 1  1   1
 type ANDGate struct {
 	relays    []*Relay // two or more relays to control the final gate state answer
-	pwrSource          // switch gains all that is pwrSource too
+	pwrSource          // gate gains all that is pwrSource too
 }
 
 // NewANDGate will return an AND gate whose inputs are set by the passed in pins
@@ -64,9 +68,9 @@ func (g *ANDGate) Shutdown() {
 // 0  1   1
 // 1  1   1
 type ORGate struct {
-	relays  []*Relay
-	chStops []chan bool
-	pwrSource
+	relays    []*Relay    // two or more relays to control the final gate state answer
+	chStops   []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
+	pwrSource             // gate gains all that is pwrSource too
 }
 
 // NewORGate will return an OR gate whose inputs are set by the passed in pins
@@ -75,23 +79,34 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 	gate.Init()
 
 	// build a relay and associated listen/transmit func to deal with each input pin
+	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
 	for i, pin := range pins {
 		gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
 
 		chStates = append(chStates, make(chan Electron, 1))
 		gate.chStops = append(gate.chStops, make(chan bool, 1))
-		go func(index int) {
+		go func(chState chan Electron, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chStates[index]:
-					gate.Transmit(e.powerState)
+				case e := <-chState:
+					gots[index].Store(e.powerState)
+
+					answer := false
+					for g, _ := range gots {
+						// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
+						if gots[g].Load() != nil && gots[g].Load().(bool) == true {
+							answer = true
+							break
+						}
+					}
+					gate.Transmit(answer)
 					e.wg.Done()
-				case <-gate.chStops[index]:
+				case <-chStop:
 					return
 				}
 			}
-		}(i)
+		}(chStates[i], gate.chStops[i], i)
 
 		// for an OR, every relay can trigger state (from CLOSED out)
 		gate.relays[i].ClosedOut.WireUp(chStates[i])
@@ -118,9 +133,9 @@ func (g *ORGate) Shutdown() {
 // 0  1   1
 // 1  1   0
 type NANDGate struct {
-	relays  []*Relay
-	chStops []chan bool
-	pwrSource
+	relays    []*Relay    // two or more relays to control the final gate state answer
+	chStops   []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
+	pwrSource             // gate gains all that is pwrSource too
 }
 
 // NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
@@ -129,23 +144,34 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 	gate.Init()
 
 	// build a relay and associated listen/transmit func to deal with each input pin
+	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
 	for i, pin := range pins {
 		gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
 
 		chStates = append(chStates, make(chan Electron, 1))
 		gate.chStops = append(gate.chStops, make(chan bool, 1))
-		go func(index int) {
+		go func(chState chan Electron, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chStates[index]:
-					gate.Transmit(e.powerState)
+				case e := <-chState:
+					gots[index].Store(e.powerState)
+
+					answer := false
+					for g, _ := range gots {
+						// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
+						if gots[g].Load() != nil && gots[g].Load().(bool) == true {
+							answer = true
+							break
+						}
+					}
+					gate.Transmit(answer)
 					e.wg.Done()
-				case <-gate.chStops[index]:
+				case <-chStop:
 					return
 				}
 			}
-		}(i)
+		}(chStates[i], gate.chStops[i], i)
 
 		// for a NAND, every relay can trigger state (from OPEN out)
 		gate.relays[i].OpenOut.WireUp(chStates[i])
@@ -162,9 +188,8 @@ func (g *NANDGate) Shutdown() {
 	}
 }
 
-/*
 // NORGate is a standard NOR (Not-OR) logic gate.
-//	Wired like an AND gate, but wired up to the OPEN outs of each relay.
+//	Wired like an AND gate, but each relay is chained via the OPEN out
 //
 // Truth Table
 // in in out
@@ -173,17 +198,14 @@ func (g *NANDGate) Shutdown() {
 // 0  1   0
 // 1  1   0
 type NORGate struct {
-	relays []*Relay
-	ch     chan bool
-	pwrSource
+	relays    []*Relay // two or more relays to control the final gate state answer
+	pwrSource          // gate gains all that is pwrSource too
 }
 
 // NewNORGate will return a NOR gate whose inputs are set by the passed in pins
 func NewNORGate(pins ...pwrEmitter) *NORGate {
 	gate := &NORGate{}
 	gate.Init()
-
-	gate.ch = make(chan bool, 1)
 
 	for i, pin := range pins {
 		if i == 0 {
@@ -193,26 +215,21 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 		}
 	}
 
-	// for a NOR, the last relay in the chain is the final answer (from OPEN out)
-	gate.relays[len(pins)-1].OpenOut.WireUp(gate.ch)
-
-	transmit := func() {
-		gate.Transmit(<-gate.ch)
-	}
-
-	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	transmit()
-
+	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
+			case e := <-chState:
+				gate.Transmit(e.powerState)
+				e.wg.Done()
 			case <-gate.chStop:
 				return
-			default:
-				transmit()
 			}
 		}
 	}()
+
+	// for a NOR, the last relay in the chain is the final answer (from OPEN out)
+	gate.relays[len(pins)-1].OpenOut.WireUp(chState)
 
 	return gate
 }
@@ -234,11 +251,10 @@ func (g *NORGate) Shutdown() {
 // 0  1   1
 // 1  1   0
 type XORGate struct {
-	orGate   *ORGate
-	nandGate *NANDGate
-	andGate  *ANDGate
-	ch       chan bool
-	pwrSource
+	orGate    *ORGate   // standard OR Gate used to build a basic XOR Gate
+	nandGate  *NANDGate // standard NAND Gate used to build a basic XOR Gate
+	andGate   *ANDGate  // standard AND Gate used to build a basic XOR Gate
+	pwrSource           // gate gains all that is pwrSource too
 }
 
 // NewXORGate will return an XOR gate whose inputs are set by the passed in pins
@@ -246,32 +262,25 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 	gate := &XORGate{}
 	gate.Init()
 
-	gate.ch = make(chan bool, 1)
-
 	gate.orGate = NewORGate(pin1, pin2)
 	gate.nandGate = NewNANDGate(pin1, pin2)
 	gate.andGate = NewANDGate(gate.orGate, gate.nandGate)
 
-	// for an XOR, the state of the shared AND Gate is the answer
-	gate.andGate.WireUp(gate.ch)
-
-	transmit := func() {
-		gate.Transmit(<-gate.ch)
-	}
-
-	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	transmit()
-
+	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
+			case e := <-chState:
+				gate.Transmit(e.powerState)
+				e.wg.Done()
 			case <-gate.chStop:
 				return
-			default:
-				transmit()
 			}
 		}
 	}()
+
+	// for an XOR, the state of the shared AND Gate is the answer
+	gate.andGate.WireUp(chState)
 
 	return gate
 }
@@ -294,10 +303,9 @@ func (g *XORGate) Shutdown() {
 // 0  1   0
 // 1  1   1
 type XNORGate struct {
-	inverter *Inverter
-	xorGate  *XORGate
-	ch       chan bool
-	pwrSource
+	inverter  *Inverter // will use this to invert a basic XOR Gate to get an XNOR answer
+	xorGate   *XORGate  // will start with this basic XOR Gate and invert it to make the XNOR result
+	pwrSource           // gate gains all that is pwrSource too
 }
 
 // NewXNORGate will return an XNOR gate whose inputs are set by the passed in pins
@@ -305,31 +313,24 @@ func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 	gate := &XNORGate{}
 	gate.Init()
 
-	gate.ch = make(chan bool, 1)
-
 	gate.xorGate = NewXORGate(pin1, pin2) // having to make one as a named object so it can be Shutdown later (vs. just feeding NewXORGate(pin1, pin2) into NewInverter())
 	gate.inverter = NewInverter(gate.xorGate)
 
-	// in this approach to an XNOR (vs. building it with a combination of other gates), the Inverter owns the final answer
-	gate.inverter.WireUp(gate.ch)
-
-	transmit := func() {
-		gate.Transmit(<-gate.ch)
-	}
-
-	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	transmit()
-
+	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
+			case e := <-chState:
+				gate.Transmit(e.powerState)
+				e.wg.Done()
 			case <-gate.chStop:
 				return
-			default:
-				transmit()
 			}
 		}
 	}()
+
+	// in this approach to an XNOR (vs. building it with a combination of other gates), the Inverter owns the final answer
+	gate.inverter.WireUp(chState)
 
 	return gate
 }
@@ -340,4 +341,3 @@ func (g *XNORGate) Shutdown() {
 	g.inverter.Shutdown()
 	g.chStop <- true
 }
-*/

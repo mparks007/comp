@@ -1,5 +1,5 @@
 package circuit
-/*
+
 // Inverter is a standard circuit that inverts the power state of the input
 //
 // Truth Table
@@ -7,9 +7,8 @@ package circuit
 // 0   1
 // 1   0
 type Inverter struct {
-	relay *Relay
-	ch    chan bool
-	pwrSource
+	relay     *Relay // internal relay wired up in a way it reverses the power state sent to the inverter component
+	pwrSource        // inverter gains all that is pwrSource too
 }
 
 // NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's power state
@@ -17,30 +16,23 @@ func NewInverter(pin pwrEmitter) *Inverter {
 	inv := &Inverter{}
 	inv.Init()
 
-	inv.ch = make(chan bool, 1)
-
 	inv.relay = NewRelay(NewBattery(true), pin)
 
-	// in an Inverter, the Open Out is what gets the flipped state (the "answer")
-	inv.relay.OpenOut.WireUp(inv.ch)
-
-	transmit := func() {
-		inv.Transmit(<-inv.ch)
-	}
-
-	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	transmit()
-
+	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
+			case e := <-chState:
+				inv.Transmit(e.powerState)
+				e.wg.Done()
 			case <-inv.chStop:
 				return
-			default:
-				transmit()
 			}
 		}
 	}()
+
+	// in an Inverter, the Open Out is what gets the flipped state (the "answer")
+	inv.relay.OpenOut.WireUp(chState)
 
 	return inv
 }
@@ -50,4 +42,3 @@ func (inv *Inverter) Shutdown() {
 	inv.relay.Shutdown()
 	inv.chStop <- true
 }
-*/
