@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -25,10 +26,10 @@ import (
 func TestPwrsource(t *testing.T) {
 	var want bool
 	var got1, got2 atomic.Value
-	chStop := make(chan bool, 1)
 	ch1 := make(chan Electron, 1)
 	ch2 := make(chan Electron, 1)
-	
+	chStop := make(chan bool, 1)
+
 	pwr := &pwrSource{}
 	pwr.Init()
 
@@ -103,9 +104,9 @@ func TestPwrsource(t *testing.T) {
 func TestWire_NoDelay(t *testing.T) {
 	var want bool
 	var got1, got2 atomic.Value
-	chStop := make(chan bool, 1)
 	ch1 := make(chan Electron, 1)
 	ch2 := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	wire := NewWire(0)
 	defer wire.Shutdown()
@@ -182,9 +183,9 @@ func TestWire_WithDelay(t *testing.T) {
 	var want bool
 	var got1, got2 atomic.Value
 	var wireLen uint = 100
-	chStop := make(chan bool, 1)
 	ch1 := make(chan Electron, 1)
 	ch2 := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	wire := NewWire(wireLen)
 	defer wire.Shutdown()
@@ -280,9 +281,9 @@ func TestWire_WithDelay(t *testing.T) {
 func TestRibbonCable(t *testing.T) {
 	var want bool
 	var got1, got2 atomic.Value
-	chStop := make(chan bool, 1)
 	ch1 := make(chan Electron, 1)
 	ch2 := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	rib := NewRibbonCable(2, 0)
 	defer rib.Shutdown()
@@ -324,8 +325,8 @@ func TestRibbonCable(t *testing.T) {
 func TestBattery(t *testing.T) {
 	var want bool
 	var got atomic.Value
-	chStop := make(chan bool, 1)
 	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	bat := NewBattery(true)
 
@@ -366,7 +367,7 @@ func TestBattery(t *testing.T) {
 		t.Errorf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got.Load().(bool))
 	}
 }
-/*
+
 func TestRelay_WithBatteries(t *testing.T) {
 	testCases := []struct {
 		aInPowered   bool
@@ -374,18 +375,19 @@ func TestRelay_WithBatteries(t *testing.T) {
 		wantAtOpen   bool
 		wantAtClosed bool
 	}{
-		// {true, false, true, false},
-		// {true, true, false, true},
-		// {false, true, false, false},
-		// {false, false, false, false},
-		// {true, false, true, false},
-		// {true, true, false, true},
-		// {false, false, false, false},
+		{true, false, true, false},
+		{true, true, false, true},
+		{false, true, false, false},
+		{false, false, false, false},
+		{true, false, true, false},
+		{true, true, false, true},
+		{false, false, false, false},
 	}
 
 	var pin1Battery, pin2Battery *Battery
-	openCh := make(chan bool, 1)
-	closedCh := make(chan bool, 1)
+	openCh := make(chan Electron, 1)
+	closedCh := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	pin1Battery = NewBattery(true)
 	pin2Battery = NewBattery(true)
@@ -397,25 +399,28 @@ func TestRelay_WithBatteries(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case newOpen := <-openCh:
-				gotOpenOut.Store(newOpen)
-			case newClosed := <-closedCh:
-				gotClosedOut.Store(newClosed)
+			case eOpen := <-openCh:
+				gotOpenOut.Store(eOpen.powerState)
+				eOpen.wg.Done()
+			case eClosed := <-closedCh:
+				gotClosedOut.Store(eClosed.powerState)
+				eClosed.wg.Done()
+			case <-chStop:
+				return
 			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	rel.OpenOut.WireUp(openCh)
 	rel.ClosedOut.WireUp(closedCh)
 
-	//time.Sleep(time.Millisecond * 25)
-
-	// if gotOpenOut.Load().(bool) != false {
-	// 	t.Error("Wanted no power at the open position but got some")
-	// }
-	// if gotClosedOut.Load().(bool) != true {
-	// 	t.Error("Wanted power at the closed position but got none")
-	// }
+	if gotOpenOut.Load().(bool) != false {
+		t.Error("Wanted no power at the open position but got some")
+	}
+	if gotClosedOut.Load().(bool) != true {
+		t.Error("Wanted power at the closed position but got none")
+	}
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Test#%d: Setting input A to %t and B to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
@@ -425,15 +430,12 @@ func TestRelay_WithBatteries(t *testing.T) {
 			} else {
 				pin1Battery.Discharge()
 			}
-			<-pin1Battery.chTransmitted
 
 			if tc.bInPowered {
 				pin2Battery.Charge()
 			} else {
 				pin2Battery.Discharge()
 			}
-			<-pin2Battery.chTransmitted
-			//time.Sleep(time.Millisecond * 15)
 
 			if gotOpenOut.Load().(bool) != tc.wantAtOpen {
 				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut.Load().(bool))
@@ -445,55 +447,59 @@ func TestRelay_WithBatteries(t *testing.T) {
 		})
 	}
 }
-/*
+
 func TestSwitch(t *testing.T) {
-	var got, want bool
-	ch := make(chan bool, 1)
-	receivedCh := make(chan struct{})
+	var want bool
+	var got atomic.Value
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	sw := NewSwitch(false)
 	defer sw.Shutdown()
 
 	go func() {
 		for {
-			got = <-ch
-			receivedCh <- struct{}{}
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	sw.WireUp(ch)
-	<-receivedCh
-
-	want = false
 
 	// test initial off switch state
-	if got != want {
-		t.Errorf("With an off switch, wanted the subscriber to see power as %t but got %t", want, got)
+	want = false
+
+	if got.Load().(bool) != want {
+		t.Errorf("With an off switch, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
 	}
 
 	// initial turn on
 	want = true
 	sw.Set(want)
-	<-receivedCh
 
-	if got != want {
-		t.Errorf("With an off switch turned on, wanted the subscriber to see power as %t but got %t", want, got)
+	if got.Load().(bool) != want {
+		t.Errorf("With an off switch turned on, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
 	}
 
 	// turn on again, though already on ('want' is already true from prior Set)
 	sw.Set(want)
 
-	if got != want {
+	if got.Load().(bool) != want {
 		t.Errorf("With an attempt to turn on an already on switch, wanted the channel to be empty, but it wasn't")
 	}
 
 	// now off
 	want = false
 	sw.Set(want)
-	<-receivedCh
 
-	if got != want {
-		t.Errorf("With an on switch turned off, wanted the subscriber to see power as %t but got %t", want, got)
+	if got.Load().(bool) != want {
+		t.Errorf("With an on switch turned off, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
 	}
 }
 
@@ -547,7 +553,22 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
 	}
 
-	received := make(chan struct{}, 1)
+	var got atomic.Value
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+
+	go func() {
+		for {
+			select {
+			case e := <-ch:
+				got.Store(e.powerState)
+				e.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Setting switches to %s", tc.input), func(t *testing.T) {
@@ -556,26 +577,14 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 			if err != nil {
 				t.Error("Unexpected error: " + err.Error())
 			}
-
 			defer sb.Shutdown()
-
-			var got atomic.Value
-			ch := make(chan bool, 1)
-			go func() {
-				for {
-					got.Store(<-ch)
-					received <- struct{}{}
-				}
-			}()
 
 			for i, pwr := range sb.Switches {
 
 				pwr.(*Switch).WireUp(ch)
-				<-received
 
 				want := tc.want[i]
 
-				// how can I NOT have a real bool here since the <-received should have waited until the bool got stored in the go func for loop!
 				if got.Load().(bool) != want {
 					t.Errorf("At index %d, wanted %t but got %t", i, want, got.Load().(bool))
 				}
@@ -600,8 +609,9 @@ func TestRelay_WithSwitches(t *testing.T) {
 		{false, false, false, false},
 	}
 
-	openCh := make(chan bool, 1)
-	closedCh := make(chan bool, 1)
+	openCh := make(chan Electron, 1)
+	closedCh := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	aSwitch := NewSwitch(true)
 	defer aSwitch.Shutdown()
@@ -616,18 +626,21 @@ func TestRelay_WithSwitches(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case newOpen := <-openCh:
-				gotOpenOut.Store(newOpen)
-			case newClosed := <-closedCh:
-				gotClosedOut.Store(newClosed)
+			case eOpen := <-openCh:
+				gotOpenOut.Store(eOpen.powerState)
+				eOpen.wg.Done()
+			case eClosed := <-closedCh:
+				gotClosedOut.Store(eClosed.powerState)
+				eClosed.wg.Done()
+			case <-chStop:
+				return
 			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	rel.OpenOut.WireUp(openCh)
 	rel.ClosedOut.WireUp(closedCh)
-
-	time.Sleep(time.Millisecond * 10)
 
 	if gotOpenOut.Load().(bool) != false {
 		t.Error("Wanted no power at the open position but got some")
@@ -642,8 +655,6 @@ func TestRelay_WithSwitches(t *testing.T) {
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
 
-			time.Sleep(time.Millisecond * 20)
-
 			if gotOpenOut.Load().(bool) != tc.wantAtOpen {
 				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut.Load().(bool))
 			}
@@ -655,6 +666,7 @@ func TestRelay_WithSwitches(t *testing.T) {
 	}
 }
 
+/*
 func TestANDGate(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool

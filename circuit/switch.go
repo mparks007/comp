@@ -1,5 +1,5 @@
 package circuit
-/*
+
 import (
 	"fmt"
 	"regexp"
@@ -7,10 +7,10 @@ import (
 
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
-	relay       *Relay
-	pin2Battery *Battery
-	chState     chan bool
-	pwrSource
+	relay       *Relay        // innards of the switch are using a relay to control on/off
+	pin2Battery *Battery      // switch on/off is controlled by charging/discharging this battery
+	chState     chan Electron // to listen to controlling relay for swtich state answer
+	pwrSource                 // switch gains all that is pwrSource too
 }
 
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value
@@ -18,50 +18,33 @@ func NewSwitch(startState bool) *Switch {
 	sw := &Switch{}
 	sw.Init()
 
-	sw.chState = make(chan bool, 1)
+	sw.chState = make(chan Electron, 1)
 
-	// setup the battery-based relay pins which will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.relay = NewRelay(NewBattery(true), NewBattery(startState))
-
-	// a switch acts like a relay, where Closed Out on the relay is the switch's power "answer"
-	sw.relay.ClosedOut.WireUp(sw.chState)
-
-	transmit := func() {
-		sw.Transmit(<-sw.chState)
-	}
-
-	// calling transmit explicitly to ensure the 'answer' for the output, post WireUp above, has settled BEFORE returning and letting things wire up to it
-	transmit()
-	// ORRRRR...try to wait for settle by using a Ready channel here with close statement at the end?
-	// chReady := make(chan bool, 1)
-	// bah. sometimes New leaves too fast before the intial transmit() in the go func finishes
+	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
+	sw.pin2Battery = NewBattery(startState)
+	sw.relay = NewRelay(NewBattery(true), sw.pin2Battery)
 
 	go func() {
-		// first := true
 		for {
 			select {
+			case e := <-sw.chState:
+				sw.Transmit(e.powerState)
+				e.wg.Done()
 			case <-sw.chStop:
 				return
-			default:
-				transmit()
-				// if first {
-				// 	chReady<-true
-				// 	//first = false
-				// }
 			}
 		}
 	}()
 
-	// <-chReady
+	// a switch acts like a relay, where Closed Out on the relay is the switch's power "answer"
+	sw.relay.ClosedOut.WireUp(sw.chState)
 
 	return sw
 }
 
 // Shutdown will allow the go func, which is handling listen/transmit, to exit, and propogates the Shuthdown action to the internal relay
 func (s *Switch) Shutdown() {
-	fmt.Println("Shutting down relay in switch")
 	s.relay.Shutdown()
-	fmt.Println("Shutting down switch itself")
 	s.chStop <- true
 }
 
@@ -103,8 +86,6 @@ func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 // Shutdown will allow the go funcs, which are handling listen/transmit on each switch, to exit
 func (sb *NSwitchBank) Shutdown() {
 	for i := range sb.Switches {
-		fmt.Println("Shutting down switch from bank")
 		sb.Switches[i].(*Switch).Shutdown()
 	}
 }
-*/

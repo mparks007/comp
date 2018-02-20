@@ -1,7 +1,6 @@
 package circuit
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
@@ -10,7 +9,7 @@ import (
 //	Most loop-back based compoound components will use a wire for the looping aspect.
 type Wire struct {
 	length      uint            // will pause for this many milliseconds to simulate resistance of wire due to length
-	Input       chan Electron       // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
+	Input       chan Electron   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
 	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
 	isPowered   bool            // core state flag to track the components current state
 	chStop      chan bool       // listen/transmit loop shutdown channel
@@ -33,7 +32,6 @@ func NewWire(length uint) *Wire {
 				wire.Transmit(e.powerState)
 				e.wg.Done()
 			case <-wire.chStop:
-				fmt.Println("DEBUG: Bailing from Wire go func loop")
 				return
 			}
 		}
@@ -106,7 +104,6 @@ func NewRibbonCable(width, len uint) *RibbonCable {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each wire, to exit
 func (r *RibbonCable) Shutdown() {
-	fmt.Println("DEBUG: About to shutdown wires in ribbon cable")
 	for i := range r.Wires {
 		r.Wires[i].(*Wire).Shutdown()
 	}
