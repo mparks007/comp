@@ -1,9 +1,5 @@
 package circuit
 
-import (
-	"fmt"
-)
-
 // RSFlipFlop (Reset-Set) Flip-Flop is a standard flipflop circuit controlled by Set and Reset to output power at Q or "QBar" (QBar being opposite of Q)
 // 	...or is this an SR (Set-Reset) Flip-Flop, or is this just an RS Latch?  SR Latch?  No matter for my purposes thus far...
 //  This circuit is core to more complicated FlipFops/Latches to make even further complicated components (memory, counters, more?)
@@ -26,21 +22,13 @@ func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
 	ff.wireQOut = NewWire(0)
-	fmt.Printf("Wire QOut @ %v\n", ff.wireQOut)
 	ff.wireQBarOut = NewWire(0)
-	fmt.Printf("Wire QBarOut @ %v\n", ff.wireQBarOut)
 
 	ff.QBar = NewNORGate(sPin, ff.wireQOut)
-	fmt.Printf("NOR QBar @ %v\n", ff.QBar)
 	ff.QBar.WireUp(ff.wireQBarOut.Input)
 
-	//time.Sleep(time.Millisecond * 10)
-
 	ff.Q = NewNORGate(rPin, ff.wireQBarOut)
-	fmt.Printf("NOR Q @ %v\n", ff.Q)
 	ff.Q.WireUp(ff.wireQOut.Input)
-
-	//time.Sleep(time.Millisecond * 10)
 
 	return ff
 }

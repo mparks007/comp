@@ -1802,19 +1802,19 @@ func TestRSFlipFlop(t *testing.T) {
 		wantQ         bool
 		wantQBar      bool
 	}{ // construction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Q off)
-		// {false, false, false, true}, // Un-Set should change nothing
-		{false, true, true, false}, // Set causes Q on (QBar off)
-		// {false, true, true, false},  // Set again should change nothing
-		//  {false, false, true, false}, // Un-Set should remember prior
-		//  {false, false, true, false}, // Un-Set again should change nothing
-		//  {true, false, false, true},  // Reset causes Q off (QBar on)
-		//  {true, false, false, true},  // Reset again should change nothing
-		//  {false, false, false, true}, // Un-Reset should remember prior
-		//  {true, false, false, true},  // Un-Reset again should change nothing
-		// {false, true, true, false},  // Set causes Q on (QBar off)
-		// {true, false, false, true},  // Reset causes Q off (QBar on)
-		// {false, true, true, false},  // Set causes Q on (QBar off)
-		// {false, false, true, false}, // Un-Set again should change nothing
+		{false, false, false, true}, // Un-Set should change nothing
+		{false, true, true, false},  // Set causes Q on (QBar off)
+		{false, true, true, false},  // Set again should change nothing
+		{false, false, true, false}, // Un-Set should remember prior
+		{false, false, true, false}, // Un-Set again should change nothing
+		{true, false, false, true},  // Reset causes Q off (QBar on)
+		{true, false, false, true},  // Reset again should change nothing
+		{false, false, false, true}, // Un-Reset should remember prior
+		{true, false, false, true},  // Un-Reset again should change nothing
+		{false, true, true, false},  // Set causes Q on (QBar off)
+		{true, false, false, true},  // Reset causes Q off (QBar on)
+		{false, true, true, false},  // Set causes Q on (QBar off)
+		{false, false, true, false}, // Un-Set again should change nothing
 	}
 
 	testName := func(i int) string {
@@ -1849,7 +1849,6 @@ func TestRSFlipFlop(t *testing.T) {
 		for {
 			select {
 			case eQBar := <-chQBar:
-				fmt.Printf("Test func: <-chQBar:  eQBar.powerState=%t\n", eQBar.powerState)
 				gotQBar.Store(eQBar.powerState)
 				eQBar.wg.Done()
 			case <-chStopQBar:
@@ -1862,7 +1861,6 @@ func TestRSFlipFlop(t *testing.T) {
 		for {
 			select {
 			case eQ := <-chQ:
-				fmt.Printf("Test func: <-chQ:  eQ.powerState=%t\n", eQ.powerState)
 				gotQ.Store(eQ.powerState)
 				eQ.wg.Done()
 			case <-chStopQ:
@@ -1887,18 +1885,14 @@ func TestRSFlipFlop(t *testing.T) {
 		t.Run(testName(i), func(t *testing.T) {
 
 			if tc.rPinIsPowered {
-				fmt.Println("rPinBattery.Charge()")
 				rPinBattery.Charge()
 			} else {
-				fmt.Println("rPinBattery.Discharge()")
 				rPinBattery.Discharge()
 			}
 
 			if tc.sPinIsPowered {
-				fmt.Println("sPinBattery.Charge()")
 				sPinBattery.Charge()
 			} else {
-				fmt.Println("sPinBattery.Discharge()")
 				sPinBattery.Discharge()
 			}
 

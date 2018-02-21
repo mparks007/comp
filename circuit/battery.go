@@ -9,7 +9,7 @@ type Battery struct {
 func NewBattery(startState bool) *Battery {
 	bat := &Battery{}
 	bat.Init()
-	bat.isPowered = startState
+	bat.isPowered.Store(startState)
 	return bat
 }
 

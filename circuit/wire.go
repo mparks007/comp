@@ -1,10 +1,15 @@
 package circuit
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
+
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
 
 // Wire is a component connector, which will transmit between source and listeners (with an optional pause to simulate wire length)
 //	Most loop-back based compoound components will use a wire for the looping aspect.
@@ -30,7 +35,6 @@ func NewWire(length uint) *Wire {
 		for {
 			select {
 			case e := <-wire.Input:
-				fmt.Printf("Wire (%v): <-wire.Input:  e.powerState=%t\n", wire, e.powerState)
 				wire.Transmit(e.powerState)
 				e.wg.Done()
 			case <-wire.chStop:

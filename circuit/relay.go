@@ -1,7 +1,6 @@
 package circuit
 
 import (
-	"sync"
 	"sync/atomic"
 )
 
@@ -20,7 +19,6 @@ type Relay struct {
 // NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	rel := &Relay{}
-	mu := &sync.Mutex{}
 
 	rel.aInCh = make(chan Electron, 1)
 	rel.bInCh = make(chan Electron, 1)
@@ -31,10 +29,11 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	rel.aInIsPowered.Store(false)
 	rel.bInIsPowered.Store(false)
 
-	transmit := func() {
-		mu.Lock() // must lock since receiveA and receiveB might be called concurrently, per their go funcs below, which call this transmit
-		defer mu.Unlock()
+	// Init these pwrSource types (need to ensure isPowered is defaulting to false)
+	rel.OpenOut.Init()
+	rel.ClosedOut.Init()
 
+	transmit := func() {
 		aInIsPowered := rel.aInIsPowered.Load().(bool)
 		bInIsPowered := rel.bInIsPowered.Load().(bool)
 
