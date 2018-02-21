@@ -1,5 +1,5 @@
 package circuit
-/*
+
 import (
 	"fmt"
 )
@@ -48,4 +48,3 @@ func (s *TwoToOneSelector) Shutdown() {
 		s.inverters[i].Shutdown()
 	}
 }
-*/

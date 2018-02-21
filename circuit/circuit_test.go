@@ -17,11 +17,11 @@ import (
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
 
 // setSwitches will flip the switches of a SwitchBank to match a passed in bits string
-// func setSwitches(switchBank *NSwitchBank, bits string) {
-// 	for i, b := range bits {
-// 		switchBank.Switches[i].(*Switch).Set(b == '1')
-// 	}
-// }
+func setSwitches(switchBank *NSwitchBank, bits string) {
+	for i, b := range bits {
+		switchBank.Switches[i].(*Switch).Set(b == '1')
+	}
+}
 
 func TestPwrsource(t *testing.T) {
 	pwr := &pwrSource{}
@@ -1085,7 +1085,6 @@ func TestInverter(t *testing.T) {
 	}
 }
 
-/*
 func TestHalfAdder(t *testing.T) {
 	testCases := []struct {
 		aInPowered bool
@@ -1109,24 +1108,27 @@ func TestHalfAdder(t *testing.T) {
 	defer half.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
-	chSum := make(chan bool, 1)
-	chCarry := make(chan bool, 1)
-
+	chSum := make(chan Electron, 1)
+	chCarry := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case sum := <-chSum:
-				gotSum.Store(sum)
-			case carry := <-chCarry:
-				gotCarry.Store(carry)
+			case eS := <-chSum:
+				gotSum.Store(eS.powerState)
+				eS.wg.Done()
+			case eC := <-chCarry:
+				gotCarry.Store(eC.powerState)
+				eC.wg.Done()
+			case <-chStop:
+				return
 			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	half.Sum.WireUp(chSum)
 	half.Carry.WireUp(chCarry)
-
-	time.Sleep(time.Millisecond * 10)
 
 	if gotSum.Load().(bool) != false {
 		t.Error("Wanted no Sum but got one")
@@ -1141,8 +1143,6 @@ func TestHalfAdder(t *testing.T) {
 
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
-
-			time.Sleep(time.Millisecond * 15)
 
 			if gotSum.Load().(bool) != tc.wantSum {
 				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
@@ -1186,24 +1186,27 @@ func TestFullAdder(t *testing.T) {
 	defer full.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
-	chSum := make(chan bool, 1)
-	chCarry := make(chan bool, 1)
-
+	chSum := make(chan Electron, 1)
+	chCarry := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case sum := <-chSum:
-				gotSum.Store(sum)
-			case carry := <-chCarry:
-				gotCarry.Store(carry)
+			case eS := <-chSum:
+				gotSum.Store(eS.powerState)
+				eS.wg.Done()
+			case eC := <-chCarry:
+				gotCarry.Store(eC.powerState)
+				eC.wg.Done()
+			case <-chStop:
+				return
 			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	full.Sum.WireUp(chSum)
 	full.Carry.WireUp(chCarry)
-
-	time.Sleep(time.Millisecond * 10)
 
 	if gotSum.Load().(bool) != false {
 		t.Error("Wanted no Sum but got one")
@@ -1219,8 +1222,6 @@ func TestFullAdder(t *testing.T) {
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
 			cSwitch.Set(tc.carryInPowered)
-
-			time.Sleep(time.Millisecond * 15)
 
 			if gotSum.Load().(bool) != tc.wantSum {
 				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
@@ -1318,43 +1319,36 @@ func TestNBitAdder_EightBit(t *testing.T) {
 
 	defer addr.Shutdown()
 
-	// setup the Sum results bool array (default all to false to match the initial switch states above)
-	var gotSums [8]atomic.Value
-	for i := 0; i < len(gotSums); i++ {
-		gotSums[i].Store(false)
-	}
-
-	// setup the channels for listening to channel changes (doing dynamic select-case vs. a stack of 8 channels)
-	cases := make([]reflect.SelectCase, len(addr.Sums)+1) // one for each sum, BUT a +1 to hold the CarryOut channel read
-
-	// setup a case for each sum
-	for i, sum := range addr.Sums {
-		ch := make(chan bool, 1)
-		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-		sum.WireUp(ch)
-	}
-
-	// setup the single CarryOut result
-	var gotCarryOut atomic.Value
-
-	// add a case for the single CarryOut channel
-	chCarryOut := make(chan bool, 1)
-	cases[len(cases)-1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chCarryOut)}
-	addr.CarryOut.WireUp(chCarryOut)
-
-	go func() {
-		for {
-			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-			chosen, value, _ := reflect.Select(cases)
-
-			// if know the selected case was within the range of Sums, set the matching Sums bool array element
-			if chosen < len(cases)-1 {
-				gotSums[chosen].Store(value.Bool())
-			} else {
-				gotCarryOut.Store(value.Bool())
+	var gots [9]atomic.Value // 0-7 for sums, 8 for carryout
+	var chStates []chan Electron
+	var chStops []chan bool
+	for i := 0; i < 9; i++ {
+		gots[i].Store(false)
+		chStates = append(chStates, make(chan Electron, 1))
+		chStops = append(chStops, make(chan bool, 1))
+		go func(chState chan Electron, chStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chState:
+					gots[index].Store(e.powerState)
+					e.wg.Done()
+				case <-chStop:
+					return
+				}
 			}
+		}(chStates[i], chStops[i], i)
+	}
+	defer func() {
+		for i := 0; i < 9; i++ {
+			chStops[i] <- true
 		}
 	}()
+
+	for i, sum := range addr.Sums {
+		sum.WireUp(chStates[i])
+	}
+
+	addr.CarryOut.WireUp(chStates[8])
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", tc.byte1, tc.byte2, tc.carryInPowered), func(t *testing.T) {
@@ -1363,12 +1357,10 @@ func TestNBitAdder_EightBit(t *testing.T) {
 			setSwitches(addend2Switches, tc.byte2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			time.Sleep(time.Millisecond * 150)
-
 			// build a string based on each sum's state
 			gotAnswer := ""
-			for i := 0; i < len(gotSums); i++ {
-				if gotSums[i].Load().(bool) {
+			for i := 0; i < 8; i++ {
+				if gots[i].Load().(bool) {
 					gotAnswer += "1"
 				} else {
 					gotAnswer += "0"
@@ -1379,13 +1371,14 @@ func TestNBitAdder_EightBit(t *testing.T) {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotCarryOut.Load().(bool) != tc.wantCarryOut {
-				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gotCarryOut.Load().(bool))
+			if gots[8].Load().(bool) != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gots[8].Load().(bool))
 			}
 		})
 	}
 }
 
+/*
 func TestNBitAdder_SixteenBit(t *testing.T) {
 	testCases := []struct {
 		bytes1         string

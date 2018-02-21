@@ -36,8 +36,11 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 		for {
 			select {
 			case e := <-chState:
-				gate.Transmit(e.powerState)
-				e.wg.Done()
+				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
+				go func() {
+					gate.Transmit(e.powerState)
+					e.wg.Done()
+				}()
 			case <-gate.chStop:
 				return
 			}
@@ -92,16 +95,25 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 				case e := <-chState:
 					gots[index].Store(e.powerState)
 
-					answer := false
-					for g, _ := range gots {
-						// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-						if gots[g].Load() != nil && gots[g].Load().(bool) == true {
-							answer = true
-							break
+					var answer bool
+					// if already found a true, no need to check the other relays
+					if e.powerState {
+						answer = true
+					} else {
+						answer = false
+						for g, _ := range gots {
+							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
+							if gots[g].Load() != nil && gots[g].Load().(bool) == true {
+								answer = true
+								break
+							}
 						}
 					}
-					gate.Transmit(answer)
-					e.wg.Done()
+					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
+					go func() {
+						gate.Transmit(answer)
+						e.wg.Done()
+					}()
 				case <-chStop:
 					return
 				}
@@ -157,16 +169,25 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 				case e := <-chState:
 					gots[index].Store(e.powerState)
 
-					answer := false
-					for g, _ := range gots {
-						// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
-						if gots[g].Load() != nil && gots[g].Load().(bool) == true {
-							answer = true
-							break
+					var answer bool
+					// if already found a true, no need to check the other relays
+					if e.powerState {
+						answer = true
+					} else {
+						answer = false
+						for g, _ := range gots {
+							// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
+							if gots[g].Load() != nil && gots[g].Load().(bool) == true {
+								answer = true
+								break
+							}
 						}
 					}
-					gate.Transmit(answer)
-					e.wg.Done()
+					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
+					go func() {
+						gate.Transmit(answer)
+						e.wg.Done()
+					}()
 				case <-chStop:
 					return
 				}
@@ -220,7 +241,7 @@ func NewNORGate(pins ...pwrEmitter) *NORGate {
 		for {
 			select {
 			case e := <-chState:
-				// having to do the transmit in a new go func() since any loopback flow that ends up inputting back into THIS gate would not be able to enter the select again
+				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func() {
 					gate.Transmit(e.powerState)
 					e.wg.Done()
@@ -274,8 +295,11 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 		for {
 			select {
 			case e := <-chState:
-				gate.Transmit(e.powerState)
-				e.wg.Done()
+				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
+				go func() {
+					gate.Transmit(e.powerState)
+					e.wg.Done()
+				}()
 			case <-gate.chStop:
 				return
 			}
@@ -324,8 +348,11 @@ func NewXNORGate(pin1, pin2 pwrEmitter) *XNORGate {
 		for {
 			select {
 			case e := <-chState:
-				gate.Transmit(e.powerState)
-				e.wg.Done()
+				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
+				go func() {
+					gate.Transmit(e.powerState)
+					e.wg.Done()
+				}()
 			case <-gate.chStop:
 				return
 			}

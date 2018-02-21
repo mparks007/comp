@@ -1,11 +1,10 @@
 package circuit
 
-import (
-	// "fmt"
-	// "time"
-)
+import "fmt"
 
-/*
+// "fmt"
+// "time"
+
 // HalfAdder is a standard Half Adder circuit
 //	A and B inputs result in Sum and Carry outputs (as normal, this circuit doesn't handle a carry in (needs FullAdder for that)
 //
@@ -175,9 +174,6 @@ func NewThreeNumberAdder(aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, erro
 	// set adder sums to be the input to the loopback ribbon cable
 	addr.loopRibbon.SetInputs(addr.adder.Sums...)
 
-	// give the SetInputs inner go funcs time to spin up and get their states
-	time.Sleep(time.Millisecond * 10)
-
 	// refer to the appropriate adder innards for easier external access
 	addr.Sums = addr.adder.Sums
 	addr.CarryOut = addr.adder.CarryOut
@@ -244,4 +240,3 @@ func (a *NNumberAdder) Shutdown() {
 	a.Add.Shutdown()
 	a.Clear.Shutdown()
 }
-*/

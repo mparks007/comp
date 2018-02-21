@@ -41,7 +41,6 @@ func (f *RSFlipFlop) Shutdown() {
 	f.wireQOut.Shutdown()
 }
 
-/*
 // LevelTriggeredDTypeLatch is a type of latch/flipflop which will store the value of data only when the clock is high (on) ("Level" = clock high/low, "D" = data 0/1)
 //
 // Truth Table
@@ -142,12 +141,12 @@ func NewLevelTriggeredDTypeLatchWithClear(clrPin, clkInPin, dataInPin pwrEmitter
 
 	latch.clrOR = NewORGate(clrPin, latch.rAnd)
 
-	wireSAndToQBarNor := NewWire(125) // need to ensure the Clear state resolves the QNor first, by slowing down the AND->QBarNor wire (using a "longer wire" between them)
+	//wireSAndToQBarNor := NewWire(125) // need to ensure the Clear state resolves the QNor first, by slowing down the AND->QBarNor wire (using a "longer wire" between them)
 
-	latch.sAnd.WireUp(wireSAndToQBarNor.Input)
+	//latch.sAnd.WireUp(wireSAndToQBarNor.Input)
 
-	latch.rs = NewRSFlipFLop(latch.clrOR, wireSAndToQBarNor)
-	//latch.rs = NewRSFlipFLop(latch.clrOR, latch.sAnd) // if remove wires (for pause), this line makes the correct latch
+	//latch.rs = NewRSFlipFLop(latch.clrOR, wireSAndToQBarNor)
+	latch.rs = NewRSFlipFLop(latch.clrOR, latch.sAnd) // if remove wires (for pause), this line makes the correct latch
 
 	// refer to the inner-flipflop's outputs for easier external access
 	latch.Q = latch.rs.Q
