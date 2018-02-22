@@ -519,8 +519,8 @@ func TestNewNSwitchBank_BadInputs(t *testing.T) {
 			sb, err := NewNSwitchBank(tc.input)
 
 			if sb != nil {
-				t.Error("Didn't expected a Switch Bank back but got one.")
 				sb.Shutdown()
+				t.Error("Didn't expected a Switch Bank back but got one.")
 			}
 
 			tc.wantError += "\"" + tc.input + "\""
@@ -1257,8 +1257,8 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 			addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, nil)
 
 			if addr != nil {
-				t.Error("Did not expect an adder to be created, but got one")
 				addr.Shutdown()
+				t.Error("Did not expect an adder to be created, but got one")
 			}
 
 			if err == nil {
@@ -1378,7 +1378,6 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	}
 }
 
-/*
 func TestNBitAdder_SixteenBit(t *testing.T) {
 	testCases := []struct {
 		bytes1         string
@@ -1414,6 +1413,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	carryInSwitch := NewSwitch(false)
 	defer carryInSwitch.Shutdown()
 
+	// create the adder based on those switches
 	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
 
 	if err != nil {
@@ -1426,42 +1426,36 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 
 	defer addr.Shutdown()
 
-	// setup the Sum results bool array (default all to false to match the initial switch states above)
-	var gotSums [16]atomic.Value
-	for i := 0; i < len(gotSums); i++ {
-		gotSums[i].Store(false)
-	}
-
-	// setup the channels for listening to channel changes (doing dynamic select-case vs. a stack of 8 channels)
-	cases := make([]reflect.SelectCase, len(addr.Sums)+1) // one for each sum, BUT a +1 to hold the CarryOut channel read
-
-	for i, sum := range addr.Sums {
-		ch := make(chan bool, 1)
-		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-		sum.WireUp(ch)
-	}
-
-	// setup the single CarryOut result
-	var gotCarryOut atomic.Value
-
-	// add a case for the single CarryOut channel
-	chCarryOut := make(chan bool, 1)
-	cases[len(cases)-1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chCarryOut)}
-	addr.CarryOut.WireUp(chCarryOut)
-
-	go func() {
-		for {
-			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-			chosen, value, _ := reflect.Select(cases)
-
-			// if know the selected case was within the range of Sums, set the matching Sums bool array element
-			if chosen < len(cases)-1 {
-				gotSums[chosen].Store(value.Bool())
-			} else {
-				gotCarryOut.Store(value.Bool())
+	var gots [17]atomic.Value // 0-15 for sums, 16 for carryout
+	var chStates []chan Electron
+	var chStops []chan bool
+	for i := 0; i < 17; i++ {
+		gots[i].Store(false)
+		chStates = append(chStates, make(chan Electron, 1))
+		chStops = append(chStops, make(chan bool, 1))
+		go func(chState chan Electron, chStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chState:
+					gots[index].Store(e.powerState)
+					e.wg.Done()
+				case <-chStop:
+					return
+				}
 			}
+		}(chStates[i], chStops[i], i)
+	}
+	defer func() {
+		for i := 0; i < 17; i++ {
+			chStops[i] <- true
 		}
 	}()
+
+	for i, sum := range addr.Sums {
+		sum.WireUp(chStates[i])
+	}
+
+	addr.CarryOut.WireUp(chStates[16])
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", tc.bytes1, tc.bytes2, tc.carryInPowered), func(t *testing.T) {
@@ -1470,12 +1464,10 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 			setSwitches(addend2Switches, tc.bytes2)
 			carryInSwitch.Set(tc.carryInPowered)
 
-			time.Sleep(time.Millisecond * 400)
-
 			// build a string based on each sum's state
 			gotAnswer := ""
-			for i := 0; i < len(gotSums); i++ {
-				if gotSums[i].Load().(bool) {
+			for i := 0; i < 16; i++ {
+				if gots[i].Load().(bool) {
 					gotAnswer += "1"
 				} else {
 					gotAnswer += "0"
@@ -1486,48 +1478,13 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotCarryOut.Load().(bool) != tc.wantCarryOut {
-				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gotCarryOut.Load().(bool))
+			if gots[16].Load().(bool) != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gots[16].Load().(bool))
 			}
 		})
 	}
 }
 
-/*
-// -stopCh=XXX prevents the test running aspect from finding any tests
-// go test -stopCh=XXX -bench=. -benchmem -count 5 > old.txt
-// ---change some code---
-// go test -stopCh=XXX -bench=. -benchmem -count 5 > new.txt
-
-// go get golang.org/x/perf/cmd/benchstat
-// benchstat old.txt new.txt
-
-func BenchmarkNBitAdder_SixteenBit_AsAnswerString(b *testing.B) {
-	benchmarks := []struct {
-		name           string
-		bytes1         string
-		bytes2         string
-		carryInPowered bool
-	}{
-		{"All zeros", "0000000000000000", "0000000000000000", false},
-		{"All ones", "1111111111111111", "1111111111111111", false},
-	}
-	for _, bm := range benchmarks {
-		carryInSwitch := NewSwitch(bm.carryInPowered)
-		addend1Switches, _ := NewNSwitchBank(bm.bytes1)
-		addend2Switches, _ := NewNSwitchBank(bm.bytes2)
-		addend1BitPubs := addend1Switches.AsPwrEmitters()
-		addend2BitPubs := addend2Switches.AsPwrEmitters()
-		a, _ := NewNBitAdder(addend1BitPubs, addend2BitPubs, carryInSwitch)
-		b.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", bm.bytes1, bm.bytes2, bm.carryInPowered), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				a.AsAnswerString()
-			}
-		})
-	}
-}
-*/
-/*
 func TestOnesCompliment(t *testing.T) {
 
 	testCases := []struct {
@@ -1553,7 +1510,10 @@ func TestOnesCompliment(t *testing.T) {
 			bitSwitches, _ := NewNSwitchBank(tc.bits)
 			defer bitSwitches.Shutdown()
 
-			comp := NewOnesComplementer(bitSwitches.Switches, NewSwitch(tc.signalIsPowered))
+			signalSwitch := NewSwitch(tc.signalIsPowered)
+			defer signalSwitch.Shutdown()
+
+			comp := NewOnesComplementer(bitSwitches.Switches, signalSwitch)
 
 			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
@@ -1561,29 +1521,34 @@ func TestOnesCompliment(t *testing.T) {
 
 			defer comp.Shutdown()
 
-			// setup the Compliments results bool array (default all to false)
 			gotCompliments := make([]atomic.Value, len(tc.bits))
+			var chStates []chan Electron
+			var chStops []chan bool
 			for i := 0; i < len(tc.bits); i++ {
 				gotCompliments[i].Store(false)
+				chStates = append(chStates, make(chan Electron, 1))
+				chStops = append(chStops, make(chan bool, 1))
+				go func(chState chan Electron, chStop chan bool, index int) {
+					for {
+						select {
+						case e := <-chState:
+							gotCompliments[index].Store(e.powerState)
+							e.wg.Done()
+						case <-chStop:
+							return
+						}
+					}
+				}(chStates[i], chStops[i], i)
 			}
-
-			// setup the channels for listening to Compliments change
-			cases := make([]reflect.SelectCase, len(tc.bits))
-			for i, cmp := range comp.Complements {
-				ch := make(chan bool, 1)
-				cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-				cmp.WireUp(ch)
-			}
-
-			go func() {
-				for {
-					// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-					chosen, value, _ := reflect.Select(cases)
-					gotCompliments[chosen].Store(value.Bool())
+			defer func() {
+				for i := 0; i < len(tc.bits); i++ {
+					chStops[i] <- true
 				}
 			}()
 
-			time.Sleep(time.Millisecond * 15)
+			for i, c := range comp.Complements {
+				c.WireUp(chStates[i])
+			}
 
 			// build a string based on each bit's state
 			gotCompliment := ""
@@ -1625,8 +1590,8 @@ func TestNBitSubtractor_BadInputLengths(t *testing.T) {
 			sub, err := NewNBitSubtractor(minuendSwitches.Switches, subtrahendSwitches.Switches)
 
 			if sub != nil {
-				t.Error("Did not expect a Subtractor to be created, but got one")
 				sub.Shutdown()
+				t.Error("Did not expect a Subtractor to be created, but got one")
 			}
 
 			if err == nil {
@@ -1669,49 +1634,48 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 	subtrahendSwitches, _ := NewNSwitchBank("00000000")
 	defer subtrahendSwitches.Shutdown()
 
-	sub, _ := NewNBitSubtractor(minuendwitches.Switches, subtrahendSwitches.Switches)
+	sub, err := NewNBitSubtractor(minuendwitches.Switches, subtrahendSwitches.Switches)
+
+	if err != nil {
+		t.Errorf("Expected no error on construction, but got: %s", err.Error())
+	}
 
 	if sub == nil {
-		t.Error("Expected an subtractor to return due to good inputs, but gotAnswer c nil one.")
+		t.Error("Expected a subtractor to return due to good inputs, but got a nil one.")
 	}
 
 	defer sub.Shutdown()
 
-	// setup the Differences results bool array (default all to false to match the initial switch states above)
-	var gotDifferences [8]atomic.Value
-	for i := 0; i < len(gotDifferences); i++ {
-		gotDifferences[i].Store(false)
-	}
-
-	// setup the channels for listening to Differences change
-	cases := make([]reflect.SelectCase, len(sub.Differences)+1) // +1 to hold the CarryOut channel read
-	for i, diff := range sub.Differences {
-		ch := make(chan bool, 1)
-		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-		diff.WireUp(ch)
-	}
-
-	// setup the single CarryOut result
-	var gotCarryOut atomic.Value
-
-	// add a case for the single CarryOut channel
-	chCarryOut := make(chan bool, 1)
-	cases[len(cases)-1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chCarryOut)}
-	sub.CarryOut.WireUp(chCarryOut)
-
-	go func() {
-		for {
-			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-			chosen, value, _ := reflect.Select(cases)
-
-			// if know the selected case was within the range of Differences, set the matching Differences bool array element
-			if chosen < len(cases)-1 {
-				gotDifferences[chosen].Store(value.Bool())
-			} else {
-				gotCarryOut.Store(value.Bool())
+	var gots [9]atomic.Value // 0-7 for diffs, 8 for carryout
+	var chStates []chan Electron
+	var chStops []chan bool
+	for i := 0; i < 9; i++ {
+		gots[i].Store(false)
+		chStates = append(chStates, make(chan Electron, 1))
+		chStops = append(chStops, make(chan bool, 1))
+		go func(chState chan Electron, chStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chState:
+					gots[index].Store(e.powerState)
+					e.wg.Done()
+				case <-chStop:
+					return
+				}
 			}
+		}(chStates[i], chStops[i], i)
+	}
+	defer func() {
+		for i := 0; i < 9; i++ {
+			chStops[i] <- true
 		}
 	}()
+
+	for i, dif := range sub.Differences {
+		dif.WireUp(chStates[i])
+	}
+
+	sub.CarryOut.WireUp(chStates[8])
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
@@ -1719,12 +1683,10 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 			setSwitches(minuendwitches, tc.minuend)
 			setSwitches(subtrahendSwitches, tc.subtrahend)
 
-			time.Sleep(time.Millisecond * 300)
-
-			// build a string based on each bit's state
+			// build a string based on each dif's state
 			gotAnswer := ""
-			for i := 0; i < len(gotDifferences); i++ {
-				if gotDifferences[i].Load().(bool) {
+			for i := 0; i < 8; i++ {
+				if gots[i].Load().(bool) {
 					gotAnswer += "1"
 				} else {
 					gotAnswer += "0"
@@ -1735,13 +1697,14 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, gotAnswer)
 			}
 
-			if gotCarryOut.Load().(bool) != tc.wantCarryOut {
-				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gotCarryOut.Load().(bool))
+			if gots[8].Load().(bool) != tc.wantCarryOut {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarryOut, gots[8].Load().(bool))
 			}
 		})
 	}
 }
 
+/*
 func TestOscillator(t *testing.T) {
 	testCases := []struct {
 		initState   bool

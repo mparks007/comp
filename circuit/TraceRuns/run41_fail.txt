@@ -1,0 +1,7 @@
+--- FAIL: TestNBitAdder_EightBit (0.36s)
+    --- FAIL: TestNBitAdder_EightBit/Adding_01111111_to_11111111_with_carry_in_of_false (0.01s)
+    	circuit_test.go:1375: Wanted carry true, but got false
+    --- FAIL: TestNBitAdder_EightBit/Adding_01111111_to_11111111_with_carry_in_of_true (0.00s)
+    	circuit_test.go:1375: Wanted carry true, but got false
+FAIL
+FAIL	github.com/mparks007/comp/circuit	0.463s
