@@ -178,7 +178,7 @@ func TestWire_NoDelay(t *testing.T) {
 }
 
 func TestWire_WithDelay(t *testing.T) {
-	var wireLen uint = 100
+	var wireLen uint = 10
 
 	wire := NewWire(wireLen)
 	defer wire.Shutdown()
@@ -381,6 +381,7 @@ func TestRelay_WithBatteries(t *testing.T) {
 		{true, false, true, false},
 		{true, true, false, true},
 		{false, false, false, false},
+		{true, true, false, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	var pin1Battery, pin2Battery *Battery
@@ -544,10 +545,11 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		{"11111111", []bool{true, true, true, true, true, true, true, true}},
 		{"10101010", []bool{true, false, true, false, true, false, true, false}},
 		{"10000001", []bool{true, false, false, false, false, false, false, true}},
-		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
-		{"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
 		{"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
 		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
+		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
+		{"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
+		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	var got atomic.Value
@@ -604,6 +606,7 @@ func TestRelay_WithSwitches(t *testing.T) {
 		{true, false, true, false},
 		{true, true, false, true},
 		{false, false, false, false},
+		{true, true, false, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(true)
@@ -677,6 +680,8 @@ func TestANDGate(t *testing.T) {
 		{true, false, true, false},
 		{false, true, true, false},
 		{true, true, true, true},
+		{false, false, false, false},
+		{true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(true)
@@ -743,6 +748,7 @@ func TestORGate(t *testing.T) {
 		{false, true, true, true},
 		{true, true, true, true},
 		{false, false, false, false},
+		{true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(true)
@@ -809,6 +815,7 @@ func TestNANDGate(t *testing.T) {
 		{false, true, true, true},
 		{true, true, true, false},
 		{false, false, false, true},
+		{true, true, true, false}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(true)
@@ -875,6 +882,7 @@ func TestNORGate(t *testing.T) {
 		{false, true, true, false},
 		{true, true, true, false},
 		{false, false, false, true},
+		{true, true, true, false}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(true)
@@ -935,6 +943,8 @@ func TestXORGate(t *testing.T) {
 		{true, false, true},
 		{false, true, true},
 		{true, true, false},
+		{false, false, false},
+		{true, true, false}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(false)
@@ -991,6 +1001,7 @@ func TestXNORGate(t *testing.T) {
 		{false, true, false},
 		{true, true, true},
 		{false, false, true},
+		{true, false, false}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(false)
@@ -1045,6 +1056,7 @@ func TestInverter(t *testing.T) {
 		{false, true},
 		{true, false},
 		{false, true},
+		{true, false},
 	}
 
 	pin1Battery := NewBattery(true)
@@ -1096,6 +1108,8 @@ func TestHalfAdder(t *testing.T) {
 		{true, false, true, false},
 		{false, true, true, false},
 		{true, true, false, true},
+		{false, false, false, false},
+		{true, true, false, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(false)
@@ -1163,14 +1177,17 @@ func TestFullAdder(t *testing.T) {
 		wantSum        bool
 		wantCarry      bool
 	}{
-		{false, false, false, false, false},
-		{true, false, false, true, false},
-		{true, true, false, false, true},
-		{true, true, true, true, true},
-		{false, true, false, true, false},
-		{false, true, true, false, true},
-		{false, false, true, true, false},
+		// {false, false, false, false, false},
+		// {true, false, false, true, false},
+		// {true, true, false, false, true},
+		// {true, true, true, true, true},
+		// {false, true, false, true, false},
+		// {false, true, true, false, true},
+		// {false, false, true, true, false},
 		{true, false, true, false, true},
+		{true, true, true, true, true},
+		// {false, false, false, false, false},
+		// {true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	aSwitch := NewSwitch(false)
