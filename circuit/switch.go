@@ -7,25 +7,32 @@ import (
 
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
-	relay       *Relay        // innards of the switch are using a relay to control on/off
-	pin2Battery *Battery      // switch on/off is controlled by charging/discharging this battery
-	pwrSource                 // switch gains all that is pwrSource too
+	relay       *Relay   // innards of the switch are using a relay to control on/off
+	pin2Battery *Battery // switch on/off is controlled by charging/discharging this battery
+	pwrSource            // switch gains all that is pwrSource too
+}
+
+func NewSwitch(startState bool) *Switch {
+	return NewNamedSwitch("?", startState)
 }
 
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value
-func NewSwitch(startState bool) *Switch {
+func NewNamedSwitch(name string, startState bool) *Switch {
 	sw := &Switch{}
 	sw.Init()
+	sw.Name = name
 
 	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.pin2Battery = NewBattery(startState)
-	sw.relay = NewRelay(NewBattery(true), sw.pin2Battery)
+	sw.pin2Battery = NewNamedBattery(fmt.Sprintf("%s-pin2Battery", name), startState)
+	pin1Battery := NewNamedBattery(fmt.Sprintf("%s-pin1Battery", name), true)
+	sw.relay = NewNamedRelay(fmt.Sprintf("%s-Relay", name), pin1Battery, sw.pin2Battery)
 
 	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
 			case e := <-chState:
+				Debug(fmt.Sprintf("[%s]: Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, chState))
 				sw.Transmit(e.powerState)
 				e.wg.Done()
 			case <-sw.chStop:

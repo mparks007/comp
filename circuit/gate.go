@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync/atomic"
 )
 
@@ -18,16 +19,21 @@ type ANDGate struct {
 	pwrSource          // gate gains all that is pwrSource too
 }
 
-// NewANDGate will return an AND gate whose inputs are set by the passed in pins
 func NewANDGate(pins ...pwrEmitter) *ANDGate {
+	return NewNamedANDGate("?", pins...)
+}
+
+// NewANDGate will return an AND gate whose inputs are set by the passed in pins
+func NewNamedANDGate(name string, pins ...pwrEmitter) *ANDGate {
 	gate := &ANDGate{}
 	gate.Init()
+	gate.Name = name
 
 	for i, pin := range pins {
 		if i == 0 {
-			gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
+			gate.relays = append(gate.relays, NewNamedRelay(fmt.Sprintf("%s-Relay%d", name, i), NewBattery(true), pin))
 		} else {
-			gate.relays = append(gate.relays, NewRelay(&gate.relays[i-1].ClosedOut, pin))
+			gate.relays = append(gate.relays, NewNamedRelay(fmt.Sprintf("%s-Relay%d", name, i), &gate.relays[i-1].ClosedOut, pin))
 		}
 	}
 
@@ -38,6 +44,7 @@ func NewANDGate(pins ...pwrEmitter) *ANDGate {
 			case e := <-chState:
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func() {
+					Debug(fmt.Sprintf("[%s]: Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, chState))
 					gate.Transmit(e.powerState)
 					e.wg.Done()
 				}()
@@ -76,16 +83,21 @@ type ORGate struct {
 	pwrSource             // gate gains all that is pwrSource too
 }
 
-// NewORGate will return an OR gate whose inputs are set by the passed in pins
 func NewORGate(pins ...pwrEmitter) *ORGate {
+	return NewNamedORGate("?", pins...)
+}
+
+// NewORGate will return an OR gate whose inputs are set by the passed in pins
+func NewNamedORGate(name string, pins ...pwrEmitter) *ORGate {
 	gate := &ORGate{}
 	gate.Init()
+	gate.Name = name
 
 	// build a relay and associated listen/transmit func to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
 	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
+		gate.relays = append(gate.relays, NewNamedRelay(fmt.Sprintf("%s-Relay%d", name, i), NewBattery(true), pin))
 
 		chStates = append(chStates, make(chan Electron, 1))
 		gate.chStops = append(gate.chStops, make(chan bool, 1))
@@ -93,6 +105,7 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 			for {
 				select {
 				case e := <-chState:
+					Debug(fmt.Sprintf("[%s]: Relay[%d] received (%t) from (%s) on (%v)", name, index, e.powerState, e.Name, chState))
 					gots[index].Store(e.powerState)
 
 					var answer bool
@@ -101,14 +114,15 @@ func NewORGate(pins ...pwrEmitter) *ORGate {
 						answer = true
 					} else {
 						answer = false
-						for g, _ := range gots {
+						for g := range gots {
 							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-							if gots[g].Load() != nil && gots[g].Load().(bool) == true {
+							if gots[g].Load() != nil && gots[g].Load().(bool) {
 								answer = true
 								break
 							}
 						}
 					}
+					Debug(fmt.Sprintf("[%s]: Final answer to transmit (%t)", name, answer))
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 					go func() {
 						gate.Transmit(answer)
@@ -150,16 +164,21 @@ type NANDGate struct {
 	pwrSource             // gate gains all that is pwrSource too
 }
 
-// NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
 func NewNANDGate(pins ...pwrEmitter) *NANDGate {
+	return NewNamedNANDGate("?", pins...)
+}
+
+// NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
+func NewNamedNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 	gate := &NANDGate{}
 	gate.Init()
+	gate.Name = name
 
 	// build a relay and associated listen/transmit func to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
 	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(NewBattery(true), pin))
+		gate.relays = append(gate.relays, NewNamedRelay(fmt.Sprintf("%s-Relay%d", name, i), NewBattery(true), pin))
 
 		chStates = append(chStates, make(chan Electron, 1))
 		gate.chStops = append(gate.chStops, make(chan bool, 1))
@@ -167,6 +186,7 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 			for {
 				select {
 				case e := <-chState:
+					Debug(fmt.Sprintf("[%s]: Relay[%d] received (%t) from (%s) on (%v)", name, index, e.powerState, e.Name, chState))
 					gots[index].Store(e.powerState)
 
 					var answer bool
@@ -175,14 +195,15 @@ func NewNANDGate(pins ...pwrEmitter) *NANDGate {
 						answer = true
 					} else {
 						answer = false
-						for g, _ := range gots {
+						for g := range gots {
 							// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
-							if gots[g].Load() != nil && gots[g].Load().(bool) == true {
+							if gots[g].Load() != nil && gots[g].Load().(bool) {
 								answer = true
 								break
 							}
 						}
 					}
+					Debug(fmt.Sprintf("[%s]: Final answer to transmit (%t)", name, answer))
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 					go func() {
 						gate.Transmit(answer)
@@ -281,14 +302,19 @@ type XORGate struct {
 	pwrSource           // gate gains all that is pwrSource too
 }
 
-// NewXORGate will return an XOR gate whose inputs are set by the passed in pins
 func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
+	return NewNamedXORGate("?", pin1, pin2)
+}
+
+// NewXORGate will return an XOR gate whose inputs are set by the passed in pins
+func NewNamedXORGate(name string, pin1, pin2 pwrEmitter) *XORGate {
 	gate := &XORGate{}
 	gate.Init()
+	gate.Name = name
 
-	gate.orGate = NewORGate(pin1, pin2)
-	gate.nandGate = NewNANDGate(pin1, pin2)
-	gate.andGate = NewANDGate(gate.orGate, gate.nandGate)
+	gate.orGate = NewNamedORGate(fmt.Sprintf("%s-ORGate", name), pin1, pin2)
+	gate.nandGate = NewNamedNANDGate(fmt.Sprintf("%s-NANDGate", name), pin1, pin2)
+	gate.andGate = NewNamedANDGate(fmt.Sprintf("%s-ANDGate", name), gate.orGate, gate.nandGate)
 
 	chState := make(chan Electron, 1)
 	go func() {
@@ -297,6 +323,7 @@ func NewXORGate(pin1, pin2 pwrEmitter) *XORGate {
 			case e := <-chState:
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func() {
+					Debug(fmt.Sprintf("[%s]: Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, chState))
 					gate.Transmit(e.powerState)
 					e.wg.Done()
 				}()

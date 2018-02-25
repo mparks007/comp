@@ -15,6 +15,7 @@ import (
 // go test -run TestOscillator (specific test)
 // go test -run TestOscillator -count 100 -v (multi options)
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
+// go test -race -cpu=1 -run TestFullAdder -count 5 -trace TestFullAdder_trace.txt > TestFullAdder_run.txt
 
 // setSwitches will flip the switches of a SwitchBank to match a passed in bits string
 func setSwitches(switchBank *NSwitchBank, bits string) {
@@ -1112,13 +1113,13 @@ func TestHalfAdder(t *testing.T) {
 		{true, true, false, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
-	aSwitch := NewSwitch(false)
+	aSwitch := NewNamedSwitch("aSwitch", false)
 	defer aSwitch.Shutdown()
 
-	bSwitch := NewSwitch(false)
+	bSwitch := NewNamedSwitch("bSwitch", false)
 	defer bSwitch.Shutdown()
 
-	half := NewHalfAdder(aSwitch, bSwitch)
+	half := NewNamedHalfAdder("HalfAdder", aSwitch, bSwitch)
 	defer half.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
@@ -1129,9 +1130,11 @@ func TestHalfAdder(t *testing.T) {
 		for {
 			select {
 			case eS := <-chSum:
+				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eS.powerState, chSum))
 				gotSum.Store(eS.powerState)
 				eS.wg.Done()
 			case eC := <-chCarry:
+				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eC.powerState, chCarry))
 				gotCarry.Store(eC.powerState)
 				eC.wg.Done()
 			case <-chStop:
@@ -1140,6 +1143,8 @@ func TestHalfAdder(t *testing.T) {
 		}
 	}()
 	defer func() { chStop <- true }()
+
+	Debug("TestHalfAdder: About to WireUp")
 
 	half.Sum.WireUp(chSum)
 	half.Carry.WireUp(chCarry)
@@ -1177,29 +1182,29 @@ func TestFullAdder(t *testing.T) {
 		wantSum        bool
 		wantCarry      bool
 	}{
-		// {false, false, false, false, false},
-		// {true, false, false, true, false},
-		// {true, true, false, false, true},
-		// {true, true, true, true, true},
-		// {false, true, false, true, false},
-		// {false, true, true, false, true},
-		// {false, false, true, true, false},
+		{false, false, false, false, false},
+		{true, false, false, true, false},
+		{true, true, false, false, true},
+		{true, true, true, true, true},
+		{false, true, false, true, false},
+		{false, true, true, false, true},
+		{false, false, true, true, false},
 		{true, false, true, false, true},
 		{true, true, true, true, true},
-		// {false, false, false, false, false},
-		// {true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
+		{false, false, false, false, false},
+		{true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
-	aSwitch := NewSwitch(false)
+	aSwitch := NewNamedSwitch("aSwitch", false)
 	defer aSwitch.Shutdown()
 
-	bSwitch := NewSwitch(false)
+	bSwitch := NewNamedSwitch("bSwitch", false)
 	defer bSwitch.Shutdown()
 
-	cSwitch := NewSwitch(false)
+	cSwitch := NewNamedSwitch("cSwitch", false)
 	defer cSwitch.Shutdown()
 
-	full := NewFullAdder(aSwitch, bSwitch, cSwitch)
+	full := NewNamedFullAdder("FullAdder", aSwitch, bSwitch, cSwitch)
 	defer full.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
@@ -1210,9 +1215,11 @@ func TestFullAdder(t *testing.T) {
 		for {
 			select {
 			case eS := <-chSum:
+				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eS.powerState, chSum))
 				gotSum.Store(eS.powerState)
 				eS.wg.Done()
 			case eC := <-chCarry:
+				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eC.powerState, chCarry))
 				gotCarry.Store(eC.powerState)
 				eC.wg.Done()
 			case <-chStop:
@@ -1233,22 +1240,29 @@ func TestFullAdder(t *testing.T) {
 		t.Error("Wanted no Carry but got one")
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Setting input source A to %t and source B to %t with carry in of %t", tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
+	Debug("[Test]: Start Case Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t\n", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
+
+			//Debug(fmt.Sprintf("[Test]:LoopStep[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
 
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
 			cSwitch.Set(tc.carryInPowered)
 
 			if gotSum.Load().(bool) != tc.wantSum {
+				fmt.Printf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered)
 				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
 			}
 
 			if gotCarry.Load().(bool) != tc.wantCarry {
+				fmt.Printf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered)
 				t.Errorf("Wanted carry %t, but got %t", tc.wantCarry, gotCarry.Load().(bool))
 			}
 		})
 	}
+	Debug("[Test]: End Case Loop")
 }
 
 func TestNBitAdder_BadInputLengths(t *testing.T) {

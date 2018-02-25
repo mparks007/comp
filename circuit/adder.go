@@ -19,12 +19,16 @@ type HalfAdder struct {
 	Carry *ANDGate
 }
 
-// NewHalfAdder returns a HalfAdder which can add up the values of the two input pins
 func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
+	return NewNamedHalfAdder("?", pin1, pin2)
+}
+
+// NewHalfAdder returns a HalfAdder which can add up the values of the two input pins
+func NewNamedHalfAdder(name string, pin1, pin2 pwrEmitter) *HalfAdder {
 	h := &HalfAdder{}
 
-	h.Sum = NewXORGate(pin1, pin2)
-	h.Carry = NewANDGate(pin1, pin2)
+	h.Sum = NewNamedXORGate(fmt.Sprintf("%s-XORGate", name), pin1, pin2)
+	h.Carry = NewNamedANDGate(fmt.Sprintf("%s-ANDGate", name), pin1, pin2)
 
 	return h
 }
@@ -55,14 +59,18 @@ type FullAdder struct {
 	Carry      *ORGate
 }
 
-// NewFullAdder returns a FullAdder which can add up the values of the two input pins, but also accepts a carry-in pin to include in the addition
 func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
+	return NewNamedFullAdder("?", pin1, pin2, carryInPin)
+}
+
+// NewFullAdder returns a FullAdder which can add up the values of the two input pins, but also accepts a carry-in pin to include in the addition
+func NewNamedFullAdder(name string, pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 	f := &FullAdder{}
 
-	f.halfAdder1 = NewHalfAdder(pin1, pin2)
-	f.halfAdder2 = NewHalfAdder(f.halfAdder1.Sum, carryInPin)
+	f.halfAdder1 = NewNamedHalfAdder(fmt.Sprintf("%s-LeftHalfAdder", name), pin1, pin2)
+	f.halfAdder2 = NewNamedHalfAdder(fmt.Sprintf("%s-RighHalfAdder", name), f.halfAdder1.Sum, carryInPin)
 	f.Sum = f.halfAdder2.Sum
-	f.Carry = NewORGate(f.halfAdder1.Carry, f.halfAdder2.Carry)
+	f.Carry = NewNamedORGate(fmt.Sprintf("%s-ORGate", name), f.halfAdder1.Carry, f.halfAdder2.Carry)
 
 	return f
 }

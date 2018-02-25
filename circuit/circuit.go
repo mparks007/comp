@@ -1,8 +1,10 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 )
+var Debugging = true
 
 // pwrEmitter allows a circuit component to take part in the power subscription/transmission process
 type pwrEmitter interface {
@@ -19,4 +21,11 @@ type Logger interface {
 type Electron struct {
 	powerState bool
 	wg    *sync.WaitGroup
+	Name string
+}
+
+func Debug(text string) {
+	if Debugging {
+		fmt.Println(text)
+	}
 }

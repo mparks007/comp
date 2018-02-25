@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -11,6 +12,7 @@ type pwrSource struct {
 	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
 	isPowered   atomic.Value    // core state flag to know of the components current state
 	chStop      chan bool       // listen/transmit loop shutdown channel
+	Name        string
 }
 
 // Init will do initialization code for all pwrSource-based objects
@@ -33,14 +35,22 @@ func (p *pwrSource) WireUp(ch chan Electron) {
 // Transmit will push out the power source's new power state (IF state changed) to each wired up component
 func (p *pwrSource) Transmit(newPowerState bool) {
 
+	Debug(fmt.Sprintf("[%s]: Transmit (%t...maybe)", p.Name, newPowerState))
+
 	if p.isPowered.Load().(bool) != newPowerState {
 		p.isPowered.Store(newPowerState)
+		Debug(fmt.Sprintf("[%s]: Transmit (better chance of transmitting that (%t), state did change)", p.Name, newPowerState))
 
 		wg := &sync.WaitGroup{} // will use this to ensure we finish firing off the state change to all wired up components (unknown how concurrent this will actually be, but trying a bit)
 
-		e := Electron{powerState: newPowerState, wg: wg} // for now, will share the same electron object across all listeners (though the wg.Add(1) will still allow each listener to call their own Done)
+		e := Electron{powerState: newPowerState, wg: wg, Name: p.Name} // for now, will share the same electron object across all direct listeners (though the wg.Add(1) will still allow each listener to call their own Done)
+
+		if len(p.outChannels) == 0 {
+			Debug(fmt.Sprintf("[%s]: No Transmit, nothing wired up", p.Name))
+		}
 
 		for _, ch := range p.outChannels {
+			Debug(fmt.Sprintf("[%s]: Transmitting (%t) to %v", p.Name, newPowerState, ch))
 			wg.Add(1)
 			go func(ch chan Electron) {
 				ch <- e
@@ -48,5 +58,7 @@ func (p *pwrSource) Transmit(newPowerState bool) {
 		}
 
 		wg.Wait()
+	} else {
+		Debug(fmt.Sprintf("[%s]: Skipping Transmit (no state change)", p.Name))
 	}
 }

@@ -5,10 +5,16 @@ type Battery struct {
 	pwrSource // battery gains all that is pwrSource too
 }
 
-// NewBattery will return a battery whose initial state is based on the passed in initialization value
 func NewBattery(startState bool) *Battery {
+	return NewNamedBattery("?", startState)
+}
+
+// NewBattery will return a battery whose initial state is based on the passed in initialization value
+func NewNamedBattery(name string, startState bool) *Battery {
 	bat := &Battery{}
 	bat.Init()
+	bat.Name = name
+
 	bat.isPowered.Store(startState)
 	return bat
 }

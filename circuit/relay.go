@@ -1,6 +1,7 @@
 package circuit
 
 import (
+	"fmt"
 	"sync/atomic"
 )
 
@@ -16,8 +17,12 @@ type Relay struct {
 	chBStop      chan bool     // shutdown channel for B channel's listening loop
 }
 
-// NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
+	return NewNamedRelay("?", pin1, pin2)
+}
+
+// NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
+func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel := &Relay{}
 
 	rel.aInCh = make(chan Electron, 1)
@@ -33,6 +38,9 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 	rel.OpenOut.Init()
 	rel.ClosedOut.Init()
 
+	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
+	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
+
 	transmit := func() {
 		aInIsPowered := rel.aInIsPowered.Load().(bool)
 		bInIsPowered := rel.bInIsPowered.Load().(bool)
@@ -46,6 +54,7 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 		for {
 			select {
 			case e := <-rel.aInCh:
+				Debug(fmt.Sprintf("[%s]: aIn Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, rel.aInCh))
 				rel.aInIsPowered.Store(e.powerState)
 				transmit()
 				e.wg.Done()
@@ -58,6 +67,7 @@ func NewRelay(pin1, pin2 pwrEmitter) *Relay {
 		for {
 			select {
 			case e := <-rel.bInCh:
+				Debug(fmt.Sprintf("[%s]: bIn Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, rel.bInCh))
 				rel.bInIsPowered.Store(e.powerState)
 				transmit()
 				e.wg.Done()

@@ -20,11 +20,11 @@ do
     outfile=$1_run$counter.txt
     tracefile=$1_trace$counter.txt
 
-    echo -e ${LBLUE}Run \($counter of $2\):${NC} go test ../ -race -cpu=1 -run $1 -trace $tracefile \> $outfile
+    echo -e ${LBLUE}Run \($counter of $2\):${NC} go test ../ -cpu=1 -run $1 -trace $tracefile \> $outfile
 
-    go test ../ -race -cpu=1 -run $1 -trace $tracefile > $outfile
+    go test ../ -cpu=1 -run $1 -trace $tracefile > $outfile
     
-    if [ -z $(grep "FAIL:" "$outfile") ]
+    if [ -z $(grep "FAIL" "$outfile") ]
     then
         echo -e ${LGREEN}"PASS"${NC}
         echo -e ${DGRAY}Removing: $outfile${NC}
@@ -34,8 +34,11 @@ do
     else
         echo -e ${RED}"FAIL"${NC}
         mv $tracefile $1\_trace$counter\_fail.txt
+        mv $outfile $1\_run$counter\_fail.txt
+        break
     fi
-        ((counter++))
+    
+    ((counter++))
     
     echo
 done
