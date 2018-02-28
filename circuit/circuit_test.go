@@ -1195,6 +1195,8 @@ func TestFullAdder(t *testing.T) {
 		{true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
+	Debug("[Test]: Initial Component Setup")
+
 	aSwitch := NewNamedSwitch("aSwitch", false)
 	defer aSwitch.Shutdown()
 
@@ -1240,24 +1242,26 @@ func TestFullAdder(t *testing.T) {
 		t.Error("Wanted no Carry but got one")
 	}
 
-	Debug("[Test]: Start Case Loop")
+	Debug("\n[Test]: Start Case Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t\n", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
 
-			//Debug(fmt.Sprintf("[Test]:LoopStep[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
+			Debug(fmt.Sprintf("\n[Test]:LoopStep[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
 
 			aSwitch.Set(tc.aInPowered)
 			bSwitch.Set(tc.bInPowered)
 			cSwitch.Set(tc.carryInPowered)
 
 			if gotSum.Load().(bool) != tc.wantSum {
-				fmt.Printf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered)
+				Debug(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
+				time.Sleep(time.Millisecond * 100)
 				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
 			}
 
 			if gotCarry.Load().(bool) != tc.wantCarry {
-				fmt.Printf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered)
+				Debug(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
+				time.Sleep(time.Millisecond * 100)
 				t.Errorf("Wanted carry %t, but got %t", tc.wantCarry, gotCarry.Load().(bool))
 			}
 		})
