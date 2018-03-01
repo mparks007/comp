@@ -1,0 +1,7 @@
+--- FAIL: TestFullAdder (0.20s)
+    --- FAIL: TestFullAdder/Setting_input_source_A_to_false_and_source_B_to_false_with_carry_in_of_false#01 (0.02s)
+    	circuit_test.go:1084: Wanted sum false, but got true
+    	circuit_test.go:1088: Wanted carry false, but got true
+FAIL
+exit status 1
+FAIL	github.com/mparks007/comp/circuit	0.300s
