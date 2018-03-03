@@ -1174,7 +1174,7 @@ func TestHalfAdder(t *testing.T) {
 	}
 }
 
-func TestFullAdder(t *testing.T) {
+func TestFullAdder_Orig(t *testing.T) {
 	testCases := []struct {
 		aInPowered     bool
 		bInPowered     bool
@@ -1182,17 +1182,17 @@ func TestFullAdder(t *testing.T) {
 		wantSum        bool
 		wantCarry      bool
 	}{
-		// {false, false, false, false, false},
-		// {true, false, false, true, false},
-		// {true, true, false, false, true},
-		// {true, true, true, true, true},
-		// {false, true, false, true, false},
-		// {false, true, true, false, true},
-		// {false, false, true, true, false},
+		{false, false, false, false, false},
+		{true, false, false, true, false},
+		{true, true, false, false, true},
+		{true, true, true, true, true},
+		{false, true, false, true, false},
+		{false, true, true, false, true},
+		{false, false, true, true, false},
 		{true, false, true, false, true},
 		{true, true, true, true, true},
-		// {false, false, false, false, false},
-		// {true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
+		{false, false, false, false, false},
+		{true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	Debug("[Test]: Initial Component Setup")
@@ -1242,39 +1242,140 @@ func TestFullAdder(t *testing.T) {
 		t.Error("Wanted no Carry but got one")
 	}
 
-	// if gotSum.Load().(bool) != true {
-	// 	t.Error("Wanted Sum but got none")
-	// }
-
-	// if gotCarry.Load().(bool) != true {
-	// 	t.Error("Wanted Carry but got none")
-	// }
-
 	Debug("\n[Test]: Start Case Loop")
 
 	for i, tc := range testCases {
-		//t.Run(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
 
-		Debug(fmt.Sprintf("\n[Test]:LoopStep[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
+			Debug(fmt.Sprintf("\n[Test]:LoopStep[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
 
-		aSwitch.Set(tc.aInPowered)
-		bSwitch.Set(tc.bInPowered)
-		cSwitch.Set(tc.carryInPowered)
+			aSwitch.Set(tc.aInPowered)
+			bSwitch.Set(tc.bInPowered)
+			cSwitch.Set(tc.carryInPowered)
 
-		if gotSum.Load().(bool) != tc.wantSum {
-			Debug(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
-			time.Sleep(time.Millisecond * 100)
-			t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
-		}
+			if gotSum.Load().(bool) != tc.wantSum {
+				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
+			}
 
-		if gotCarry.Load().(bool) != tc.wantCarry {
-			Debug(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
-			time.Sleep(time.Millisecond * 100)
-			t.Errorf("Wanted carry %t, but got %t", tc.wantCarry, gotCarry.Load().(bool))
-		}
-		//		})
+			if gotCarry.Load().(bool) != tc.wantCarry {
+				t.Errorf("Wanted carry %t, but got %t", tc.wantCarry, gotCarry.Load().(bool))
+			}
+		})
 	}
 	Debug("[Test]: End Case Loop")
+}
+
+func TestFullAdder_New(t *testing.T) {
+	// {false, false, false, false, false},
+	// {true, false, false, true, false},
+	// {true, true, false, false, true},
+	// {true, true, true, true, true},
+	// {false, true, false, true, false},
+	// {false, true, true, false, true},
+	// {false, false, true, true, false},
+	// {true, false, true, false, true},
+	// {true, true, true, true, true},
+	// {false, false, false, false, false},
+	// {true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
+
+	Debug("[Test]: Initial Component Setup")
+
+	aSwitch := NewNamedSwitch("aSwitch", false)
+	defer aSwitch.Shutdown()
+
+	bSwitch := NewNamedSwitch("bSwitch", false)
+	defer bSwitch.Shutdown()
+
+	cSwitch := NewNamedSwitch("cSwitch", false)
+	defer cSwitch.Shutdown()
+
+	full := NewNamedFullAdder("FullAdder", aSwitch, bSwitch, cSwitch)
+	defer full.Shutdown()
+
+	var gotSum, gotCarry atomic.Value
+	chSum := make(chan Electron, 1)
+	chCarry := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case eS := <-chSum:
+				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eS.powerState, chSum))
+				gotSum.Store(eS.powerState)
+				eS.wg.Done()
+			case eC := <-chCarry:
+				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eC.powerState, chCarry))
+				gotCarry.Store(eC.powerState)
+				eC.wg.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	full.Sum.WireUp(chSum)
+	full.Carry.WireUp(chCarry)
+
+	if gotSum.Load().(bool) != false {
+		t.Error("Wanted no Sum but got one")
+	}
+
+	if gotCarry.Load().(bool) != false {
+		t.Error("Wanted no Carry but got one")
+	}
+
+	aSwitchVal := true
+	bSwitchVal := false
+	cSwitchVal := true
+
+	Debug(fmt.Sprintf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t", aSwitchVal, bSwitchVal, cSwitchVal))
+	//fmt.Printf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t\n", aSwitchVal, bSwitchVal, cSwitchVal)
+
+	aSwitch.Set(aSwitchVal)
+	bSwitch.Set(bSwitchVal)
+	cSwitch.Set(cSwitchVal)
+
+	wantSum := false
+	wantCarry := true
+
+	if gotSum.Load().(bool) != wantSum {
+		fmt.Printf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t\n", aSwitchVal, bSwitchVal, cSwitchVal)
+		t.Errorf("Wanted sum %t, but got %t", wantSum, gotSum.Load().(bool))
+	}
+
+	if gotCarry.Load().(bool) != wantCarry {
+		fmt.Printf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t\n", aSwitchVal, bSwitchVal, cSwitchVal)
+		t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarry.Load().(bool))
+	}
+
+	aSwitchVal = true
+	bSwitchVal = true
+	cSwitchVal = true
+
+	Debug(fmt.Sprintf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t", aSwitchVal, bSwitchVal, cSwitchVal))
+	//fmt.Printf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t\n", aSwitchVal, bSwitchVal, cSwitchVal)
+
+	aSwitch.Set(aSwitchVal)
+	bSwitch.Set(bSwitchVal)
+	cSwitch.Set(cSwitchVal)
+
+	wantSum = true
+	wantCarry = true
+
+	if gotSum.Load().(bool) != wantSum {
+		fmt.Printf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t\n", aSwitchVal, bSwitchVal, cSwitchVal)
+		t.Errorf("Wanted sum %t, but got %t", wantSum, gotSum.Load().(bool))
+	}
+
+	if gotCarry.Load().(bool) != wantCarry {
+		fmt.Printf("\n[Test]: Setting input source A to %t and source B to %t with carry in of %t\n", aSwitchVal, bSwitchVal, cSwitchVal)
+		// fmt.Printf("Wanted carry %t, but got %t\n", wantCarry, gotCarry.Load().(bool))
+		// time.Sleep(time.Millisecond * 100)
+		// if gotCarry.Load().(bool) != wantCarry {
+		t.Errorf("Wanted carry %t, but got %t", wantCarry, gotCarry.Load().(bool))
+		// }
+	}
 }
 
 func TestNBitAdder_BadInputLengths(t *testing.T) {
