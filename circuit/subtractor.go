@@ -1,9 +1,6 @@
 package circuit
 
-import (
-	"fmt"
-)
-
+/*
 // NBitSubtractor allows for the determination of the difference between to binary numbers
 type NBitSubtractor struct {
 	adder       *NBitAdder
@@ -35,3 +32,4 @@ func (s *NBitSubtractor) Shutdown() {
 	s.comp.Shutdown()
 	s.adder.Shutdown()
 }
+*/

@@ -2,7 +2,6 @@ package circuit
 
 import (
 	"fmt"
-	"sync"
 	"sync/atomic"
 )
 
@@ -14,23 +13,16 @@ type Relay struct {
 	ClosedOut    pwrSource     // external access point to active/engaged relay
 	aInCh        chan Electron // channel to track the relay arm path input
 	bInCh        chan Electron // channel to track the electromagnet path inpupt
-	chAStop      chan bool     // shutdown channel for A channel's listening loop
-	chBStop      chan bool     // shutdown channel for B channel's listening loop
-	mu           sync.Mutex
-}
-
-func NewRelay(pin1, pin2 pwrEmitter) *Relay {
-	return NewNamedRelay("?", pin1, pin2)
+	chStop       chan bool     // shutdown channel for listening loop
 }
 
 // NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
-func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
+func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel := &Relay{}
 
 	rel.aInCh = make(chan Electron, 1)
 	rel.bInCh = make(chan Electron, 1)
-	rel.chAStop = make(chan bool, 1)
-	rel.chBStop = make(chan bool, 1)
+	rel.chStop = make(chan bool, 1)
 
 	// default to false (as a boolean defaults)
 	rel.aInIsPowered.Store(false)
@@ -43,48 +35,28 @@ func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
-	transmit := func(aInIsPowered, bInIsPowered bool) {
-		rel.mu.Lock()
+	transmit := func() {
+		aInIsPowered := rel.aInIsPowered.Load().(bool)
+		bInIsPowered := rel.bInIsPowered.Load().(bool)
+
 		rel.OpenOut.Transmit(aInIsPowered && !bInIsPowered)
 		rel.ClosedOut.Transmit(aInIsPowered && bInIsPowered)
-		rel.mu.Unlock()
 	}
 
-	// doing aIn and bIn go funcs independently since power could be changing on either one at the "same" time
 	go func() {
 		for {
 			select {
 			case e := <-rel.aInCh:
-				Debug(fmt.Sprintf("[%s]: aIn Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, rel.aInCh))
+				Debug(name, fmt.Sprintf("(aIn) Received (%t) from (%s) on (%v)", e.powerState, e.Name, rel.aInCh))
 				rel.aInIsPowered.Store(e.powerState)
-
-				rel.mu.Lock()
-				a := rel.aInIsPowered.Load().(bool)
-				b := rel.bInIsPowered.Load().(bool)
-				rel.mu.Unlock()
-
-				transmit(a, b)
+				transmit()
 				e.wg.Done()
-			case <-rel.chAStop:
-				return
-			}
-		}
-	}()
-	go func() {
-		for {
-			select {
 			case e := <-rel.bInCh:
-				Debug(fmt.Sprintf("[%s]: bIn Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, rel.bInCh))
+				Debug(name, fmt.Sprintf("(bIn) Received (%t) from (%s) on (%v)", e.powerState, e.Name, rel.bInCh))
 				rel.bInIsPowered.Store(e.powerState)
-
-				rel.mu.Lock()
-				a := rel.aInIsPowered.Load().(bool)
-				b := rel.bInIsPowered.Load().(bool)
-				rel.mu.Unlock()
-
-				transmit(a, b)
+				transmit()
 				e.wg.Done()
-			case <-rel.chBStop:
+			case <-rel.chStop:
 				return
 			}
 		}
@@ -98,6 +70,5 @@ func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit, to exit
 func (r *Relay) Shutdown() {
-	r.chAStop <- true
-	r.chBStop <- true
+	r.chStop <- true
 }

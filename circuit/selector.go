@@ -1,9 +1,6 @@
 package circuit
 
-import (
-	"fmt"
-)
-
+/*
 // TwoToOneSelector is a circuit which takes two sets of input pins and exposes a switch to decide with of those input sets will be sent to the output
 //
 // Truth Table
@@ -48,3 +45,4 @@ func (s *TwoToOneSelector) Shutdown() {
 		s.inverters[i].Shutdown()
 	}
 }
+*/

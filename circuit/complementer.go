@@ -1,5 +1,6 @@
 package circuit
 
+/*
 // OnesComplementer is a circuit which will invert the power of all input pins when given a signal
 type OnesComplementer struct {
 	Complements []pwrEmitter
@@ -24,3 +25,4 @@ func (o *OnesComplementer) Shutdown() {
 	}
 }
 
+*/

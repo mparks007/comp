@@ -3,9 +3,10 @@ package circuit
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
-var Debugging = false
+var Debugging = true
 
 // pwrEmitter allows a circuit component to take part in the power subscription/transmission process
 type pwrEmitter interface {
@@ -20,13 +21,13 @@ type Logger interface {
 
 // Electron will be the the pimary means for indicating power flowing from component to component (and flagging if propogation of state change has ended)
 type Electron struct {
+	Name       string
 	powerState bool
 	wg         *sync.WaitGroup
-	Name       string
 }
 
-func Debug(text string) {
+func Debug(name, text string) {
 	if Debugging {
-		fmt.Println(text)
+		fmt.Printf("%v,%s,\"%s\"\n", time.Now().Format(time.RFC3339), name, text)
 	}
 }

@@ -1,5 +1,6 @@
 package circuit
 
+/*
 // Inverter is a standard circuit that inverts the power state of the input
 //
 // Truth Table
@@ -12,17 +13,19 @@ type Inverter struct {
 }
 
 // NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's power state
-func NewInverter(pin pwrEmitter) *Inverter {
+func NewInverter(name string, pin pwrEmitter) *Inverter {
 	inv := &Inverter{}
 	inv.Init()
 
-	inv.relay = NewRelay(NewBattery(true), pin)
+	bat := NewNamedBattery(fmt.Sprintf("%s-Battery", name), true)
+	inv.relay = NewNamedRelay(fmt.Sprintf("%s-Inverter", name), bat, pin)
 
 	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
 			case e := <-chState:
+				Debug(fmt.Sprintf("[%s],Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, chState))
 				inv.Transmit(e.powerState)
 				e.wg.Done()
 			case <-inv.chStop:
@@ -42,3 +45,4 @@ func (inv *Inverter) Shutdown() {
 	inv.relay.Shutdown()
 	inv.chStop <- true
 }
+*/

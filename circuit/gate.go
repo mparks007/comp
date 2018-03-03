@@ -1,10 +1,6 @@
 package circuit
 
-import (
-	"fmt"
-	"sync/atomic"
-)
-
+/*
 // ANDGate is a standard AND logic gate
 //	Wired like a NOR gate, but each relay is chained via the CLOSED out
 //
@@ -398,3 +394,4 @@ func (g *XNORGate) Shutdown() {
 	g.inverter.Shutdown()
 	g.chStop <- true
 }
+*/

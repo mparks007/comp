@@ -1,10 +1,6 @@
 package circuit
 
-import (
-	"fmt"
-	"regexp"
-)
-
+/*
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
 	relay       *Relay   // innards of the switch are using a relay to control on/off
@@ -94,3 +90,4 @@ func (sb *NSwitchBank) Shutdown() {
 		sb.Switches[i].(*Switch).Shutdown()
 	}
 }
+*/

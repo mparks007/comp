@@ -18,15 +18,16 @@ import (
 // go test -race -cpu=1 -run TestFullAdder -count 5 -trace TestFullAdder_trace.txt > TestFullAdder_run.txt
 
 // setSwitches will flip the switches of a SwitchBank to match a passed in bits string
-func setSwitches(switchBank *NSwitchBank, bits string) {
-	for i, b := range bits {
-		switchBank.Switches[i].(*Switch).Set(b == '1')
-	}
-}
+// func setSwitches(switchBank *NSwitchBank, bits string) {
+// 	for i, b := range bits {
+// 		switchBank.Switches[i].(*Switch).Set(b == '1')
+// 	}
+// }
 
 func TestPwrsource(t *testing.T) {
 	pwr := &pwrSource{}
 	pwr.Init()
+	pwr.Name = "TestPwrsource:pwrSource"
 
 	var want bool
 	var got1, got2 atomic.Value
@@ -37,9 +38,11 @@ func TestPwrsource(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
+				Debug("TestPwrsource:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
 				got1.Store(e1.powerState)
 				e1.wg.Done()
 			case e2 := <-ch2:
+				Debug("TestPwrsource:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
 				got2.Store(e2.powerState)
 				e2.wg.Done()
 			case <-chStop:
@@ -102,7 +105,7 @@ func TestPwrsource(t *testing.T) {
 }
 
 func TestWire_NoDelay(t *testing.T) {
-	wire := NewWire(0)
+	wire := NewWire("TestWire_NoDelay:Wire", 0)
 	defer wire.Shutdown()
 
 	var want bool
@@ -114,9 +117,11 @@ func TestWire_NoDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
+				Debug("TestWire_NoDelay:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
 				got1.Store(e1.powerState)
 				e1.wg.Done()
 			case e2 := <-ch2:
+				Debug("TestWire_NoDelay:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
 				got2.Store(e2.powerState)
 				e2.wg.Done()
 			case <-chStop:
@@ -181,7 +186,7 @@ func TestWire_NoDelay(t *testing.T) {
 func TestWire_WithDelay(t *testing.T) {
 	var wireLen uint = 10
 
-	wire := NewWire(wireLen)
+	wire := NewWire("TestWire_WithDelay:Wire", wireLen)
 	defer wire.Shutdown()
 
 	var want bool
@@ -193,9 +198,11 @@ func TestWire_WithDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
+				Debug("TestWire_WithDelay:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
 				got1.Store(e1.powerState)
 				e1.wg.Done()
 			case e2 := <-ch2:
+				Debug("TestWire_WithDelay:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
 				got2.Store(e2.powerState)
 				e2.wg.Done()
 			case <-chStop:
@@ -278,10 +285,10 @@ func TestWire_WithDelay(t *testing.T) {
 }
 
 func TestRibbonCable(t *testing.T) {
-	rib := NewRibbonCable(2, 0)
+	rib := NewRibbonCable("TestRibbonCable:RibbonCable", 2, 0)
 	defer rib.Shutdown()
 
-	rib.SetInputs(NewBattery(false), NewBattery(true))
+	rib.SetInputs(NewBattery("TestRibbonCable:Battery1", false), NewBattery("TestRibbonCable:Battery2", true))
 
 	var want bool
 	var got1, got2 atomic.Value
@@ -292,9 +299,11 @@ func TestRibbonCable(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
+				Debug("TestRibbonCable:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
 				got1.Store(e1.powerState)
 				e1.wg.Done()
 			case e2 := <-ch2:
+				Debug("TestRibbonCable:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
 				got2.Store(e2.powerState)
 				e2.wg.Done()
 			case <-chStop:
@@ -323,7 +332,7 @@ func TestRibbonCable(t *testing.T) {
 }
 
 func TestBattery(t *testing.T) {
-	bat := NewBattery(true)
+	bat := NewBattery("TestBattery:Battery", true)
 
 	var want bool
 	var got atomic.Value
@@ -333,6 +342,7 @@ func TestBattery(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
+				Debug("TestBattery:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
 				got.Store(e.powerState)
 				e.wg.Done()
 			case <-chStop:
@@ -366,6 +376,15 @@ func TestBattery(t *testing.T) {
 	if got.Load().(bool) != want {
 		t.Errorf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got.Load().(bool))
 	}
+
+	// test charging again (should skip it)
+	bat.Charge()
+
+	select {
+	case <-ch:
+		t.Error("Transmit of same state as prior state should have never gotten to ch, but it did.")
+	default:
+	}
 }
 
 func TestRelay_WithBatteries(t *testing.T) {
@@ -385,11 +404,13 @@ func TestRelay_WithBatteries(t *testing.T) {
 		{true, true, false, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
-	var pin1Battery, pin2Battery *Battery
-	pin1Battery = NewBattery(true)
-	pin2Battery = NewBattery(true)
+	Debug("TestRelay_WithBatteries", "Initial Setup")
 
-	rel := NewRelay(pin1Battery, pin2Battery)
+	var pin1Battery, pin2Battery *Battery
+	pin1Battery = NewBattery("TestRelay_WithBatteries:Battery1", true)
+	pin2Battery = NewBattery("TestRelay_WithBatteries:Battery2", true)
+
+	rel := NewRelay("TestRelay_WithBatteries:Relay", pin1Battery, pin2Battery)
 	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
@@ -400,9 +421,11 @@ func TestRelay_WithBatteries(t *testing.T) {
 		for {
 			select {
 			case eOpen := <-openCh:
+				Debug("TestRelay_WithBatteries:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.Name, openCh))
 				gotOpenOut.Store(eOpen.powerState)
 				eOpen.wg.Done()
 			case eClosed := <-closedCh:
+				Debug("TestRelay_WithBatteries:Select", fmt.Sprintf("Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.Name, closedCh))
 				gotClosedOut.Store(eClosed.powerState)
 				eClosed.wg.Done()
 			case <-chStop:
@@ -422,8 +445,12 @@ func TestRelay_WithBatteries(t *testing.T) {
 		t.Error("Wanted power at the closed position but got none")
 	}
 
+	Debug("TestRelay_WithBatteries", "Start Test Cases Loop")
+
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Test#%d: Setting input A to %t and B to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting input A to (%t) and B to (%t)", i, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+
+			Debug("TestRelay_WithBatteries", fmt.Sprintf("testCases[%d]: Setting input A to (%t) and B to (%t)", i, tc.aInPowered, tc.bInPowered))
 
 			if tc.aInPowered {
 				pin1Battery.Charge()
@@ -446,8 +473,11 @@ func TestRelay_WithBatteries(t *testing.T) {
 			}
 		})
 	}
+
+	Debug("TestRelay_WithBatteries", "End Test Cases Loop")
 }
 
+/*
 func TestSwitch(t *testing.T) {
 	sw := NewSwitch(false)
 	defer sw.Shutdown()
@@ -610,6 +640,8 @@ func TestRelay_WithSwitches(t *testing.T) {
 		{true, true, false, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
+	Debug("TestRelay_WithSwitches", "Initial Setup")
+
 	aSwitch := NewSwitch(true)
 	defer aSwitch.Shutdown()
 
@@ -649,6 +681,8 @@ func TestRelay_WithSwitches(t *testing.T) {
 		t.Error("Wanted power at the closed position but got none")
 	}
 
+	Debug("TestRelay_WithSwitches", "Start Test Cases Loop")
+
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Flip#%d: Setting A power to %t and B power to %t", i+1, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
 
@@ -664,6 +698,7 @@ func TestRelay_WithSwitches(t *testing.T) {
 			}
 		})
 	}
+	Debug("TestRelay_WithSwitches", "End Test Cases Loop")
 }
 
 func TestANDGate(t *testing.T) {
@@ -1242,7 +1277,7 @@ func TestFullAdder_Orig(t *testing.T) {
 		t.Error("Wanted no Carry but got one")
 	}
 
-	Debug("\n[Test]: Start Case Loop")
+	Debug("\n[Test]: Start Test Cases Loop")
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("Step[%d]: Setting input source A to %t and source B to %t with carry in of %t", i+1, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
@@ -1262,7 +1297,7 @@ func TestFullAdder_Orig(t *testing.T) {
 			}
 		})
 	}
-	Debug("[Test]: End Case Loop")
+	Debug("[Test]: End Test Cases Loop")
 }
 
 func TestFullAdder_New(t *testing.T) {
@@ -1895,6 +1930,8 @@ func TestOscillator(t *testing.T) {
 	}
 }
 */
+
+/*
 func TestRSFlipFlop(t *testing.T) {
 	testCases := []struct {
 		rPinIsPowered bool
