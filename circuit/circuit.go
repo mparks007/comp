@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"sync"
 )
-var Debugging = true
+
+var Debugging = false
 
 // pwrEmitter allows a circuit component to take part in the power subscription/transmission process
 type pwrEmitter interface {
@@ -20,8 +21,8 @@ type Logger interface {
 // Electron will be the the pimary means for indicating power flowing from component to component (and flagging if propogation of state change has ended)
 type Electron struct {
 	powerState bool
-	wg    *sync.WaitGroup
-	Name string
+	wg         *sync.WaitGroup
+	Name       string
 }
 
 func Debug(text string) {

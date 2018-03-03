@@ -1,0 +1,345 @@
+[Test]: Initial Component Setup
+[aSwitch-Relay]: aIn Received (true) from () on (0xc042040180)
+[aSwitch-Relay-OpenOut]: Transmit (true...maybe)
+[aSwitch-Relay-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[aSwitch-Relay-OpenOut]: No Transmit, nothing wired up
+[aSwitch-Relay-ClosedOut]: Transmit (false...maybe)
+[aSwitch-Relay-ClosedOut]: Skipping Transmit (no state change)
+[aSwitch-Relay]: bIn Received (true) from () on (0xc0420401e0)
+[aSwitch-Relay-OpenOut]: Transmit (false...maybe)
+[aSwitch-Relay-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[aSwitch-Relay-OpenOut]: No Transmit, nothing wired up
+[aSwitch-Relay-ClosedOut]: Transmit (true...maybe)
+[aSwitch-Relay-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[aSwitch-Relay-ClosedOut]: No Transmit, nothing wired up
+[aSwitch]: Received (true) from () on (0xc042040420)
+[aSwitch]: Transmit (true...maybe)
+[aSwitch]: Transmit (better chance of transmitting that (true), state did change)
+[aSwitch]: No Transmit, nothing wired up
+[bSwitch-Relay]: aIn Received (true) from () on (0xc042040540)
+[bSwitch-Relay-OpenOut]: Transmit (true...maybe)
+[bSwitch-Relay-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[bSwitch-Relay-OpenOut]: No Transmit, nothing wired up
+[bSwitch-Relay-ClosedOut]: Transmit (false...maybe)
+[bSwitch-Relay-ClosedOut]: Skipping Transmit (no state change)
+[bSwitch-Relay]: bIn Received (true) from () on (0xc0420405a0)
+[bSwitch-Relay-OpenOut]: Transmit (false...maybe)
+[bSwitch-Relay-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[bSwitch-Relay-OpenOut]: No Transmit, nothing wired up
+[bSwitch-Relay-ClosedOut]: Transmit (true...maybe)
+[bSwitch-Relay-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[bSwitch-Relay-ClosedOut]: No Transmit, nothing wired up
+[bSwitch]: Received (true) from () on (0xc042040780)
+[bSwitch]: Transmit (true...maybe)
+[bSwitch]: Transmit (better chance of transmitting that (true), state did change)
+[bSwitch]: No Transmit, nothing wired up
+[cSwitch-Relay]: aIn Received (true) from () on (0xc0420408a0)
+[cSwitch-Relay-OpenOut]: Transmit (true...maybe)
+[cSwitch-Relay-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[cSwitch-Relay-OpenOut]: No Transmit, nothing wired up
+[cSwitch-Relay-ClosedOut]: Transmit (false...maybe)
+[cSwitch-Relay-ClosedOut]: Skipping Transmit (no state change)
+[cSwitch-Relay]: bIn Received (true) from () on (0xc042040900)
+[cSwitch-Relay-OpenOut]: Transmit (false...maybe)
+[cSwitch-Relay-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[cSwitch-Relay-OpenOut]: No Transmit, nothing wired up
+[cSwitch-Relay-ClosedOut]: Transmit (true...maybe)
+[cSwitch-Relay-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[cSwitch-Relay-ClosedOut]: No Transmit, nothing wired up
+[cSwitch]: Received (true) from () on (0xc042040ae0)
+[cSwitch]: Transmit (true...maybe)
+[cSwitch]: Transmit (better chance of transmitting that (true), state did change)
+[cSwitch]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0]: aIn Received (true) from () on (0xc042040c60)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0]: bIn Received (true) from () on (0xc042040cc0)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Relay[0] received (true) from () on (0xc042040ea0)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Final answer to transmit (true)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1]: aIn Received (true) from () on (0xc042040fc0)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1]: bIn Received (true) from () on (0xc042041020)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Relay[1] received (true) from () on (0xc042041200)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Final answer to transmit (true)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ORGate]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0]: aIn Received (true) from () on (0xc042041320)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0]: bIn Received (true) from () on (0xc042041380)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Relay[0] received (false) from () on (0xc042041560)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Final answer to transmit (false)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1]: aIn Received (true) from () on (0xc042041680)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1]: bIn Received (true) from () on (0xc0420416e0)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Relay[1] received (false) from () on (0xc0420418c0)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Final answer to transmit (false)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-NANDGate]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0]: aIn Received (true) from () on (0xc042041a40)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0]: bIn Received (true) from () on (0xc042041aa0)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1]: aIn Received (true) from () on (0xc042041c80)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1]: bIn Received (false) from () on (0xc042041ce0)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate]: Received (false) from () on (0xc042041ec0)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate-ANDGate]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-XORGate]: Received (false) from () on (0xc0420f0000)
+[FullAdder-LeftHalfAdder-XORGate]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-XORGate]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0]: aIn Received (true) from () on (0xc0420f0180)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0]: bIn Received (true) from () on (0xc0420f01e0)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay0-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-ANDGate-Relay1]: aIn Received (true) from () on (0xc0420f03c0)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1]: bIn Received (true) from () on (0xc0420f0420)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-ClosedOut]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-ANDGate-Relay1-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-LeftHalfAdder-ANDGate]: Received (true) from () on (0xc0420f0600)
+[FullAdder-LeftHalfAdder-ANDGate]: Transmit (true...maybe)
+[FullAdder-LeftHalfAdder-ANDGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-LeftHalfAdder-ANDGate]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0]: aIn Received (true) from () on (0xc0420f0780)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0]: bIn Received (false) from () on (0xc0420f07e0)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Relay[0] received (false) from () on (0xc0420f09c0)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Final answer to transmit (false)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1]: aIn Received (true) from () on (0xc0420f0ae0)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1]: bIn Received (true) from () on (0xc0420f0b40)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ORGate-Relay1-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Relay[1] received (true) from () on (0xc0420f0d20)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Final answer to transmit (true)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ORGate]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0]: aIn Received (true) from () on (0xc0420f0e40)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0]: bIn Received (false) from () on (0xc0420f0ea0)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Relay[0] received (true) from () on (0xc0420f1080)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Final answer to transmit (true)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1]: aIn Received (true) from () on (0xc0420f11a0)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1]: bIn Received (true) from () on (0xc0420f1200)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-NANDGate-Relay1-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Relay[1] received (false) from () on (0xc0420f13e0)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Final answer to transmit (true)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-NANDGate]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0]: aIn Received (true) from () on (0xc0420f1560)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0]: bIn Received (true) from () on (0xc0420f15c0)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay0-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1]: aIn Received (true) from () on (0xc0420f17a0)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1]: bIn Received (true) from () on (0xc0420f1800)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate-Relay1-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate-ANDGate]: Received (true) from () on (0xc0420f19e0)
+[FullAdder-RighHalfAdder-XORGate-ANDGate]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate-ANDGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate-ANDGate]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-XORGate]: Received (true) from () on (0xc0420f1b00)
+[FullAdder-RighHalfAdder-XORGate]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-XORGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-XORGate]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-ANDGate-Relay0]: aIn Received (true) from () on (0xc0420f1c80)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-RighHalfAdder-ANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate-Relay0]: bIn Received (false) from () on (0xc0420f1ce0)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate-Relay1]: aIn Received (false) from () on (0xc0420f1ec0)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate-Relay1]: bIn Received (true) from () on (0xc0420f1f20)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-OpenOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-RighHalfAdder-ANDGate]: Received (false) from () on (0xc042134120)
+[FullAdder-RighHalfAdder-ANDGate]: Transmit (false...maybe)
+[FullAdder-RighHalfAdder-ANDGate]: Skipping Transmit (no state change)
+[FullAdder-ORGate-Relay0]: aIn Received (true) from () on (0xc042134240)
+[FullAdder-ORGate-Relay0-OpenOut]: Transmit (true...maybe)
+[FullAdder-ORGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-ORGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-ORGate-Relay0-ClosedOut]: Transmit (false...maybe)
+[FullAdder-ORGate-Relay0-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-ORGate-Relay0]: bIn Received (true) from () on (0xc0421342a0)
+[FullAdder-ORGate-Relay0-OpenOut]: Transmit (false...maybe)
+[FullAdder-ORGate-Relay0-OpenOut]: Transmit (better chance of transmitting that (false), state did change)
+[FullAdder-ORGate-Relay0-OpenOut]: No Transmit, nothing wired up
+[FullAdder-ORGate-Relay0-ClosedOut]: Transmit (true...maybe)
+[FullAdder-ORGate-Relay0-ClosedOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-ORGate-Relay0-ClosedOut]: No Transmit, nothing wired up
+[FullAdder-ORGate]: Relay[0] received (true) from () on (0xc042134480)
+[FullAdder-ORGate]: Final answer to transmit (true)
+[FullAdder-ORGate]: Transmit (true...maybe)
+[FullAdder-ORGate]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-ORGate]: No Transmit, nothing wired up
+[FullAdder-ORGate-Relay1]: aIn Received (true) from () on (0xc0421345a0)
+[FullAdder-ORGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-ORGate-Relay1-OpenOut]: Transmit (better chance of transmitting that (true), state did change)
+[FullAdder-ORGate-Relay1-OpenOut]: No Transmit, nothing wired up
+[FullAdder-ORGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-ORGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-ORGate-Relay1]: bIn Received (false) from () on (0xc042134600)
+[FullAdder-ORGate-Relay1-OpenOut]: Transmit (true...maybe)
+[FullAdder-ORGate-Relay1-OpenOut]: Skipping Transmit (no state change)
+[FullAdder-ORGate-Relay1-ClosedOut]: Transmit (false...maybe)
+[FullAdder-ORGate-Relay1-ClosedOut]: Skipping Transmit (no state change)
+[FullAdder-ORGate]: Relay[1] received (false) from () on (0xc0421347e0)
+[FullAdder-ORGate]: Final answer to transmit (true)
+[FullAdder-ORGate]: Transmit (true...maybe)
+[FullAdder-ORGate]: Skipping Transmit (no state change)
+[Test]: Received (true) on 0xc042134900
+[Test]: Received (true) on 0xc042134960
+
+[Test]: Start Case Loop
+[Test]: End Case Loop
+PASS
+ok  	github.com/mparks007/comp/circuit	0.260s

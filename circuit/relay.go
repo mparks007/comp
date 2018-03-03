@@ -2,6 +2,7 @@ package circuit
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 )
 
@@ -15,6 +16,7 @@ type Relay struct {
 	bInCh        chan Electron // channel to track the electromagnet path inpupt
 	chAStop      chan bool     // shutdown channel for A channel's listening loop
 	chBStop      chan bool     // shutdown channel for B channel's listening loop
+	mu           sync.Mutex
 }
 
 func NewRelay(pin1, pin2 pwrEmitter) *Relay {
@@ -41,12 +43,11 @@ func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
-	transmit := func() {
-		aInIsPowered := rel.aInIsPowered.Load().(bool)
-		bInIsPowered := rel.bInIsPowered.Load().(bool)
-
+	transmit := func(aInIsPowered, bInIsPowered bool) {
+		rel.mu.Lock()
 		rel.OpenOut.Transmit(aInIsPowered && !bInIsPowered)
 		rel.ClosedOut.Transmit(aInIsPowered && bInIsPowered)
+		rel.mu.Unlock()
 	}
 
 	// doing aIn and bIn go funcs independently since power could be changing on either one at the "same" time
@@ -56,7 +57,13 @@ func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 			case e := <-rel.aInCh:
 				Debug(fmt.Sprintf("[%s]: aIn Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, rel.aInCh))
 				rel.aInIsPowered.Store(e.powerState)
-				transmit()
+
+				rel.mu.Lock()
+				a := rel.aInIsPowered.Load().(bool)
+				b := rel.bInIsPowered.Load().(bool)
+				rel.mu.Unlock()
+
+				transmit(a, b)
 				e.wg.Done()
 			case <-rel.chAStop:
 				return
@@ -69,7 +76,13 @@ func NewNamedRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 			case e := <-rel.bInCh:
 				Debug(fmt.Sprintf("[%s]: bIn Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, rel.bInCh))
 				rel.bInIsPowered.Store(e.powerState)
-				transmit()
+
+				rel.mu.Lock()
+				a := rel.aInIsPowered.Load().(bool)
+				b := rel.bInIsPowered.Load().(bool)
+				rel.mu.Unlock()
+
+				transmit(a, b)
 				e.wg.Done()
 			case <-rel.chBStop:
 				return

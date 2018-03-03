@@ -68,7 +68,7 @@ func NewNamedFullAdder(name string, pin1, pin2, carryInPin pwrEmitter) *FullAdde
 	f := &FullAdder{}
 
 	f.halfAdder1 = NewNamedHalfAdder(fmt.Sprintf("%s-LeftHalfAdder", name), pin1, pin2)
-	f.halfAdder2 = NewNamedHalfAdder(fmt.Sprintf("%s-RighHalfAdder", name), f.halfAdder1.Sum, carryInPin)
+	f.halfAdder2 = NewNamedHalfAdder(fmt.Sprintf("%s-RightHalfAdder", name), f.halfAdder1.Sum, carryInPin)
 	f.Sum = f.halfAdder2.Sum
 	f.Carry = NewNamedORGate(fmt.Sprintf("%s-ORGate", name), f.halfAdder1.Carry, f.halfAdder2.Carry)
 
