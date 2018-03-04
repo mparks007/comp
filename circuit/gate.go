@@ -40,10 +40,10 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 			case e := <-chState:
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-				go func() {
-					gate.Transmit(e.powerState)
+				go func(answer bool) {
+					gate.Transmit(answer)
 					e.wg.Done()
-				}()
+				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
 				return
@@ -106,10 +106,12 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 					if e.powerState {
 						answer = true
 					} else {
+						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
 						answer = false
 						for g := range gots {
 							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
 							if gots[g].Load() != nil && gots[g].Load().(bool) {
+								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
 								answer = true
 								break
 							}
@@ -117,10 +119,10 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 					}
 					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-					go func() {
+					go func(answer bool) {
 						gate.Transmit(answer)
 						e.wg.Done()
-					}()
+					}(answer)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
@@ -184,10 +186,12 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 					if e.powerState {
 						answer = true
 					} else {
+						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
 						answer = false
 						for g := range gots {
 							// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
 							if gots[g].Load() != nil && gots[g].Load().(bool) {
+								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
 								answer = true
 								break
 							}
@@ -195,10 +199,10 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 					}
 					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-					go func() {
+					go func(answer bool) {
 						gate.Transmit(answer)
 						e.wg.Done()
-					}()
+					}(answer)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
@@ -256,10 +260,10 @@ func NewNORGate(name string, pins ...pwrEmitter) *NORGate {
 			case e := <-chState:
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-				go func() {
-					gate.Transmit(e.powerState)
+				go func(answer bool) {
+					gate.Transmit(answer)
 					e.wg.Done()
-				}()
+				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
 				return
@@ -313,10 +317,10 @@ func NewXORGate(name string, pin1, pin2 pwrEmitter) *XORGate {
 			case e := <-chState:
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-				go func() {
-					gate.Transmit(e.powerState)
+				go func(answer bool) {
+					gate.Transmit(answer)
 					e.wg.Done()
-				}()
+				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
 				return
@@ -369,10 +373,10 @@ func NewXNORGate(name string, pin1, pin2 pwrEmitter) *XNORGate {
 			case e := <-chState:
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-				go func() {
-					gate.Transmit(e.powerState)
+				go func(answer bool) {
+					gate.Transmit(answer)
 					e.wg.Done()
-				}()
+				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
 				return
