@@ -76,7 +76,7 @@ func (w *Wire) Transmit(newPowerState bool) {
 
 	if w.isPowered.Load().(bool) != newPowerState {
 		w.isPowered.Store(newPowerState)
-		Debug(w.name, fmt.Sprintf("Transmit (better chance of transmitting (%t) since state did change)", newPowerState))
+		Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", newPowerState))
 
 		if len(w.outChannels) == 0 {
 			Debug(w.name, "No Transmit, nothing wired up")

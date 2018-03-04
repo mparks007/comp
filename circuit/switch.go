@@ -1,6 +1,10 @@
 package circuit
 
-/*
+import (
+	"fmt"
+	"regexp"
+)
+
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
 	relay       *Relay   // innards of the switch are using a relay to control on/off
@@ -8,30 +12,26 @@ type Switch struct {
 	pwrSource            // switch gains all that is pwrSource too
 }
 
-func NewSwitch(startState bool) *Switch {
-	return NewNamedSwitch("?", startState)
-}
-
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value
-func NewNamedSwitch(name string, startState bool) *Switch {
+func NewSwitch(name string, startState bool) *Switch {
 	sw := &Switch{}
 	sw.Init()
 	sw.Name = name
 
 	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.pin2Battery = NewNamedBattery(fmt.Sprintf("%s-pin2Battery", name), startState)
-	pin1Battery := NewNamedBattery(fmt.Sprintf("%s-pin1Battery", name), true)
-	sw.relay = NewNamedRelay(fmt.Sprintf("%s-Relay", name), pin1Battery, sw.pin2Battery)
+	sw.pin2Battery = NewBattery(fmt.Sprintf("%s-pin2Battery", name), startState)
+	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewBattery(fmt.Sprintf("%s-pin1Battery", name), true), sw.pin2Battery)
 
 	chState := make(chan Electron, 1)
 	go func() {
 		for {
 			select {
 			case e := <-chState:
-				Debug(fmt.Sprintf("[%s]: Received (%t) from (%s) on (%v)", name, e.powerState, e.Name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
 				sw.Transmit(e.powerState)
 				e.wg.Done()
 			case <-sw.chStop:
+				Debug(name, "Stopped")
 				return
 			}
 		}
@@ -64,7 +64,7 @@ type NSwitchBank struct {
 }
 
 // NewNSwitchBank takes a string of 0/1s and creates a slice of Switch objects, where each one is independently initialized based on "0" or "1" in the string
-func NewNSwitchBank(bits string) (*NSwitchBank, error) {
+func NewNSwitchBank(name string, bits string) (*NSwitchBank, error) {
 
 	match, err := regexp.MatchString("^[01]+$", bits)
 	if err != nil {
@@ -77,8 +77,8 @@ func NewNSwitchBank(bits string) (*NSwitchBank, error) {
 
 	sb := &NSwitchBank{}
 
-	for _, bit := range bits {
-		sb.Switches = append(sb.Switches, NewSwitch(bit == '1'))
+	for i, bit := range bits {
+		sb.Switches = append(sb.Switches, NewSwitch(fmt.Sprintf("%s-Switches[%d]", name, i), bit == '1'))
 	}
 
 	return sb, nil
@@ -90,4 +90,3 @@ func (sb *NSwitchBank) Shutdown() {
 		sb.Switches[i].(*Switch).Shutdown()
 	}
 }
-*/

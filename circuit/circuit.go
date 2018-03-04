@@ -28,6 +28,6 @@ type Electron struct {
 
 func Debug(name, text string) {
 	if Debugging {
-		fmt.Printf("%v,%s,\"%s\"\n", time.Now().Format(time.RFC3339), name, text)
+		fmt.Printf("%v,%s,\"%s\"\n", time.Now().Format("01-02-2006 15:04:05.9999999"), name, text)
 	}
 }

@@ -39,7 +39,7 @@ func (p *pwrSource) Transmit(newPowerState bool) {
 
 	if p.isPowered.Load().(bool) != newPowerState {
 		p.isPowered.Store(newPowerState)
-		Debug(p.Name, fmt.Sprintf("Transmit (better chance of transmitting (%t) since state did change)", newPowerState))
+		Debug(p.Name, fmt.Sprintf("Transmit (%t)...better chance since state did change", newPowerState))
 
 		if len(p.outChannels) == 0 {
 			Debug(p.Name, "No Transmit, nothing wired up")

@@ -1,8 +1,7 @@
 package circuit
 
-// "fmt"
-// "time"
-/*
+import "fmt"
+
 // HalfAdder is a standard Half Adder circuit
 //	A and B inputs result in Sum and Carry outputs (as normal, this circuit doesn't handle a carry in (needs FullAdder for that)
 //
@@ -17,16 +16,12 @@ type HalfAdder struct {
 	Carry *ANDGate
 }
 
-func NewHalfAdder(pin1, pin2 pwrEmitter) *HalfAdder {
-	return NewNamedHalfAdder("?", pin1, pin2)
-}
-
 // NewHalfAdder returns a HalfAdder which can add up the values of the two input pins
-func NewNamedHalfAdder(name string, pin1, pin2 pwrEmitter) *HalfAdder {
+func NewHalfAdder(name string, pin1, pin2 pwrEmitter) *HalfAdder {
 	h := &HalfAdder{}
 
-	h.Sum = NewNamedXORGate(fmt.Sprintf("%s-XORGate", name), pin1, pin2)
-	h.Carry = NewNamedANDGate(fmt.Sprintf("%s-ANDGate", name), pin1, pin2)
+	h.Sum = NewXORGate(fmt.Sprintf("%s-XORGate", name), pin1, pin2)
+	h.Carry = NewANDGate(fmt.Sprintf("%s-ANDGate", name), pin1, pin2)
 
 	return h
 }
@@ -37,6 +32,7 @@ func (h *HalfAdder) Shutdown() {
 	h.Sum.Shutdown()
 }
 
+/*
 // FullAdder is a standard Full Adder circuit
 // 	A, B, and Carry in result in Sum and Carry out (can handle "1 + 1 = 0 carry the 1"!)
 //
