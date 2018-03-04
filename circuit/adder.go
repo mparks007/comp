@@ -32,7 +32,6 @@ func (h *HalfAdder) Shutdown() {
 	h.Sum.Shutdown()
 }
 
-/*
 // FullAdder is a standard Full Adder circuit
 // 	A, B, and Carry in result in Sum and Carry out (can handle "1 + 1 = 0 carry the 1"!)
 //
@@ -53,18 +52,14 @@ type FullAdder struct {
 	Carry      *ORGate
 }
 
-func NewFullAdder(pin1, pin2, carryInPin pwrEmitter) *FullAdder {
-	return NewNamedFullAdder("?", pin1, pin2, carryInPin)
-}
-
 // NewFullAdder returns a FullAdder which can add up the values of the two input pins, but also accepts a carry-in pin to include in the addition
-func NewNamedFullAdder(name string, pin1, pin2, carryInPin pwrEmitter) *FullAdder {
+func NewFullAdder(name string, pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 	f := &FullAdder{}
 
-	f.halfAdder1 = NewNamedHalfAdder(fmt.Sprintf("%s-LeftHalfAdder", name), pin1, pin2)
-	f.halfAdder2 = NewNamedHalfAdder(fmt.Sprintf("%s-RightHalfAdder", name), f.halfAdder1.Sum, carryInPin)
+	f.halfAdder1 = NewHalfAdder(fmt.Sprintf("%s-LeftHalfAdder", name), pin1, pin2)
+	f.halfAdder2 = NewHalfAdder(fmt.Sprintf("%s-RightHalfAdder", name), f.halfAdder1.Sum, carryInPin)
 	f.Sum = f.halfAdder2.Sum
-	f.Carry = NewNamedORGate(fmt.Sprintf("%s-ORGate", name), f.halfAdder1.Carry, f.halfAdder2.Carry)
+	f.Carry = NewORGate(fmt.Sprintf("%s-ORGate", name), f.halfAdder1.Carry, f.halfAdder2.Carry)
 
 	return f
 }
@@ -75,7 +70,7 @@ func (f *FullAdder) Shutdown() {
 	f.halfAdder2.Shutdown()
 	f.halfAdder1.Shutdown()
 }
-
+/*
 // NBitAdder allows the summing of two binary numbers
 //	Handles a Carry bit in and holds potential Carry bit after summing all
 //

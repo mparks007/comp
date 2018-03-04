@@ -1,1 +1,0 @@
-FAIL	github.com/mparks007/comp/circuit [build failed]
