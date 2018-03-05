@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// master flag to control very verbose logging to the console
+// Debugging is the master flag to control very verbose logging to the console
 var Debugging = true
 
 // wireUpper allows a circuit component to wire up to a transmitter component in order to be told of the transmitter's power state
