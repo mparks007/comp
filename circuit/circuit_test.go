@@ -2,6 +2,7 @@ package circuit
 
 import (
 	"fmt"
+	"math/rand"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -17,13 +18,6 @@ import (
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
 // go test -race -cpu=1 -run TestFullAdder -count 5 -trace TestFullAdder_trace.txt > TestFullAdder_run.txt
 
-// setSwitches will flip the switches of a SwitchBank to match a passed in bits string
-// func setSwitches(switchBank *NSwitchBank, bits string) {
-// 	for i, b := range bits {
-// 		switchBank.Switches[i].(*Switch).Set(b == '1')
-// 	}
-// }
-
 func TestPwrsource(t *testing.T) {
 	pwr := &pwrSource{}
 	pwr.Init()
@@ -38,13 +32,13 @@ func TestPwrsource(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug("TestPwrsource:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
+				Debug("TestPwrsource:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
 				got1.Store(e1.powerState)
-				e1.wg.Done()
+				e1.Done()
 			case e2 := <-ch2:
-				Debug("TestPwrsource:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
+				Debug("TestPwrsource:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
 				got2.Store(e2.powerState)
-				e2.wg.Done()
+				e2.Done()
 			case <-chStop:
 				return
 			}
@@ -117,13 +111,13 @@ func TestWire_NoDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug("TestWire_NoDelay:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
+				Debug("TestWire_NoDelay:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
 				got1.Store(e1.powerState)
-				e1.wg.Done()
+				e1.Done()
 			case e2 := <-ch2:
-				Debug("TestWire_NoDelay:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
+				Debug("TestWire_NoDelay:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
 				got2.Store(e2.powerState)
-				e2.wg.Done()
+				e2.Done()
 			case <-chStop:
 				return
 			}
@@ -198,13 +192,13 @@ func TestWire_WithDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug("TestWire_WithDelay:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
+				Debug("TestWire_WithDelay:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
 				got1.Store(e1.powerState)
-				e1.wg.Done()
+				e1.Done()
 			case e2 := <-ch2:
-				Debug("TestWire_WithDelay:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
+				Debug("TestWire_WithDelay:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
 				got2.Store(e2.powerState)
-				e2.wg.Done()
+				e2.Done()
 			case <-chStop:
 				return
 			}
@@ -299,13 +293,13 @@ func TestRibbonCable(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug("TestRibbonCable:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.Name, ch1))
+				Debug("TestRibbonCable:Select", fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
 				got1.Store(e1.powerState)
-				e1.wg.Done()
+				e1.Done()
 			case e2 := <-ch2:
-				Debug("TestRibbonCable:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.Name, ch2))
+				Debug("TestRibbonCable:Select", fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
 				got2.Store(e2.powerState)
-				e2.wg.Done()
+				e2.Done()
 			case <-chStop:
 				return
 			}
@@ -342,9 +336,9 @@ func TestBattery(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestBattery:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestBattery:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -421,13 +415,13 @@ func TestRelay_WithBatteries(t *testing.T) {
 		for {
 			select {
 			case eOpen := <-openCh:
-				Debug("TestRelay_WithBatteries:Select", fmt.Sprintf("(openCh) Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.Name, openCh))
+				Debug("TestRelay_WithBatteries:Select", fmt.Sprintf("(openCh) Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.name, openCh))
 				gotOpenOut.Store(eOpen.powerState)
-				eOpen.wg.Done()
+				eOpen.Done()
 			case eClosed := <-closedCh:
-				Debug("TestRelay_WithBatteries:Select", fmt.Sprintf("(closedCh) Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.Name, closedCh))
+				Debug("TestRelay_WithBatteries:Select", fmt.Sprintf("(closedCh) Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.name, closedCh))
 				gotClosedOut.Store(eClosed.powerState)
-				eClosed.wg.Done()
+				eClosed.Done()
 			case <-chStop:
 				return
 			}
@@ -491,9 +485,9 @@ func TestSwitch(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestSwitch:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestSwitch:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -603,9 +597,9 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestNewNSwitchBank_GoodInputs:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestNewNSwitchBank_GoodInputs:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -630,7 +624,7 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 			Debug("TestNewNSwitchBank_GoodInputs", "Start Test Cases WireUp Per Switch")
 
 			// will just check one switch at a time vs. trying to get some full answer in one go from the bank
-			for i, pwr := range sb.Switches {
+			for i, pwr := range sb.Switches() {
 
 				pwr.(*Switch).WireUp(ch)
 
@@ -645,6 +639,83 @@ func TestNewNSwitchBank_GoodInputs(t *testing.T) {
 	}
 
 	Debug("TestNewNSwitchBank_GoodInputs", "End Test Cases Loop")
+}
+
+func TestNewNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  []bool
+	}{
+		{"0", []bool{false}},
+		{"1", []bool{true}},
+		{"101", []bool{true, false, true}},
+		{"00000000", []bool{false, false, false, false, false, false, false, false}},
+		{"11111111", []bool{true, true, true, true, true, true, true, true}},
+		{"10101010", []bool{true, false, true, false, true, false, true, false}},
+		{"10000001", []bool{true, false, false, false, false, false, false, true}},
+		{"1010101010101010", []bool{true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false}},
+		{"1000000000000001", []bool{true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}},
+		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}},
+		{"1111111111111111", []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}},
+		{"0000000000000000", []bool{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}}, // final test ensuring we can toggle all inputs fully reversed again
+	}
+
+	var got atomic.Value
+	ch := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-ch:
+				Debug("TestNewNSwitchBank_GoodInputs_SetSwitches:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				got.Store(e.powerState)
+				e.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	Debug("TestNewNSwitchBank_GoodInputs_SetSwitches", "Start Test Cases Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Contructing NSwitchBank with switches set to (%s)", i, tc.input), func(t *testing.T) {
+			Debug("TestNewNSwitchBank_GoodInputs_SetSwitches", fmt.Sprintf("testCases[%d]: Contructing NSwitchBank with switches set to (%s)", i, tc.input))
+			Debug("TestNewNSwitchBank_GoodInputs_SetSwitches", "Initial Setup")
+
+			// weak attempt to have some random 1s and 0s as the initial switch bank setup on construction
+			randomInput := make([]byte, len(tc.input))
+			for i := range randomInput {
+				randomInput[i] = "000000111111"[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(12)]
+			}
+
+			sb, err := NewNSwitchBank("TestNewNSwitchBank_GoodInputs_SetSwitches:NewNSwitchBank", string(randomInput))
+			sb.SetSwitches(tc.input)
+
+			if err != nil {
+				t.Error("Unexpected error: " + err.Error())
+			}
+			defer sb.Shutdown()
+
+			Debug("TestNewNSwitchBank_GoodInputs_SetSwitches", "Start Test Cases WireUp Per Switch")
+
+			// will just check one switch at a time vs. trying to get some full answer in one go from the bank
+			for i, pwr := range sb.Switches() {
+
+				pwr.(*Switch).WireUp(ch)
+
+				want := tc.want[i]
+
+				if got.Load().(bool) != want {
+					t.Errorf("At index %d, wanted %t but got %t", i, want, got.Load().(bool))
+				}
+			}
+			Debug("TestNewNSwitchBank_GoodInputs_SetSwitches", "End Test Cases WireUp Per Switch")
+		})
+	}
+
+	Debug("TestNewNSwitchBank_GoodInputs_SetSwitches", "End Test Cases Loop")
 }
 
 func TestRelay_WithSwitches(t *testing.T) {
@@ -683,13 +754,13 @@ func TestRelay_WithSwitches(t *testing.T) {
 		for {
 			select {
 			case eOpen := <-openCh:
-				Debug("TestRelay_WithSwitches:Select", fmt.Sprintf("(openCh) Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.Name, openCh))
+				Debug("TestRelay_WithSwitches:Select", fmt.Sprintf("(openCh) Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.name, openCh))
 				gotOpenOut.Store(eOpen.powerState)
-				eOpen.wg.Done()
+				eOpen.Done()
 			case eClosed := <-closedCh:
-				Debug("TestRelay_WithSwitches:Select", fmt.Sprintf("(closedCh) Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.Name, closedCh))
+				Debug("TestRelay_WithSwitches:Select", fmt.Sprintf("(closedCh) Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.name, closedCh))
 				gotClosedOut.Store(eClosed.powerState)
-				eClosed.wg.Done()
+				eClosed.Done()
 			case <-chStop:
 				return
 			}
@@ -769,9 +840,9 @@ func TestANDGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestANDGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestANDGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -844,9 +915,9 @@ func TestORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -919,9 +990,9 @@ func TestNANDGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestNANDGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestNANDGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -994,9 +1065,9 @@ func TestNORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestNORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestNORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -1061,9 +1132,9 @@ func TestXORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestXORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestXORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -1119,9 +1190,9 @@ func TestInverter(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestInverter:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestInverter:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -1183,9 +1254,9 @@ func TestXNORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug("TestXNORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.Name, ch))
+				Debug("TestXNORGate:Select", fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
 				got.Store(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-chStop:
 				return
 			}
@@ -1251,13 +1322,13 @@ func TestHalfAdder(t *testing.T) {
 		for {
 			select {
 			case eS := <-chSum:
-				Debug("TestHalfAdder:Select", fmt.Sprintf("(Sum) Received (%t) from (%s) on (%v)", eS.powerState, eS.Name, chSum))
+				Debug("TestHalfAdder:Select", fmt.Sprintf("(Sum) Received (%t) from (%s) on (%v)", eS.powerState, eS.name, chSum))
 				gotSum.Store(eS.powerState)
-				eS.wg.Done()
+				eS.Done()
 			case eC := <-chCarry:
-				Debug("TestHalfAdder:Select", fmt.Sprintf("(Carry) Received (%t) from (%s) on (%v)", eC.powerState, eC.Name, chCarry))
+				Debug("TestHalfAdder:Select", fmt.Sprintf("(Carry) Received (%t) from (%s) on (%v)", eC.powerState, eC.name, chCarry))
 				gotCarry.Store(eC.powerState)
-				eC.wg.Done()
+				eC.Done()
 			case <-chStop:
 				return
 			}
@@ -1344,11 +1415,11 @@ func TestFullAdder_Orig(t *testing.T) {
 			case eS := <-chSum:
 				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eS.powerState, chSum))
 				gotSum.Store(eS.powerState)
-				eS.wg.Done()
+				eS.Done()
 			case eC := <-chCarry:
 				Debug(fmt.Sprintf("[Test]: Received (%t) on %v", eC.powerState, chCarry))
 				gotCarry.Store(eC.powerState)
-				eC.wg.Done()
+				eC.Done()
 			case <-chStop:
 				return
 			}
@@ -1414,13 +1485,13 @@ func TestFullAdder_New(t *testing.T) {
 		for {
 			select {
 			case eS := <-chSum:
-				Debug("TestFullAdder_New:Select", fmt.Sprintf("(Sum) Received (%t) from (%s) on (%v)", eS.powerState, eS.Name, chSum))
+				Debug("TestFullAdder_New:Select", fmt.Sprintf("(Sum) Received (%t) from (%s) on (%v)", eS.powerState, eS.name, chSum))
 				gotSum.Store(eS.powerState)
-				eS.wg.Done()
+				eS.Done()
 			case eC := <-chCarry:
-				Debug("TestFullAdder_New:Select", fmt.Sprintf("(Carry) Received (%t) from (%s) on (%v)", eC.powerState, eC.Name, chCarry))
+				Debug("TestFullAdder_New:Select", fmt.Sprintf("(Carry) Received (%t) from (%s) on (%v)", eC.powerState, eC.name, chCarry))
 				gotCarry.Store(eC.powerState)
-				eC.wg.Done()
+				eC.Done()
 			case <-chStop:
 				return
 			}
@@ -1507,7 +1578,7 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
 			defer addend2Switches.Shutdown()
 
-			addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, nil)
+			addr, err := NewNBitAdder(addend1Switches.Switches(), addend2Switches.Switches(), nil)
 
 			if addr != nil {
 				addr.Shutdown()
@@ -1560,7 +1631,7 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	defer carryInSwitch.Shutdown()
 
 	// create the adder based on those switches
-	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
+	addr, err := NewNBitAdder(addend1Switches.Switches(), addend2Switches.Switches(), carryInSwitch)
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1584,7 +1655,7 @@ func TestNBitAdder_EightBit(t *testing.T) {
 				select {
 				case e := <-chState:
 					gots[index].Store(e.powerState)
-					e.wg.Done()
+					e.Done()
 				case <-chStop:
 					return
 				}
@@ -1667,7 +1738,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	defer carryInSwitch.Shutdown()
 
 	// create the adder based on those switches
-	addr, err := NewNBitAdder(addend1Switches.Switches, addend2Switches.Switches, carryInSwitch)
+	addr, err := NewNBitAdder(addend1Switches.Switches(), addend2Switches.Switches(), carryInSwitch)
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1691,7 +1762,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 				select {
 				case e := <-chState:
 					gots[index].Store(e.powerState)
-					e.wg.Done()
+					e.Done()
 				case <-chStop:
 					return
 				}
@@ -1766,7 +1837,7 @@ func TestOnesCompliment(t *testing.T) {
 			signalSwitch := NewSwitch(tc.signalIsPowered)
 			defer signalSwitch.Shutdown()
 
-			comp := NewOnesComplementer(bitSwitches.Switches, signalSwitch)
+			comp := NewOnesComplementer(bitSwitches.Switches(), signalSwitch)
 
 			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
@@ -1786,7 +1857,7 @@ func TestOnesCompliment(t *testing.T) {
 						select {
 						case e := <-chState:
 							gotCompliments[index].Store(e.powerState)
-							e.wg.Done()
+							e.Done()
 						case <-chStop:
 							return
 						}
@@ -1840,7 +1911,7 @@ func TestNBitSubtractor_BadInputLengths(t *testing.T) {
 			subtrahendSwitches, _ := NewNSwitchBank(tc.byte2)
 			defer subtrahendSwitches.Shutdown()
 
-			sub, err := NewNBitSubtractor(minuendSwitches.Switches, subtrahendSwitches.Switches)
+			sub, err := NewNBitSubtractor(minuendSwitches.Switches(), subtrahendSwitches.Switches())
 
 			if sub != nil {
 				sub.Shutdown()
@@ -1887,7 +1958,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 	subtrahendSwitches, _ := NewNSwitchBank("00000000")
 	defer subtrahendSwitches.Shutdown()
 
-	sub, err := NewNBitSubtractor(minuendwitches.Switches, subtrahendSwitches.Switches)
+	sub, err := NewNBitSubtractor(minuendwitches.Switches(), subtrahendSwitches.Switches())
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1911,7 +1982,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 				select {
 				case e := <-chState:
 					gots[index].Store(e.powerState)
-					e.wg.Done()
+					e.Done()
 				case <-chStop:
 					return
 				}
@@ -2061,7 +2132,7 @@ func TestRSFlipFlop(t *testing.T) {
 			select {
 			case eQBar := <-chQBar:
 				gotQBar.Store(eQBar.powerState)
-				eQBar.wg.Done()
+				eQBar.Done()
 			case <-chStopQBar:
 				return
 			}
@@ -2073,7 +2144,7 @@ func TestRSFlipFlop(t *testing.T) {
 			select {
 			case eQ := <-chQ:
 				gotQ.Store(eQ.powerState)
-				eQ.wg.Done()
+				eQ.Done()
 			case <-chStopQ:
 				return
 			}
@@ -2240,7 +2311,7 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 	clkSwitch := NewSwitch(true)
 	defer clkSwitch.Shutdown()
 
-	latch := NewNBitLevelTriggeredDTypeLatch(clkSwitch, latchSwitches.Switches)
+	latch := NewNBitLevelTriggeredDTypeLatch(clkSwitch, latchSwitches.Switches())
 	defer latch.Shutdown()
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
@@ -2327,7 +2398,7 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 			addend2Switches, _ := NewNSwitchBank(tc.byte2)
 			defer addend2Switches.Shutdown()
 
-			sel, err := NewTwoToOneSelector(nil, addend1Switches.Switches, addend2Switches.Switches)
+			sel, err := NewTwoToOneSelector(nil, addend1Switches.Switches(), addend2Switches.Switches())
 
 			if sel != nil {
 				t.Error("Did not expect a Selector to be created, but got one")
@@ -2376,7 +2447,7 @@ func TestTwoToOneSelector(t *testing.T) {
 	cases := make([]reflect.SelectCase, 3)
 	got := make([]atomic.Value, 3)
 
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches, bInSwitches.Switches)
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches(), bInSwitches.Switches())
 	defer sel.Shutdown()
 
 	// built the case statements to deal with each selector output
@@ -2439,7 +2510,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	cases := make([]reflect.SelectCase, 3)
 	got := make([]atomic.Value, 3)
 
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches, bInSwitches.Switches)
+	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches(), bInSwitches.Switches())
 	defer sel.Shutdown()
 
 	// built the case statements to deal with each selector output
@@ -2499,7 +2570,7 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	bInSwitches, _ := NewNSwitchBank("0000")
 	defer bInSwitches.Shutdown()
 
-	addr, err := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
+	addr, err := NewThreeNumberAdder(aInSwitches.Switches(), bInSwitches.Switches())
 
 	if addr != nil {
 		t.Error("Did not expect an adder back but got one.")
@@ -2530,7 +2601,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	bInSwitches, _ := NewNSwitchBank("00000000")
 	defer bInSwitches.Shutdown()
 
-	addr, _ := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
+	addr, _ := NewThreeNumberAdder(aInSwitches.Switches(), bInSwitches.Switches())
 	defer addr.Shutdown()
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
@@ -2608,7 +2679,7 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	bInSwitches, _ := NewNSwitchBank("00000001")
 	defer bInSwitches.Shutdown()
 
-	addr, _ := NewThreeNumberAdder(aInSwitches.Switches, bInSwitches.Switches)
+	addr, _ := NewThreeNumberAdder(aInSwitches.Switches(), bInSwitches.Switches())
 	defer addr.Shutdown()
 
 	// setup the Sum results bool array (default all to false to match the initial switch states above)
@@ -2844,7 +2915,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	clkSwitch := NewSwitch(false)
 	defer clkSwitch.Shutdown()
 
-	latch := NewNBitLevelTriggeredDTypeLatchWithClear(clrSwitch, clkSwitch, dataSwitches.Switches)
+	latch := NewNBitLevelTriggeredDTypeLatchWithClear(clrSwitch, clkSwitch, dataSwitches.Switches())
 	defer latch.Shutdown()
 
 	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case

@@ -39,9 +39,9 @@ func NewWire(name string, length uint) *Wire {
 		for {
 			select {
 			case e := <-w.Input:
-				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, w.Input))
+				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, w.Input))
 				w.Transmit(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-w.chStop:
 				Debug(w.name, "Stopped")
 				return
@@ -65,7 +65,7 @@ func (w *Wire) WireUp(ch chan Electron) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	Debug(w.name, fmt.Sprintf("Transmitting (%t) to (%v) due to WireUp", w.isPowered.Load().(bool), ch))
-	ch <- Electron{Name: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
+	ch <- Electron{name: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
 	wg.Wait()
 }
 
@@ -82,7 +82,7 @@ func (w *Wire) Transmit(newPowerState bool) {
 			Debug(w.name, "No Transmit, nothing wired up")
 		} else {
 			wg := &sync.WaitGroup{}                                        // will use this to ensure we finish firing off the state change to all wired up components
-			e := Electron{Name: w.name, powerState: newPowerState, wg: wg} // for now, will share the same electron object across all immediate listeners (each listener's channel receipt must call their own Done)
+			e := Electron{name: w.name, powerState: newPowerState, wg: wg} // for now, will share the same electron object across all immediate listeners (each listener's channel receipt must call their own Done)
 
 			for i, ch := range w.outChannels {
 				if w.length > 0 {

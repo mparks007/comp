@@ -1,18 +1,19 @@
 package circuit
 
-/*
+import "fmt"
+
 // OnesComplementer is a circuit which will invert the power of all input pins when given a signal
 type OnesComplementer struct {
 	Complements []pwrEmitter
 }
 
 // NewOnesComplementer will return a OnesComplementer component which will convert the power state of every input IF the signal pin is given power
-func NewOnesComplementer(pins []pwrEmitter, signal pwrEmitter) *OnesComplementer {
+func NewOnesComplementer(name string, pins []pwrEmitter, signal pwrEmitter) *OnesComplementer {
 
 	comp := &OnesComplementer{}
 
 	for _, pin := range pins {
-		comp.Complements = append(comp.Complements, NewXORGate(signal, pin))
+		comp.Complements = append(comp.Complements, NewXORGate(fmt.Sprintf("%s-XORGate", name), signal, pin))
 	}
 
 	return comp
@@ -24,5 +25,3 @@ func (o *OnesComplementer) Shutdown() {
 		o.Complements[i].(*XORGate).Shutdown()
 	}
 }
-
-*/

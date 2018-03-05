@@ -38,11 +38,11 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(answer bool) {
 					gate.Transmit(answer)
-					e.wg.Done()
+					e.Done()
 				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
@@ -98,7 +98,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.Name, chState))
+					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 					gots[index].Store(e.powerState)
 
 					var answer bool
@@ -121,7 +121,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 					go func(answer bool) {
 						gate.Transmit(answer)
-						e.wg.Done()
+						e.Done()
 					}(answer)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
@@ -178,7 +178,7 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.Name, chState))
+					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 					gots[index].Store(e.powerState)
 
 					var answer bool
@@ -201,7 +201,7 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 					go func(answer bool) {
 						gate.Transmit(answer)
-						e.wg.Done()
+						e.Done()
 					}(answer)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
@@ -258,11 +258,11 @@ func NewNORGate(name string, pins ...pwrEmitter) *NORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(answer bool) {
 					gate.Transmit(answer)
-					e.wg.Done()
+					e.Done()
 				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
@@ -315,11 +315,11 @@ func NewXORGate(name string, pin1, pin2 pwrEmitter) *XORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(answer bool) {
 					gate.Transmit(answer)
-					e.wg.Done()
+					e.Done()
 				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
@@ -371,11 +371,11 @@ func NewXNORGate(name string, pin1, pin2 pwrEmitter) *XNORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(answer bool) {
 					gate.Transmit(answer)
-					e.wg.Done()
+					e.Done()
 				}(e.powerState)
 			case <-gate.chStop:
 				Debug(name, "Stopped")

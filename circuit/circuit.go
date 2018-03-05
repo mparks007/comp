@@ -32,9 +32,14 @@ type Logger interface {
 
 // Electron will be the the pimary means for indicating power flowing from component to component (and flagging if propogation of state change has ended)
 type Electron struct {
-	Name       string
+	name       string
 	powerState bool
 	wg         *sync.WaitGroup
+}
+
+// Done will let the internal waitgroup know the processing for the Electron has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls)
+func (e *Electron) Done() {
+	e.wg.Done()
 }
 
 // Debug will write verbose state to the console (csv format: date/time,name,text)

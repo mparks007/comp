@@ -27,9 +27,9 @@ func NewSwitch(name string, startState bool) *Switch {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.Name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				sw.Transmit(e.powerState)
-				e.wg.Done()
+				e.Done()
 			case <-sw.chStop:
 				Debug(name, "Stopped")
 				return
@@ -60,7 +60,7 @@ func (s *Switch) Set(newState bool) {
 
 // NSwitchBank is a convenient way to get any number of power emitters from a string of 0/1s
 type NSwitchBank struct {
-	Switches []pwrEmitter
+	switches []pwrEmitter
 }
 
 // NewNSwitchBank takes a string of 0/1s and creates a slice of Switch objects, where each one is independently initialized based on "0" or "1" in the string
@@ -78,15 +78,27 @@ func NewNSwitchBank(name string, bits string) (*NSwitchBank, error) {
 	sb := &NSwitchBank{}
 
 	for i, bit := range bits {
-		sb.Switches = append(sb.Switches, NewSwitch(fmt.Sprintf("%s-Switches[%d]", name, i), bit == '1'))
+		sb.switches = append(sb.switches, NewSwitch(fmt.Sprintf("%s-Switches[%d]", name, i), bit == '1'))
 	}
 
 	return sb, nil
 }
 
+// Switches returns the internal switch slice for the switch bank (still allows external altering of the inner variable?  fix if so...)
+func (sb *NSwitchBank) Switches() []pwrEmitter {
+	return sb.switches
+}
+
+// SetSwitches will flip the switches of the switch bank to match a passed in bits string
+func (sb *NSwitchBank) SetSwitches(bits string) {
+	for i, b := range bits {
+		sb.switches[i].(*Switch).Set(b == '1')
+	}
+}
+
 // Shutdown will allow the go funcs, which are handling listen/transmit on each switch, to exit
 func (sb *NSwitchBank) Shutdown() {
-	for i := range sb.Switches {
-		sb.Switches[i].(*Switch).Shutdown()
+	for i := range sb.switches {
+		sb.switches[i].(*Switch).Shutdown()
 	}
 }
