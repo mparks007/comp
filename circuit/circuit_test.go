@@ -42,7 +42,7 @@ func TestPwrsource(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, ":Select"), fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
@@ -1378,6 +1378,30 @@ func TestHalfAdder(t *testing.T) {
 		})
 	}
 	Debug("TestHalfAdder", "End Test Cases Loop")
+}
+
+func TestLoopedORGate(t *testing.T) {
+	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", "Test"), 0)
+	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", "Test"), 0)
+
+	sPinBattery := NewBattery("sPinBattery", false)
+	QBar := NewORGate(fmt.Sprintf("%s-QBarORGate", "Test"), sPinBattery, wireQOut)
+	QBar.WireUp(wireQBarOut.Input)
+
+	rPinBattery := NewBattery("rPinBattery", false)
+	Q := NewORGate(fmt.Sprintf("%s-QORGate", "Test"), rPinBattery, wireQBarOut)
+	Q.WireUp(wireQOut.Input)
+
+	 sPinBattery.Charge()
+	// sPinBattery.Discharge()
+	// rPinBattery.Charge()
+	// rPinBattery.Discharge()
+
+	// sPinBattery.Charge()
+	// rPinBattery.Charge()
+
+	// sPinBattery.Discharge()
+	// rPinBattery.Discharge()
 }
 
 func TestFullAdder(t *testing.T) {

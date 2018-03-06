@@ -102,6 +102,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 				case e := <-chState:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
+					//					go func(e Electron, answer bool) {
 					go func(e Electron) {
 						mu.Lock()
 						gots[index].Store(e.powerState)
@@ -124,9 +125,12 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 						}
 						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
 
+						//go func(e Electron, answer bool) {
+						//go func(e Electron) {
 						gate.Transmit(answer)
-						e.Done()
 						mu.Unlock()
+						e.Done()
+						//}(e, answer)
 					}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
@@ -186,6 +190,7 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 				case e := <-chState:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
+					//					go func(e Electron, answer bool) {
 					go func(e Electron) {
 						mu.Lock()
 						gots[index].Store(e.powerState)
@@ -208,9 +213,12 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 						}
 						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
 
+						//go func(e Electron, answer bool) {
+						//go func(e Electron) {
 						gate.Transmit(answer)
-						e.Done()
 						mu.Unlock()
+						e.Done()
+						//}(e, answer)
 					}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))

@@ -13,7 +13,8 @@ type Relay struct {
 	ClosedOut    pwrSource     // external access point to active/engaged relay
 	aInCh        chan Electron // channel to track the relay arm path input
 	bInCh        chan Electron // channel to track the electromagnet path inpupt
-	chStop       chan bool     // shutdown channel for listening loop
+	chAStop       chan bool     // shutdown channel for listening loop
+	chBStop       chan bool     // shutdown channel for listening loop
 }
 
 // NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
@@ -22,7 +23,8 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 
 	rel.aInCh = make(chan Electron, 1)
 	rel.bInCh = make(chan Electron, 1)
-	rel.chStop = make(chan bool, 1)
+	rel.chAStop = make(chan bool, 1)
+	rel.chBStop = make(chan bool, 1)
 
 	// default to false (as a boolean defaults)
 	rel.aInIsPowered.Store(false)
@@ -43,6 +45,7 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 		rel.ClosedOut.Transmit(aInIsPowered && bInIsPowered)
 	}
 
+	// must do separate go funcs since loopback-based circuits may send aIns processing back around to the relay and we don't want to lock out the bIn case (and vice versa)
 	go func() {
 		for {
 			select {
@@ -51,12 +54,22 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 				rel.aInIsPowered.Store(e.powerState)
 				transmit()
 				e.Done()
+			case <-rel.chAStop:
+				Debug(name, "Stopped")
+				return
+			}
+		}
+	}()
+	go func() {
+		for {
+			select {
 			case e := <-rel.bInCh:
 				Debug(name, fmt.Sprintf("(bIn) Received (%t) from (%s) on (%v)", e.powerState, e.name, rel.bInCh))
 				rel.bInIsPowered.Store(e.powerState)
 				transmit()
 				e.Done()
-			case <-rel.chStop:
+			case <-rel.chBStop:
+				Debug(name, "Stopped")
 				return
 			}
 		}
@@ -70,5 +83,6 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit, to exit
 func (r *Relay) Shutdown() {
-	r.chStop <- true
+	r.chAStop <- true
+	r.chBStop <- true
 }
