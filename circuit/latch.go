@@ -41,7 +41,7 @@ func (f *RSFlipFlop) Shutdown() {
 	f.wireQBarOut.Shutdown()
 	f.wireQOut.Shutdown()
 }
-
+/*
 // LevelTriggeredDTypeLatch is a type of latch/flipflop which will store the value of data only when the clock is high (on) ("Level" = clock high/low, "D" = data 0/1)
 //
 // Truth Table

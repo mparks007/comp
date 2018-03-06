@@ -7,7 +7,7 @@ import (
 )
 
 // Debugging is the master flag to control very verbose logging to the console
-var Debugging = true
+var Debugging = false
 
 // wireUpper allows a circuit component to wire up to a transmitter component in order to be told of the transmitter's power state
 type wireUpper interface {
@@ -36,6 +36,14 @@ type Electron struct {
 	powerState bool
 	wg         *sync.WaitGroup
 }
+
+// add Wait() too
+// add Wait() too
+// add Wait() too
+// add Wait() too
+// add Wait() too
+// add Wait() too
+// add Wait() too
 
 // Done will let the internal waitgroup know the processing for the Electron has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls)
 func (e *Electron) Done() {

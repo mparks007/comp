@@ -2,6 +2,7 @@ package circuit
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 )
 
@@ -40,10 +41,10 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 			case e := <-chState:
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-				go func(answer bool) {
-					gate.Transmit(answer)
+				go func(e Electron) {
+					gate.Transmit(e.powerState)
 					e.Done()
-				}(e.powerState)
+				}(e)
 			case <-gate.chStop:
 				Debug(name, "Stopped")
 				return
@@ -86,6 +87,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 	gate.Init()
 	gate.Name = name
 
+	mu := &sync.Mutex{}
 	// build a relay and associated listen/transmit func to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
@@ -98,31 +100,34 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
-					gots[index].Store(e.powerState)
+					go func(e Electron) {
+						Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
-					var answer bool
-					// if already found a true, no need to check the other relays
-					if e.powerState {
-						answer = true
-					} else {
-						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
-						answer = false
-						for g := range gots {
-							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-							if gots[g].Load() != nil && gots[g].Load().(bool) {
-								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
-								answer = true
-								break
+						mu.Lock()
+						gots[index].Store(e.powerState)
+
+						var answer bool
+						// if already found a true, no need to check the other relays
+						if e.powerState {
+							answer = true
+						} else {
+							Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
+							answer = false
+							for g := range gots {
+								// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
+								if gots[g].Load() != nil && gots[g].Load().(bool) {
+									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
+									answer = true
+									break
+								}
 							}
 						}
-					}
-					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-					go func(answer bool) {
+						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
+						// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 						gate.Transmit(answer)
 						e.Done()
-					}(answer)
+						mu.Unlock()
+					}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
@@ -166,6 +171,7 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 	gate.Init()
 	gate.Name = name
 
+	mu := &sync.Mutex{}
 	// build a relay and associated listen/transmit func to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
@@ -178,31 +184,35 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
-					gots[index].Store(e.powerState)
+					go func(e Electron) {
+						Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
-					var answer bool
-					// if already found a true, no need to check the other relays
-					if e.powerState {
-						answer = true
-					} else {
-						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
-						answer = false
-						for g := range gots {
-							// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
-							if gots[g].Load() != nil && gots[g].Load().(bool) {
-								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
-								answer = true
-								break
+						mu.Lock()
+						gots[index].Store(e.powerState)
+
+						var answer bool
+						// if already found a true, no need to check the other relays
+						if e.powerState {
+							answer = true
+						} else {
+							Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
+							answer = false
+							for g := range gots {
+								// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
+								if gots[g].Load() != nil && gots[g].Load().(bool) {
+									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
+									answer = true
+									break
+								}
 							}
 						}
-					}
-					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
-					go func(answer bool) {
+
+						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
+						// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 						gate.Transmit(answer)
 						e.Done()
-					}(answer)
+						mu.Unlock()
+					}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
