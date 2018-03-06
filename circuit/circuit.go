@@ -37,14 +37,6 @@ type Electron struct {
 	wg         *sync.WaitGroup
 }
 
-// add Wait() too
-// add Wait() too
-// add Wait() too
-// add Wait() too
-// add Wait() too
-// add Wait() too
-// add Wait() too
-
 // Done will let the internal waitgroup know the processing for the Electron has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls)
 func (e *Electron) Done() {
 	e.wg.Done()

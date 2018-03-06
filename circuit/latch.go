@@ -1,6 +1,7 @@
 package circuit
 
-/*
+import "fmt"
+
 // RSFlipFlop (Reset-Set) Flip-Flop is a standard flipflop circuit controlled by Set and Reset to output power at Q or "QBar" (QBar being opposite of Q)
 // 	...or is this an SR (Set-Reset) Flip-Flop, or is this just an RS Latch?  SR Latch?  No matter for my purposes thus far...
 //  This circuit is core to more complicated FlipFops/Latches to make even further complicated components (memory, counters, more?)
@@ -19,16 +20,16 @@ type RSFlipFlop struct {
 }
 
 // NewRSFlipFLop returns an RSFlipFlop circuit which will be controlled by the passed in Reset/Set pins, resulting in varying states of its two outputs, Q and QBar
-func NewRSFlipFLop(rPin, sPin pwrEmitter) *RSFlipFlop {
+func NewRSFlipFLop(name string, rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
-	ff.wireQOut = NewWire(0)
-	ff.wireQBarOut = NewWire(0)
+	ff.wireQOut = NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
+	ff.wireQBarOut = NewWire(fmt.Sprintf("%s-QBarOutWire", name), 0)
 
-	ff.QBar = NewNORGate(sPin, ff.wireQOut)
+	ff.QBar = NewNORGate(fmt.Sprintf("%s-QBarNORGate", name), sPin, ff.wireQOut)
 	ff.QBar.WireUp(ff.wireQBarOut.Input)
 
-	ff.Q = NewNORGate(rPin, ff.wireQBarOut)
+	ff.Q = NewNORGate(fmt.Sprintf("%s-QNORGate", name), rPin, ff.wireQBarOut)
 	ff.Q.WireUp(ff.wireQOut.Input)
 
 	return ff
@@ -41,6 +42,7 @@ func (f *RSFlipFlop) Shutdown() {
 	f.wireQBarOut.Shutdown()
 	f.wireQOut.Shutdown()
 }
+
 /*
 // LevelTriggeredDTypeLatch is a type of latch/flipflop which will store the value of data only when the clock is high (on) ("Level" = clock high/low, "D" = data 0/1)
 //
