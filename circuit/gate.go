@@ -76,9 +76,10 @@ func (g *ANDGate) Shutdown() {
 // 0  1   1
 // 1  1   1
 type ORGate struct {
-	relays    []*Relay    // two or more relays to control the final gate state answer
-	chStops   []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
-	pwrSource             // gate gains all that is pwrSource too
+	relays       []*Relay    // two or more relays to control the final gate state answer
+	chStops      []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
+	chMasterStop chan bool
+	pwrSource    // gate gains all that is pwrSource too
 }
 
 // NewORGate will return an OR gate whose inputs are set by the passed in pins
@@ -86,6 +87,24 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 	gate := &ORGate{}
 	gate.Init()
 	gate.Name = name
+
+	chMasterState := make(chan Electron, 1)
+	gate.chMasterStop = make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-chMasterState:
+				Debug(name, fmt.Sprintf("Master Received (%t) on (%v)", e.powerState, chMasterState))
+				//go func(e Electron) {
+					gate.Transmit(e.powerState)
+					e.Done()
+				//}(e)
+			case <-gate.chMasterStop:
+				Debug(name, "Master Stopped")
+				return
+			}
+		}
+	}()
 
 	mu := &sync.Mutex{}
 	// build a relay and associated listen/transmit func to deal with each input pin
@@ -102,36 +121,38 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 				case e := <-chState:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
-					//					go func(e Electron, answer bool) {
-					go func(e Electron) {
-						mu.Lock()
-						gots[index].Store(e.powerState)
+					//	go func(e Electron, answer bool) {
+					//	go func(e Electron) {
+					mu.Lock()
+					gots[index].Store(e.powerState)
 
-						var answer bool
-						// if already found a true, no need to check the other relays
-						if e.powerState {
-							answer = true
-						} else {
-							Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
-							answer = false
-							for g := range gots {
-								// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-								if gots[g].Load() != nil && gots[g].Load().(bool) {
-									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
-									answer = true
-									break
-								}
+					var answer bool
+					// if already found a true, no need to check the other relays
+					if e.powerState {
+						answer = true
+					} else {
+						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
+						answer = false
+						for g := range gots {
+							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
+							if gots[g].Load() != nil && gots[g].Load().(bool) {
+								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
+								answer = true
+								break
 							}
 						}
-						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-
-						//go func(e Electron, answer bool) {
-						//go func(e Electron) {
-						gate.Transmit(answer)
-						mu.Unlock()
-						e.Done()
-						//}(e, answer)
-					}(e)
+					}
+					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
+					e.powerState = answer
+					mu.Unlock()
+					//go func(e Electron, answer bool) {
+					//	go func(e Electron) {
+					//gate.Transmit(a)
+					chMasterState <- e
+					Debug(name, fmt.Sprintf("Sending (%t) to Master Channel", e.powerState))
+					//e.Done()
+					//}(e, answer)
+				//	}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
@@ -152,6 +173,7 @@ func (g *ORGate) Shutdown() {
 		g.relays[i].Shutdown()
 		g.chStops[i] <- true
 	}
+	g.chMasterStop <- true
 }
 
 // NANDGate is a standard NAND (Not-AND) logic gate.
@@ -164,9 +186,10 @@ func (g *ORGate) Shutdown() {
 // 0  1   1
 // 1  1   0
 type NANDGate struct {
-	relays    []*Relay    // two or more relays to control the final gate state answer
-	chStops   []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
-	pwrSource             // gate gains all that is pwrSource too
+	relays       []*Relay    // two or more relays to control the final gate state answer
+	chStops      []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
+	chMasterStop chan bool
+	pwrSource    // gate gains all that is pwrSource too
 }
 
 // NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
@@ -174,6 +197,24 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 	gate := &NANDGate{}
 	gate.Init()
 	gate.Name = name
+
+	chMasterState := make(chan Electron, 1)
+	gate.chMasterStop = make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-chMasterState:
+				Debug(name, fmt.Sprintf("Master Received (%t) on (%v)", e.powerState, chMasterState))
+				//go func(e Electron) {
+					gate.Transmit(e.powerState)
+					e.Done()
+				//}(e)
+			case <-gate.chMasterStop:
+				Debug(name, "Master Stopped")
+				return
+			}
+		}
+	}()
 
 	mu := &sync.Mutex{}
 	// build a relay and associated listen/transmit func to deal with each input pin
@@ -190,36 +231,38 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 				case e := <-chState:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
-					//					go func(e Electron, answer bool) {
-					go func(e Electron) {
-						mu.Lock()
-						gots[index].Store(e.powerState)
+					//	go func(e Electron, answer bool) {
+					//	go func(e Electron) {
+					mu.Lock()
+					gots[index].Store(e.powerState)
 
-						var answer bool
-						// if already found a true, no need to check the other relays
-						if e.powerState {
-							answer = true
-						} else {
-							Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
-							answer = false
-							for g := range gots {
-								// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
-								if gots[g].Load() != nil && gots[g].Load().(bool) {
-									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
-									answer = true
-									break
-								}
+					var answer bool
+					// if already found a true, no need to check the other relays
+					if e.powerState {
+						answer = true
+					} else {
+						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
+						answer = false
+						for g := range gots {
+							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
+							if gots[g].Load() != nil && gots[g].Load().(bool) {
+								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
+								answer = true
+								break
 							}
 						}
-						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-
-						//go func(e Electron, answer bool) {
-						//go func(e Electron) {
-						gate.Transmit(answer)
-						mu.Unlock()
-						e.Done()
-						//}(e, answer)
-					}(e)
+					}
+					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
+					e.powerState = answer
+					mu.Unlock()
+					//go func(e Electron, answer bool) {
+					//go func(e Electron) {
+					//gate.Transmit(a)
+					chMasterState <- e
+					Debug(name, fmt.Sprintf("Sending (%t) to Master Channel", e.powerState))
+					//e.Done()
+					//}(e, answer)
+					//}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
@@ -227,7 +270,7 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 			}
 		}(chStates[i], gate.chStops[i], i)
 
-		// for a NAND, every relay can trigger state (from OPEN out)
+		// for an OR, every relay can trigger state (from CLOSED out)
 		gate.relays[i].OpenOut.WireUp(chStates[i])
 	}
 
@@ -240,6 +283,7 @@ func (g *NANDGate) Shutdown() {
 		g.relays[i].Shutdown()
 		g.chStops[i] <- true
 	}
+	g.chMasterStop <- true
 }
 
 // NORGate is a standard NOR (Not-OR) logic gate.
