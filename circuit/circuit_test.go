@@ -1392,7 +1392,7 @@ func TestLoopedORGate(t *testing.T) {
 	Q := NewORGate(fmt.Sprintf("%s-QORGate", "Test"), rPinBattery, wireQBarOut)
 	Q.WireUp(wireQOut.Input)
 
-	 sPinBattery.Charge()
+	sPinBattery.Charge()
 	// sPinBattery.Discharge()
 	// rPinBattery.Charge()
 	// rPinBattery.Discharge()
@@ -1402,6 +1402,30 @@ func TestLoopedORGate(t *testing.T) {
 
 	// sPinBattery.Discharge()
 	// rPinBattery.Discharge()
+}
+
+func TestLoopedANDGate(t *testing.T) {
+	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", "Test"), 0)
+	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", "Test"), 0)
+
+	sPinBattery := NewBattery("sPinBattery", false)
+	QBar := NewANDGate(fmt.Sprintf("%s-QBarANDGate", "Test"), sPinBattery, wireQOut)
+	QBar.WireUp(wireQBarOut.Input)
+
+	rPinBattery := NewBattery("rPinBattery", false)
+	Q := NewANDGate(fmt.Sprintf("%s-QANDGate", "Test"), rPinBattery, wireQBarOut)
+	Q.WireUp(wireQOut.Input)
+
+	sPinBattery.Charge()
+	sPinBattery.Discharge()
+	rPinBattery.Charge()
+	rPinBattery.Discharge()
+
+	sPinBattery.Charge()
+	rPinBattery.Charge()
+
+	sPinBattery.Discharge()
+	rPinBattery.Discharge()
 }
 
 func TestFullAdder(t *testing.T) {
