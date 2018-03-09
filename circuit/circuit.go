@@ -9,7 +9,8 @@ import (
 // Debugging is the master flag to control very verbose logging to the console
 var Debugging = false
 
-var seqNum int64 = 0
+// globalSeqNum will track a common value from a battery's orig current all through its downstream branching of child, sub-child, sub-sub etc. (used to track loopback situations)
+var globalSeqNum int64 = 0
 
 // wireUpper allows a circuit component to wire up to a transmitter component in order to be told of the transmitter's power state
 type wireUpper interface {
@@ -18,7 +19,7 @@ type wireUpper interface {
 
 // transmitter allows a circuit component to transmit it's power state to a wired up listener component
 type transmitter interface {
-	Transmit(powerState bool)
+	Transmit(powerState bool, seqNum int64)
 }
 
 // pwrEmitter allows a circuit component to take part in the power subscription/transmission process (what is a better name for this??)
@@ -36,7 +37,7 @@ type Logger interface {
 type Electron struct {
 	name       string
 	powerState bool
-	seqNum     int
+	seqNum     int64
 	wg         *sync.WaitGroup
 }
 

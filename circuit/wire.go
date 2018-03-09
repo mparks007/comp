@@ -20,6 +20,7 @@ type Wire struct {
 	Input       chan Electron   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
 	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
 	isPowered   atomic.Value    // core state flag to track the components current state
+	seqNum int64
 	chStop      chan bool       // listen/transmit loop shutdown channel
 	name        string          // name of component for debug purposes
 }
@@ -32,6 +33,7 @@ func NewWire(name string, length uint) *Wire {
 	w.length = length
 	w.Input = make(chan Electron, 1)
 	w.isPowered.Store(false)
+	w.seqNum = -1
 	w.chStop = make(chan bool, 1)
 
 	// spin up the func that will allow the wire's input to be sent as output
@@ -41,7 +43,8 @@ func NewWire(name string, length uint) *Wire {
 			case e := <-w.Input:
 				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, w.Input))
 				go func(e Electron) {
-					w.Transmit2(e.powerState, e.seqNum)
+					Debug(name, fmt.Sprintf("e.seqNum (%v)", e.seqNum))
+					w.Transmit(e.powerState, e.seqNum)
 					e.Done()
 				}(e)
 			case <-w.chStop:
@@ -67,12 +70,12 @@ func (w *Wire) WireUp(ch chan Electron) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	Debug(w.name, fmt.Sprintf("Transmitting (%t) to (%v) due to WireUp", w.isPowered.Load().(bool), ch))
-	ch <- Electron{name: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
+	ch <- Electron{name: w.name, powerState: w.isPowered.Load().(bool), seqNum: w.seqNum, wg: wg}
 	wg.Wait()
 }
 
 // Transmit will push out the wire's new power state (IF state changed) to each wired up component
-func (w *Wire) Transmit(newPowerState bool) {
+func (w *Wire) Transmit(newPowerState bool, seqNum int64) {
 
 	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", newPowerState))
 
@@ -90,44 +93,8 @@ func (w *Wire) Transmit(newPowerState bool) {
 		return
 	}
 
-	wg := &sync.WaitGroup{}                                        // will use this to ensure we finish firing off the state change to all wired up components
-	e := Electron{name: w.name, powerState: newPowerState, wg: wg} // for now, will share the same electron object across all immediate listeners (each listener's channel receipt must call their own Done)
-
-	for i, ch := range w.outChannels {
-		if w.length > 0 {
-			time.Sleep(time.Millisecond * time.Duration(w.length)) // simulate resistance due to "length" of wire
-		}
-
-		wg.Add(1)
-		go func(i int, ch chan Electron) {
-			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", newPowerState, i, ch))
-			ch <- e
-		}(i, ch)
-	}
-
-	wg.Wait()
-}
-
-func (w *Wire) Transmit2(newPowerState bool, seqNum int) {
-
-	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", newPowerState))
-
-	if w.isPowered.Load().(bool) == newPowerState {
-		Debug(w.name, "Skipping Transmit (no state change)")
-		return
-	}
-
-	Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", newPowerState))
-
-	w.isPowered.Store(newPowerState)
-
-	if len(w.outChannels) == 0 {
-		Debug(w.name, "No Transmit, nothing wired up")
-		return
-	}
-
-	wg := &sync.WaitGroup{}                                                        // will use this to ensure we finish firing off the state change to all wired up components
-	e := Electron{name: w.name, powerState: newPowerState, seqNum: seqNum, wg: wg} // for now, will share the same electron object across all immediate listeners (each listener's channel receipt must call their own Done)
+	wg := &sync.WaitGroup{}                                                        // will use this to ensure all immediate listeners finish their OWN transmits before returning from this one
+	e := Electron{name: w.name, powerState: newPowerState, seqNum: seqNum, wg: wg} // use common electron object for all immediate listeners (each listener's channel select must call their own Done)
 
 	for i, ch := range w.outChannels {
 		if w.length > 0 {

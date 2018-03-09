@@ -19,12 +19,12 @@ func NewBattery(name string, startState bool) *Battery {
 	return bat
 }
 
-// Charge will simulate a live battery by simply transmitting power as on
+// Charge will simulate a live battery by simply transmitting power as on (and tracking a unique sequence number for all downstream results of THIS state change)
 func (b *Battery) Charge() {
-	b.Transmit2(true, int(atomic.AddInt64(&seqNum, 1)))
+	b.Transmit(true, atomic.AddInt64(&globalSeqNum, 1))
 }
 
-// Discharge will simulate a dead battery by simply transmitting power as off
+// Discharge will simulate a dead battery by simply transmitting power as off (and tracking a unique sequence number for all downstream results of THIS state change)
 func (b *Battery) Discharge() {
-	b.Transmit2(false, int(atomic.AddInt64(&seqNum, 1)))
+	b.Transmit(false, atomic.AddInt64(&globalSeqNum, 1))
 }

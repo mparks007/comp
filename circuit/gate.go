@@ -42,7 +42,7 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
-					gate.Transmit(e.powerState)
+					gate.Transmit(e.powerState, e.seqNum)
 					e.Done()
 				}(e)
 			case <-gate.chStop:
@@ -76,10 +76,9 @@ func (g *ANDGate) Shutdown() {
 // 0  1   1
 // 1  1   1
 type ORGate struct {
-	relays       []*Relay    // two or more relays to control the final gate state answer
-	chStops      []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
-	chMasterStop chan bool
-	pwrSource    // gate gains all that is pwrSource too
+	relays    []*Relay    // two or more relays to control the final gate state answer
+	chStops   []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
+	pwrSource             // gate gains all that is pwrSource too
 }
 
 // NewORGate will return an OR gate whose inputs are set by the passed in pins
@@ -88,9 +87,11 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 	gate.Init()
 	gate.Name = name
 
-	mu := &sync.Mutex{}
-	lockedSeqNum := -1
-	// build a relay and associated listen/transmit func to deal with each input pin
+	mu := &sync.Mutex{}           // to ensure order of inner-relay transmits since they are transmitting via go funcs
+	var lockedSeqNum atomic.Value // to track if loopback to avoid deadlock on mu
+	lockedSeqNum.Store(int64(-1))
+
+	// build a relay and associated listen/transmit funcs to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
 	for i, pin := range pins {
@@ -105,14 +106,17 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
 					go func(e Electron) {
-						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedSeqNum (%v)", e.seqNum, lockedSeqNum))
+						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedSeqNum (%v)", e.seqNum, lockedSeqNum.Load().(int64)))
 
+						// need to track if later must skip unlock() call
 						ownsLock := false
-						if e.seqNum != lockedSeqNum {
+
+						// if got here NOT due to loopback, safe to lock
+						if e.seqNum != lockedSeqNum.Load().(int64) {
 							Debug(name, fmt.Sprint("Lock"))
 							mu.Lock()
 							ownsLock = true
-							lockedSeqNum = e.seqNum
+							lockedSeqNum.Store(e.seqNum) // tag that this Electron handling event is tied to the current seqNum (so can compare if pin power entry into the gate is same (aka loopback))
 						}
 
 						gots[index].Store(e.powerState)
@@ -123,18 +127,21 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 							answer = true
 						} else {
 							Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
+
 							answer = false
-							for g := range gots {
+							for i = 0; i < len(gots); i++ {
 								// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-								if gots[g].Load() != nil && gots[g].Load().(bool) {
-									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
+								if gots[i].Load() != nil && gots[i].Load().(bool) {
+									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", i))
 									answer = true
 									break
 								}
 							}
 						}
 						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-						gate.Transmit2(answer, e.seqNum)
+
+						gate.Transmit(answer, e.seqNum)
+
 						if ownsLock {
 							Debug(name, fmt.Sprint("Unlock"))
 							mu.Unlock()
@@ -155,99 +162,11 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 	return gate
 }
 
-// NewORGate2 trying different crazy things to get loopbacks and answer race to work together
-func NewORGate2(name string, pins ...pwrEmitter) *ORGate {
-	gate := &ORGate{}
-	gate.Init()
-	gate.Name = name
-
-	chMasterState := make(chan Electron, 1)
-	gate.chMasterStop = make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case e := <-chMasterState:
-				Debug(name, fmt.Sprintf("Master Received (%t) on (%v)", e.powerState, chMasterState))
-				//go func(e Electron) {
-				gate.Transmit(e.powerState)
-				e.Done()
-				//}(e)
-			case <-gate.chMasterStop:
-				Debug(name, "Master Stopped")
-				return
-			}
-		}
-	}()
-
-	mu := &sync.Mutex{}
-	// build a relay and associated listen/transmit func to deal with each input pin
-	gots := make([]atomic.Value, len(pins))
-	var chStates []chan Electron
-	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewBattery(fmt.Sprintf("%s-Relays[%d]-pin1Battery", name, i), true), pin))
-
-		chStates = append(chStates, make(chan Electron, 1))
-		gate.chStops = append(gate.chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, index int) {
-			for {
-				select {
-				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
-
-					//	go func(e Electron, answer bool) {
-					//	go func(e Electron) {
-					mu.Lock()
-					gots[index].Store(e.powerState)
-
-					var answer bool
-					// if already found a true, no need to check the other relays
-					if e.powerState {
-						answer = true
-					} else {
-						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
-						answer = false
-						for g := range gots {
-							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-							if gots[g].Load() != nil && gots[g].Load().(bool) {
-								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
-								answer = true
-								break
-							}
-						}
-					}
-					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-					e.powerState = answer
-					mu.Unlock()
-					//go func(e Electron, answer bool) {
-					//	go func(e Electron) {
-					//gate.Transmit(a)
-					chMasterState <- e
-					Debug(name, fmt.Sprintf("Sending (%t) to Master Channel", e.powerState))
-					//e.Done()
-					//}(e, answer)
-				//	}(e)
-				case <-chStop:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
-					return
-				}
-			}
-		}(chStates[i], gate.chStops[i], i)
-
-		// for an OR, every relay can trigger state (from CLOSED out)
-		gate.relays[i].ClosedOut.WireUp(chStates[i])
-	}
-
-	return gate
-}
-
 // Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
 func (g *ORGate) Shutdown() {
 	for i := range g.relays {
 		g.relays[i].Shutdown()
 		g.chStops[i] <- true
-	}
-	if g.chMasterStop != nil {
-		g.chMasterStop <- true
 	}
 }
 
@@ -261,10 +180,9 @@ func (g *ORGate) Shutdown() {
 // 0  1   1
 // 1  1   0
 type NANDGate struct {
-	relays       []*Relay    // two or more relays to control the final gate state answer
-	chStops      []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
-	chMasterStop chan bool
-	pwrSource    // gate gains all that is pwrSource too
+	relays    []*Relay    // two or more relays to control the final gate state answer
+	chStops   []chan bool // need to have a go func per relay and a Stop (from this slice) for each of those go func for loops
+	pwrSource             // gate gains all that is pwrSource too
 }
 
 // NewNANDGate will return a NAND gate whose inputs are set by the passed in pins
@@ -273,8 +191,11 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 	gate.Init()
 	gate.Name = name
 
-	mu := &sync.Mutex{}
-	// build a relay and associated listen/transmit func to deal with each input pin
+	mu := &sync.Mutex{}       // to ensure order of inner-relay transmits since they are transmitting via go funcs
+	var lockedSeqNum atomic.Value // to track if loopback to avoid deadlock on mu
+	lockedSeqNum.Store(int64(-1))
+
+	// build a relay and associated listen/transmit funcs to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
 	for i, pin := range pins {
@@ -288,9 +209,20 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 				case e := <-chState:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
-					//	go func(e Electron, answer bool) {
 					go func(e Electron) {
-						mu.Lock()
+						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedSeqNum (%v)", e.seqNum, lockedSeqNum.Load().(int64)))
+
+						// need to track if later must skip unlock() call
+						ownsLock := false
+
+						// if got here NOT due to loopback, safe to lock
+						if e.seqNum != lockedSeqNum.Load().(int64) {
+							Debug(name, fmt.Sprint("Lock"))
+							mu.Lock()
+							ownsLock = true
+							lockedSeqNum.Store(e.seqNum) // tag that this Electron handling event is tied to the current seqNum (so can compare if pin power entry into the gate is same (aka loopback))
+						}
+
 						gots[index].Store(e.powerState)
 
 						var answer bool
@@ -299,111 +231,27 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 							answer = true
 						} else {
 							Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
+
 							answer = false
-							for g := range gots {
+							for i = 0; i < len(gots); i++ {
 								// if found ANY relay as powered at OpenOut (see WireUp later), flag and bail, the NAND gate is powered (see truth table)
-								if gots[g].Load() != nil && gots[g].Load().(bool) {
-									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
+								if gots[i].Load() != nil && gots[i].Load().(bool) {
+									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", i))
 									answer = true
 									break
 								}
 							}
 						}
 						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-						//mu.Unlock() // if this is above the transmit, we have an answer race issue, but if after transmit, loopback hangs on mutex
-						//go func(e Electron, answer bool) {
-						//go func(e Electron) {
-						gate.Transmit(answer)
-						mu.Unlock() // if this is above the transmit, we have an answer race issue, but if after transmit, loopback hangs on mutex
-						e.Done()
-						//}(e, answer)
-					}(e)
-				case <-chStop:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
-					return
-				}
-			}
-		}(chStates[i], gate.chStops[i], i)
 
-		// for a NAND, every relay can trigger state (from OPEN out)
-		gate.relays[i].OpenOut.WireUp(chStates[i])
-	}
+						gate.Transmit(answer, e.seqNum)
 
-	return gate
-
-}
-
-// NewNANDGate2 trying different crazy things to get loopbacks and answer race to work together
-func NewNANDGate2(name string, pins ...pwrEmitter) *NANDGate {
-	gate := &NANDGate{}
-	gate.Init()
-	gate.Name = name
-
-	chMasterState := make(chan Electron, 1)
-	gate.chMasterStop = make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case e := <-chMasterState:
-				Debug(name, fmt.Sprintf("Master Received (%t) on (%v)", e.powerState, chMasterState))
-				//go func(e Electron) {
-				gate.Transmit(e.powerState)
-				e.Done()
-				//}(e)
-			case <-gate.chMasterStop:
-				Debug(name, "Master Stopped")
-				return
-			}
-		}
-	}()
-
-	mu := &sync.Mutex{}
-	// build a relay and associated listen/transmit func to deal with each input pin
-	gots := make([]atomic.Value, len(pins))
-	var chStates []chan Electron
-	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewBattery(fmt.Sprintf("%s-Relays[%d]-pin1Battery", name, i), true), pin))
-
-		chStates = append(chStates, make(chan Electron, 1))
-		gate.chStops = append(gate.chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, index int) {
-			for {
-				select {
-				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
-
-					//	go func(e Electron, answer bool) {
-					//	go func(e Electron) {
-					mu.Lock()
-					gots[index].Store(e.powerState)
-
-					var answer bool
-					// if already found a true, no need to check the other relays
-					if e.powerState {
-						answer = true
-					} else {
-						Debug(name, fmt.Sprintf("Since (Relays[%d]) answer is (false), checking the other relays within the gate", index))
-						answer = false
-						for g := range gots {
-							// if found ANY relay as powered at ClosedOut (see WireUp later), flag and bail, the OR gate is powered (see truth table)
-							if gots[g].Load() != nil && gots[g].Load().(bool) {
-								Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", g))
-								answer = true
-								break
-							}
+						if ownsLock {
+							Debug(name, fmt.Sprint("Unlock"))
+							mu.Unlock()
 						}
-					}
-					Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-					e.powerState = answer
-					mu.Unlock()
-					//go func(e Electron, answer bool) {
-					//go func(e Electron) {
-					//gate.Transmit(a)
-					chMasterState <- e
-					Debug(name, fmt.Sprintf("Sending (%t) to Master Channel", e.powerState))
-					//e.Done()
-					//}(e, answer)
-					//}(e)
+						e.Done()
+					}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))
 					return
@@ -423,9 +271,6 @@ func (g *NANDGate) Shutdown() {
 	for i := range g.relays {
 		g.relays[i].Shutdown()
 		g.chStops[i] <- true
-	}
-	if g.chMasterStop != nil {
-		g.chMasterStop <- true
 	}
 }
 
@@ -465,7 +310,7 @@ func NewNORGate(name string, pins ...pwrEmitter) *NORGate {
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
-					gate.Transmit(e.powerState)
+					gate.Transmit(e.powerState, e.seqNum)
 					e.Done()
 				}(e)
 			case <-gate.chStop:
@@ -522,7 +367,7 @@ func NewXORGate(name string, pin1, pin2 pwrEmitter) *XORGate {
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
-					gate.Transmit(e.powerState)
+					gate.Transmit(e.powerState, e.seqNum)
 					e.Done()
 				}(e)
 			case <-gate.chStop:
@@ -578,7 +423,7 @@ func NewXNORGate(name string, pin1, pin2 pwrEmitter) *XNORGate {
 				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
-					gate.Transmit(e.powerState)
+					gate.Transmit(e.powerState, e.seqNum)
 					e.Done()
 				}(e)
 			case <-gate.chStop:

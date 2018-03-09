@@ -37,12 +37,12 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
-	transmit := func(seqNum int) {
+	transmit := func(seqNum int64) {
 		aInIsPowered := rel.aInIsPowered.Load().(bool)
 		bInIsPowered := rel.bInIsPowered.Load().(bool)
 
-		rel.OpenOut.Transmit2(aInIsPowered && !bInIsPowered, seqNum)
-		rel.ClosedOut.Transmit2(aInIsPowered && bInIsPowered, seqNum)
+		rel.OpenOut.Transmit(aInIsPowered && !bInIsPowered, seqNum)
+		rel.ClosedOut.Transmit(aInIsPowered && bInIsPowered, seqNum)
 	}
 
 	// must do separate go funcs since loopback-based circuits may send aIns processing back around to the relay and we don't want to lock out the bIn case (and vice versa)
