@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -25,7 +24,7 @@ func init() {
 }
 
 func testName(t *testing.T, subtext string) string {
-	return fmt.Sprintf("%s:%s", reflect.ValueOf(*t).FieldByName("name").String(), subtext)
+	return fmt.Sprintf("%s:%s", t.Name(), subtext)
 }
 
 func TestPwrsource(t *testing.T) {
@@ -1392,6 +1391,7 @@ func TestLoopedORGate(t *testing.T) {
 	Q := NewORGate(fmt.Sprintf("%s-QORGate", "Test"), rPinBattery, wireQBarOut)
 	Q.WireUp(wireQOut.Input)
 
+	Debug("TestLoopedORGate", "Set S")
 	sPinBattery.Charge()
 	// sPinBattery.Discharge()
 	// rPinBattery.Charge()

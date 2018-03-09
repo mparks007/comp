@@ -13,8 +13,8 @@ type Relay struct {
 	ClosedOut    pwrSource     // external access point to active/engaged relay
 	aInCh        chan Electron // channel to track the relay arm path input
 	bInCh        chan Electron // channel to track the electromagnet path inpupt
-	chAStop       chan bool     // shutdown channel for listening loop
-	chBStop       chan bool     // shutdown channel for listening loop
+	chAStop      chan bool     // shutdown channel for listening loop
+	chBStop      chan bool     // shutdown channel for listening loop
 }
 
 // NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
@@ -37,12 +37,12 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
-	transmit := func() {
+	transmit := func(seqNum int) {
 		aInIsPowered := rel.aInIsPowered.Load().(bool)
 		bInIsPowered := rel.bInIsPowered.Load().(bool)
 
-		rel.OpenOut.Transmit(aInIsPowered && !bInIsPowered)
-		rel.ClosedOut.Transmit(aInIsPowered && bInIsPowered)
+		rel.OpenOut.Transmit2(aInIsPowered && !bInIsPowered, seqNum)
+		rel.ClosedOut.Transmit2(aInIsPowered && bInIsPowered, seqNum)
 	}
 
 	// must do separate go funcs since loopback-based circuits may send aIns processing back around to the relay and we don't want to lock out the bIn case (and vice versa)
@@ -52,7 +52,7 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 			case e := <-rel.aInCh:
 				Debug(name, fmt.Sprintf("(aIn) Received (%t) from (%s) on (%v)", e.powerState, e.name, rel.aInCh))
 				rel.aInIsPowered.Store(e.powerState)
-				transmit()
+				transmit(e.seqNum)
 				e.Done()
 			case <-rel.chAStop:
 				Debug(name, "Stopped")
@@ -66,7 +66,7 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 			case e := <-rel.bInCh:
 				Debug(name, fmt.Sprintf("(bIn) Received (%t) from (%s) on (%v)", e.powerState, e.name, rel.bInCh))
 				rel.bInIsPowered.Store(e.powerState)
-				transmit()
+				transmit(e.seqNum)
 				e.Done()
 			case <-rel.chBStop:
 				Debug(name, "Stopped")

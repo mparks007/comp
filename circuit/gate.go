@@ -89,6 +89,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 	gate.Name = name
 
 	mu := &sync.Mutex{}
+	lockedSeqNum := -1
 	// build a relay and associated listen/transmit func to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
 	var chStates []chan Electron
@@ -103,9 +104,17 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 				case e := <-chState:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
 
-					//	go func(e Electron, answer bool) {
 					go func(e Electron) {
-						mu.Lock()
+						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedSeqNum (%v)", e.seqNum, lockedSeqNum))
+
+						ownsLock := false
+						if e.seqNum != lockedSeqNum {
+							Debug(name, fmt.Sprint("Lock"))
+							mu.Lock()
+							ownsLock = true
+							lockedSeqNum = e.seqNum
+						}
+
 						gots[index].Store(e.powerState)
 
 						var answer bool
@@ -125,13 +134,12 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 							}
 						}
 						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-						// mu.Unlock() // if this is above the transmit, we have an answer race issue, but if after transmit, loopback hangs on mutex
-						//go func(e Electron, answer bool) {
-						//go func(e Electron) {
-						gate.Transmit(answer)
-						mu.Unlock() // if this is above the transmit, we have an answer race issue, but if after transmit, loopback hangs on mutex
+						gate.Transmit2(answer, e.seqNum)
+						if ownsLock {
+							Debug(name, fmt.Sprint("Unlock"))
+							mu.Unlock()
+						}
 						e.Done()
-						//}(e, answer)
 					}(e)
 				case <-chStop:
 					Debug(name, fmt.Sprintf("(Relays[%d]) Stopped", index))

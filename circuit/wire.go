@@ -41,7 +41,7 @@ func NewWire(name string, length uint) *Wire {
 			case e := <-w.Input:
 				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, w.Input))
 				go func(e Electron) {
-					w.Transmit(e.powerState)
+					w.Transmit2(e.powerState, e.seqNum)
 					e.Done()
 				}(e)
 			case <-w.chStop:
@@ -92,6 +92,42 @@ func (w *Wire) Transmit(newPowerState bool) {
 
 	wg := &sync.WaitGroup{}                                        // will use this to ensure we finish firing off the state change to all wired up components
 	e := Electron{name: w.name, powerState: newPowerState, wg: wg} // for now, will share the same electron object across all immediate listeners (each listener's channel receipt must call their own Done)
+
+	for i, ch := range w.outChannels {
+		if w.length > 0 {
+			time.Sleep(time.Millisecond * time.Duration(w.length)) // simulate resistance due to "length" of wire
+		}
+
+		wg.Add(1)
+		go func(i int, ch chan Electron) {
+			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", newPowerState, i, ch))
+			ch <- e
+		}(i, ch)
+	}
+
+	wg.Wait()
+}
+
+func (w *Wire) Transmit2(newPowerState bool, seqNum int) {
+
+	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", newPowerState))
+
+	if w.isPowered.Load().(bool) == newPowerState {
+		Debug(w.name, "Skipping Transmit (no state change)")
+		return
+	}
+
+	Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", newPowerState))
+
+	w.isPowered.Store(newPowerState)
+
+	if len(w.outChannels) == 0 {
+		Debug(w.name, "No Transmit, nothing wired up")
+		return
+	}
+
+	wg := &sync.WaitGroup{}                                                        // will use this to ensure we finish firing off the state change to all wired up components
+	e := Electron{name: w.name, powerState: newPowerState, seqNum: seqNum, wg: wg} // for now, will share the same electron object across all immediate listeners (each listener's channel receipt must call their own Done)
 
 	for i, ch := range w.outChannels {
 		if w.length > 0 {
