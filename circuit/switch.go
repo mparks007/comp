@@ -27,8 +27,8 @@ func NewSwitch(name string, startState bool) *Switch {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
-				sw.Transmit(e.powerState, e.seqNum)
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on channel (%v) having lockContexts (%v)", e.powerState, e.name, chState, e.lockContexts))
+				sw.Transmit(e)
 				e.Done()
 			case <-sw.chStop:
 				Debug(name, "Stopped")

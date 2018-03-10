@@ -41,11 +41,11 @@ func TestPwrsource(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -71,7 +71,7 @@ func TestPwrsource(t *testing.T) {
 
 	// test power transmit
 	want = true
-	pwr.Transmit(want, -1)
+	pwr.Transmit(Electron{powerState: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -82,7 +82,7 @@ func TestPwrsource(t *testing.T) {
 
 	// test transmit loss of power
 	want = false
-	pwr.Transmit(want, -1)
+	pwr.Transmit(Electron{powerState: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -92,7 +92,7 @@ func TestPwrsource(t *testing.T) {
 	}
 
 	// test transmitting same state as last time (should skip it)
-	pwr.Transmit(want, -1)
+	pwr.Transmit(Electron{powerState: want})
 
 	select {
 	case <-ch1:
@@ -120,11 +120,11 @@ func TestWire_NoDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -150,7 +150,7 @@ func TestWire_NoDelay(t *testing.T) {
 
 	// test power transmit
 	want = true
-	wire.Transmit(want, -1)
+	wire.Transmit(Electron{powerState: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -161,7 +161,7 @@ func TestWire_NoDelay(t *testing.T) {
 
 	// test transmit loss of power
 	want = false
-	wire.Transmit(want, -1)
+	wire.Transmit(Electron{powerState: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -171,7 +171,7 @@ func TestWire_NoDelay(t *testing.T) {
 	}
 
 	// test transmitting same state as last time (should skip it)
-	wire.Transmit(want, -1)
+	wire.Transmit(Electron{powerState: want})
 
 	select {
 	case <-ch1:
@@ -201,11 +201,11 @@ func TestWire_WithDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -233,7 +233,7 @@ func TestWire_WithDelay(t *testing.T) {
 	want = true
 
 	start := time.Now()
-	wire.Transmit(want, -1)
+	wire.Transmit(Electron{powerState: want})
 	end := time.Now()
 
 	if got1.Load().(bool) != want {
@@ -254,7 +254,7 @@ func TestWire_WithDelay(t *testing.T) {
 	want = false
 
 	start = time.Now()
-	wire.Transmit(want, -1)
+	wire.Transmit(Electron{powerState: want})
 	end = time.Now()
 
 	if got1.Load().(bool) != want {
@@ -272,7 +272,7 @@ func TestWire_WithDelay(t *testing.T) {
 	}
 
 	// test transmitting same state as last time (should skip it)
-	wire.Transmit(want, -1)
+	wire.Transmit(Electron{powerState: want})
 
 	select {
 	case <-ch1:
@@ -302,11 +302,11 @@ func TestRibbonCable(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received (%t) from (%s) on (%v)", e1.powerState, e1.name, ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received (%t) from (%s) on (%v)", e2.powerState, e2.name, ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -345,7 +345,7 @@ func TestBattery(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -417,18 +417,18 @@ func TestRelay_WithBatteries(t *testing.T) {
 	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
-	openCh := make(chan Electron, 1)
-	closedCh := make(chan Electron, 1)
+	chOpen := make(chan Electron, 1)
+	chClosed := make(chan Electron, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case eOpen := <-openCh:
-				Debug(testName(t, "Select"), fmt.Sprintf("(openCh) Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.name, openCh))
+			case eOpen := <-chOpen:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Open) Received Electron <%s> on channel (%v)", eOpen.String(), chOpen))
 				gotOpenOut.Store(eOpen.powerState)
 				eOpen.Done()
-			case eClosed := <-closedCh:
-				Debug(testName(t, "Select"), fmt.Sprintf("(closedCh) Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.name, closedCh))
+			case eClosed := <-chClosed:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Closed) Received Electron <%s> on channel (%v)", eClosed.String(), chClosed))
 				gotClosedOut.Store(eClosed.powerState)
 				eClosed.Done()
 			case <-chStop:
@@ -438,8 +438,8 @@ func TestRelay_WithBatteries(t *testing.T) {
 	}()
 	defer func() { chStop <- true }()
 
-	rel.OpenOut.WireUp(openCh)
-	rel.ClosedOut.WireUp(closedCh)
+	rel.OpenOut.WireUp(chOpen)
+	rel.ClosedOut.WireUp(chClosed)
 
 	if gotOpenOut.Load().(bool) != false {
 		t.Error("Wanted no power at the open position but got some")
@@ -494,7 +494,7 @@ func TestSwitch(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -606,7 +606,7 @@ func TestNSwitchBank_GoodInputs(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -676,7 +676,7 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -756,18 +756,18 @@ func TestRelay_WithSwitches(t *testing.T) {
 	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
-	openCh := make(chan Electron, 1)
-	closedCh := make(chan Electron, 1)
+	chOpen := make(chan Electron, 1)
+	chClosed := make(chan Electron, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case eOpen := <-openCh:
-				Debug(testName(t, "Select"), fmt.Sprintf("(openCh) Received (%t) from (%s) on (%v)", eOpen.powerState, eOpen.name, openCh))
+			case eOpen := <-chOpen:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Open) Received Electron <%s> on channel (%v)", eOpen.String(), chOpen))
 				gotOpenOut.Store(eOpen.powerState)
 				eOpen.Done()
-			case eClosed := <-closedCh:
-				Debug(testName(t, "Select"), fmt.Sprintf("(closedCh) Received (%t) from (%s) on (%v)", eClosed.powerState, eClosed.name, closedCh))
+			case eClosed := <-chClosed:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Closed) Received Electron <%s> on channel (%v)", eClosed.String(), chClosed))
 				gotClosedOut.Store(eClosed.powerState)
 				eClosed.Done()
 			case <-chStop:
@@ -777,8 +777,8 @@ func TestRelay_WithSwitches(t *testing.T) {
 	}()
 	defer func() { chStop <- true }()
 
-	rel.OpenOut.WireUp(openCh)
-	rel.ClosedOut.WireUp(closedCh)
+	rel.OpenOut.WireUp(chOpen)
+	rel.ClosedOut.WireUp(chClosed)
 
 	if gotOpenOut.Load().(bool) != false {
 		t.Error("Wanted no power at the open position but got some")
@@ -849,7 +849,7 @@ func TestANDGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -924,7 +924,7 @@ func TestORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -999,7 +999,7 @@ func TestNANDGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1074,7 +1074,7 @@ func TestNORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1141,7 +1141,7 @@ func TestXORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1199,7 +1199,7 @@ func TestInverter(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1263,7 +1263,7 @@ func TestXNORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received (%t) from (%s) on (%v)", e.powerState, e.name, ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1331,14 +1331,14 @@ func TestHalfAdder(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eS := <-chSum:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Sum) Received (%t) from (%s) on (%v)", eS.powerState, eS.name, chSum))
-				gotSum.Store(eS.powerState)
-				eS.Done()
-			case eC := <-chCarry:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Carry) Received (%t) from (%s) on (%v)", eC.powerState, eC.name, chCarry))
-				gotCarry.Store(eC.powerState)
-				eC.Done()
+			case eSum := <-chSum:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Sum) Received Electron <%s> on channel (%v)", eSum.String(), chSum))
+				gotSum.Store(eSum.powerState)
+				eSum.Done()
+			case eCarry := <-chCarry:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Carry) Received Electron <%s> on channel (%v)", eCarry.String(), chCarry))
+				gotCarry.Store(eCarry.powerState)
+				eCarry.Done()
 			case <-chStop:
 				return
 			}
@@ -1381,16 +1381,21 @@ func TestHalfAdder(t *testing.T) {
 
 func TestLoopedORGate(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
+	name := testName(t, "Test")
 
-	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", "Test"), 0)
-	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", "Test"), 0)
+	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
+	defer wireQOut.Shutdown()
+	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name), 0)
+	defer wireQBarOut.Shutdown()
 
 	sPinBattery := NewBattery("sPinBattery", false)
-	QBar := NewORGate(fmt.Sprintf("%s-QBarORGate", "Test"), sPinBattery, wireQOut)
+	QBar := NewORGate(fmt.Sprintf("%s-QBarORGate", name), sPinBattery, wireQOut)
+	defer QBar.Shutdown()
 	QBar.WireUp(wireQBarOut.Input)
 
 	rPinBattery := NewBattery("rPinBattery", false)
-	Q := NewORGate(fmt.Sprintf("%s-QORGate", "Test"), rPinBattery, wireQBarOut)
+	Q := NewORGate(fmt.Sprintf("%s-QORGate", name), rPinBattery, wireQBarOut)
+	defer Q.Shutdown()
 	Q.WireUp(wireQOut.Input)
 
 	Debug(testName(t, ""), "Set S")
@@ -1416,16 +1421,21 @@ func TestLoopedORGate(t *testing.T) {
 
 func TestLoopedANDGate(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
+	name := testName(t, "Test")
 
-	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", "Test"), 0)
-	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", "Test"), 0)
+	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
+	defer wireQOut.Shutdown()
+	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name), 0)
+	defer wireQBarOut.Shutdown()
 
 	sPinBattery := NewBattery("sPinBattery", false)
-	QBar := NewANDGate(fmt.Sprintf("%s-QBarANDGate", "Test"), sPinBattery, wireQOut)
+	QBar := NewANDGate(fmt.Sprintf("%s-QBarANDGate", name), sPinBattery, wireQOut)
+	defer QBar.Shutdown()
 	QBar.WireUp(wireQBarOut.Input)
 
 	rPinBattery := NewBattery("rPinBattery", false)
-	Q := NewANDGate(fmt.Sprintf("%s-QANDGate", "Test"), rPinBattery, wireQBarOut)
+	Q := NewANDGate(fmt.Sprintf("%s-QANDGate", name), rPinBattery, wireQBarOut)
+	defer Q.Shutdown()
 	Q.WireUp(wireQOut.Input)
 
 	Debug(testName(t, ""), "Set S")
@@ -1466,8 +1476,8 @@ func TestFullAdder(t *testing.T) {
 		{false, false, true, true, false},
 		{true, false, true, false, true},
 		{true, true, true, true, true},
-		// {false, false, false, false, false},
-		// {true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
+		{false, false, false, false, false},
+		{true, true, true, true, true}, // final test ensuring we can toggle all inputs fully reversed again
 	}
 
 	Debug(testName(t, ""), "Initial Setup")
@@ -1491,14 +1501,14 @@ func TestFullAdder(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eS := <-chSum:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Sum) Received (%t) from (%s) on (%v)", eS.powerState, eS.name, chSum))
-				gotSum.Store(eS.powerState)
-				eS.Done()
-			case eC := <-chCarry:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Carry) Received (%t) from (%s) on (%v)", eC.powerState, eC.name, chCarry))
-				gotCarry.Store(eC.powerState)
-				eC.Done()
+			case eSum := <-chSum:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Sum) Received Electron <%s> on channel (%v)", eSum.String(), chSum))
+				gotSum.Store(eSum.powerState)
+				eSum.Done()
+			case eCarry := <-chCarry:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Carry) Received Electron <%s> on channel (%v)", eCarry.String(), chCarry))
+				gotCarry.Store(eCarry.powerState)
+				eCarry.Done()
 			case <-chStop:
 				return
 			}
@@ -2115,7 +2125,7 @@ func TestRSFlipFlop(t *testing.T) {
 		for {
 			select {
 			case eQBar := <-chQBar:
-				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received (%t) from (%s) on (%v)", eQBar.powerState, eQBar.name, chQBar))
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received Electron <%s> on channel (%v)", eQBar.String(), chQBar))
 				gotQBar.Store(eQBar.powerState)
 				eQBar.Done()
 			case <-chStopQBar:
@@ -2128,7 +2138,7 @@ func TestRSFlipFlop(t *testing.T) {
 		for {
 			select {
 			case eQ := <-chQ:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received (%t) from (%s) on (%v)", eQ.powerState, eQ.name, chQ))
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received Electron <%s> on channel (%v)", eQ.String(), chQ))
 				gotQ.Store(eQ.powerState)
 				eQ.Done()
 			case <-chStopQ:

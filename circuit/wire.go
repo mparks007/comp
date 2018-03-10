@@ -19,8 +19,7 @@ type Wire struct {
 	length      uint            // will pause for this many milliseconds to simulate resistance of wire due to length
 	Input       chan Electron   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
 	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
-	isPowered   atomic.Value    // core state flag to track the components current state
-	seqNum int64
+	isPowered   atomic.Value    // core state flag to know of the components current state (allows avoiding having to constantly push the power states around)
 	chStop      chan bool       // listen/transmit loop shutdown channel
 	name        string          // name of component for debug purposes
 }
@@ -33,7 +32,6 @@ func NewWire(name string, length uint) *Wire {
 	w.length = length
 	w.Input = make(chan Electron, 1)
 	w.isPowered.Store(false)
-	w.seqNum = -1
 	w.chStop = make(chan bool, 1)
 
 	// spin up the func that will allow the wire's input to be sent as output
@@ -41,10 +39,9 @@ func NewWire(name string, length uint) *Wire {
 		for {
 			select {
 			case e := <-w.Input:
-				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, w.Input))
+				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on channel (%v) having lockContexts (%v)", e.powerState, e.name, w.Input, e.lockContexts))
 				go func(e Electron) {
-					Debug(name, fmt.Sprintf("e.seqNum (%v)", e.seqNum))
-					w.Transmit(e.powerState, e.seqNum)
+					w.Transmit(e)
 					e.Done()
 				}(e)
 			case <-w.chStop:
@@ -70,45 +67,46 @@ func (w *Wire) WireUp(ch chan Electron) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	Debug(w.name, fmt.Sprintf("Transmitting (%t) to (%v) due to WireUp", w.isPowered.Load().(bool), ch))
-	ch <- Electron{name: w.name, powerState: w.isPowered.Load().(bool), seqNum: w.seqNum, wg: wg}
+	ch <- Electron{name: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
 	wg.Wait()
 }
 
 // Transmit will push out the wire's new power state (IF state changed) to each wired up component
-func (w *Wire) Transmit(newPowerState bool, seqNum int64) {
+func (w *Wire) Transmit(e Electron) {
 
-	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", newPowerState))
+	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", e.powerState))
 
-	if w.isPowered.Load().(bool) == newPowerState {
+	if w.isPowered.Load().(bool) == e.powerState {
 		Debug(w.name, "Skipping Transmit (no state change)")
 		return
 	}
 
-	Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", newPowerState))
+	Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", e.powerState))
 
-	w.isPowered.Store(newPowerState)
+	w.isPowered.Store(e.powerState)
 
 	if len(w.outChannels) == 0 {
 		Debug(w.name, "No Transmit, nothing wired up")
 		return
 	}
 
-	wg := &sync.WaitGroup{}                                                        // will use this to ensure all immediate listeners finish their OWN transmits before returning from this one
-	e := Electron{name: w.name, powerState: newPowerState, seqNum: seqNum, wg: wg} // use common electron object for all immediate listeners (each listener's channel select must call their own Done)
+	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners (but keeping the lockContexts list intact)
+	e.wg = &sync.WaitGroup{}
+	e.name = w.name
 
 	for i, ch := range w.outChannels {
 		if w.length > 0 {
 			time.Sleep(time.Millisecond * time.Duration(w.length)) // simulate resistance due to "length" of wire
 		}
 
-		wg.Add(1)
+		e.wg.Add(1)
 		go func(i int, ch chan Electron) {
-			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", newPowerState, i, ch))
+			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", e.powerState, i, ch))
 			ch <- e
 		}(i, ch)
 	}
 
-	wg.Wait()
+	e.wg.Wait() // all immediate listeners must finish their OWN transmits before returning from this one
 }
 
 // RibbonCable is a convenient way to allow multiple wires to drop in as slice of pwrEmitters (for receiving/transmitting power)

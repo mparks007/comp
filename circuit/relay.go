@@ -37,12 +37,15 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
-	transmit := func(seqNum int64) {
+	transmit := func(e Electron) {
 		aInIsPowered := rel.aInIsPowered.Load().(bool)
 		bInIsPowered := rel.bInIsPowered.Load().(bool)
 
-		rel.OpenOut.Transmit(aInIsPowered && !bInIsPowered, seqNum)
-		rel.ClosedOut.Transmit(aInIsPowered && bInIsPowered, seqNum)
+		e.powerState = aInIsPowered && !bInIsPowered
+		rel.OpenOut.Transmit(e)
+
+		e.powerState = aInIsPowered && bInIsPowered
+		rel.ClosedOut.Transmit(e)
 	}
 
 	// must do separate go funcs since loopback-based circuits may send aIns processing back around to the relay and we don't want to lock out the bIn case (and vice versa)
@@ -50,9 +53,9 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 		for {
 			select {
 			case e := <-rel.aInCh:
-				Debug(name, fmt.Sprintf("(aIn) Received (%t) from (%s) on (%v)", e.powerState, e.name, rel.aInCh))
+				Debug(name, fmt.Sprintf("(aIn) Received (%t) from (%s) on channel (%v) having lockContexts (%v)", e.powerState, e.name, rel.aInCh, e.lockContexts))
 				rel.aInIsPowered.Store(e.powerState)
-				transmit(e.seqNum)
+				transmit(e)
 				e.Done()
 			case <-rel.chAStop:
 				Debug(name, "Stopped")
@@ -64,9 +67,9 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 		for {
 			select {
 			case e := <-rel.bInCh:
-				Debug(name, fmt.Sprintf("(bIn) Received (%t) from (%s) on (%v)", e.powerState, e.name, rel.bInCh))
+				Debug(name, fmt.Sprintf("(bIn) Received (%t) from (%s) on channel (%v) having lockContexts (%v)", e.powerState, e.name, rel.bInCh, e.lockContexts))
 				rel.bInIsPowered.Store(e.powerState)
-				transmit(e.seqNum)
+				transmit(e)
 				e.Done()
 			case <-rel.chBStop:
 				Debug(name, "Stopped")
