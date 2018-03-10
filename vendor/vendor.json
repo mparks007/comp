@@ -13,6 +13,12 @@
 			"revisionTime": "2017-07-15T19:24:08Z"
 		},
 		{
+			"checksumSHA1": "eDQ6f1EsNf+frcRO/9XukSEchm8=",
+			"path": "github.com/satori/go.uuid",
+			"revision": "36e9d2ebbde5e3f13ab2e25625fd453271d6522e",
+			"revisionTime": "2018-01-03T17:44:51Z"
+		},
+		{
 			"checksumSHA1": "/YsxkUA+LSSCvK4zVU7Oa3s0470=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "3d4380f53a34dcdc95f0c1db702615992b38d9a4",
@@ -25,5 +31,5 @@
 			"revisionTime": "2017-06-27T07:55:33Z"
 		}
 	],
-	"rootPath": "github.concur.com/mparks/adder"
+	"rootPath": "github.com/mparks007/comp"
 }

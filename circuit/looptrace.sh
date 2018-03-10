@@ -33,9 +33,9 @@ do
     outfile=\./traceruns/$1_run$counter.txt
     tracefile=\./traceruns/$1_trace$counter.txt
 
-    echo -e ${LBLUE}Run \($counter of $2\):${NC} go test $race -cpu=1 -run $1 -trace $tracefile \> $outfile
+    echo -e ${LBLUE}Run \($counter of $2\):${NC} go test $race -cpu=1 -run $1 -debug -trace $tracefile \> $outfile
 
-    go test $race -cpu=1 -run $1 -trace $tracefile > $outfile
+    go test $race -cpu=1 -run $1 -debug -trace $tracefile > $outfile
 
     # basic check for known text in go test fail message (tighten up if other debug output would have FAIL in it)
     if [[ -z $(grep 'FAIL' $outfile) ]]

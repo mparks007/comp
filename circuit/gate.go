@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 // ANDGate is a standard AND logic gate
@@ -39,7 +41,7 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v) having sequence (%v)", e.powerState, e.name, chState, e.seqNum))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e.powerState, e.seqNum)
@@ -103,7 +105,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
+					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v) having sequence (%v)", index, e.powerState, e.name, chState, e.seqNum))
 
 					go func(e Electron) {
 						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedSeqNum (%v)", e.seqNum, lockedSeqNum.Load().(int64)))
@@ -113,7 +115,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 
 						// if got here NOT due to loopback, safe to lock
 						if e.seqNum != lockedSeqNum.Load().(int64) {
-							Debug(name, fmt.Sprint("Lock"))
+							Debug(name, fmt.Sprintf("(Relays[%d]) Locking", index))
 							mu.Lock()
 							ownsLock = true
 							lockedSeqNum.Store(e.seqNum) // tag that this Electron handling event is tied to the current seqNum (so can compare if pin power entry into the gate is same (aka loopback))
@@ -135,15 +137,17 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", i))
 									answer = true
 									break
+								} else {
+									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (false) as well", i))
 								}
 							}
 						}
-						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
+						Debug(name, fmt.Sprintf("Final ORGate answer to transmit (%t)", answer))
 
 						gate.Transmit(answer, e.seqNum)
 
 						if ownsLock {
-							Debug(name, fmt.Sprint("Unlock"))
+							Debug(name, fmt.Sprintf("(Relays[%d]) Unlocking", index))
 							mu.Unlock()
 						}
 						e.Done()
@@ -191,9 +195,11 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 	gate.Init()
 	gate.Name = name
 
-	mu := &sync.Mutex{}       // to ensure order of inner-relay transmits since they are transmitting via go funcs
-	var lockedSeqNum atomic.Value // to track if loopback to avoid deadlock on mu
-	lockedSeqNum.Store(int64(-1))
+	mu := &sync.Mutex{}            // to ensure order of inner-relay transmits since they are transmitting via go funcs
+//	var lockedSeqNum atomic.Value  // to track if loopback to avoid deadlock on mu
+	var lockedContext atomic.Value // to track if loopback to avoid deadlock on mu
+//	lockedSeqNum.Store(int64(-1))
+	lockedContext.Store(uuid.Must(uuid.NewV4()))
 
 	// build a relay and associated listen/transmit funcs to deal with each input pin
 	gots := make([]atomic.Value, len(pins))
@@ -207,20 +213,25 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v)", index, e.powerState, e.name, chState))
+					Debug(name, fmt.Sprintf("(Relays[%d]) Received (%t) from (%s) on (%v) having sequence (%v)", index, e.powerState, e.name, chState, e.seqNum))
 
 					go func(e Electron) {
-						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedSeqNum (%v)", e.seqNum, lockedSeqNum.Load().(int64)))
+						Debug(name, fmt.Sprintf("e.seqNum (%v), lockedContext (%v)", e.seqNum, lockedContext.Load().(uuid.UUID)))
 
 						// need to track if later must skip unlock() call
 						ownsLock := false
 
 						// if got here NOT due to loopback, safe to lock
-						if e.seqNum != lockedSeqNum.Load().(int64) {
-							Debug(name, fmt.Sprint("Lock"))
+						//if e.seqNum != lockedSeqNum.Load().(int64) {
+						if !e.HasContext(lockedContext.Load().(uuid.UUID)) {
+							Debug(name, fmt.Sprintf("(Relays[%d]) Locking", index))
 							mu.Lock()
 							ownsLock = true
-							lockedSeqNum.Store(e.seqNum) // tag that this Electron handling event is tied to the current seqNum (so can compare if pin power entry into the gate is same (aka loopback))
+							//lockedSeqNum.Store(e.seqNum) // tag that this Electron handling event is tied to the current seqNum (so can compare if pin power entry into the gate is same (aka loopback))
+
+							lock := uuid.Must(uuid.NewV4())
+							lockedContext.Store(lock)
+							e.AddContext(lock)
 						}
 
 						gots[index].Store(e.powerState)
@@ -239,15 +250,17 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (true) so changing the gate's answer", i))
 									answer = true
 									break
+								} else {
+									Debug(name, fmt.Sprintf("(Relays[%d]) was found to be (false) as well", i))
 								}
 							}
 						}
-						Debug(name, fmt.Sprintf("Final answer to transmit (%t)", answer))
-
-						gate.Transmit(answer, e.seqNum)
+						Debug(name, fmt.Sprintf("Final NANDGate answer to transmit (%t)", answer))
+e.powerState = answer
+						gate.Transmit(e)
 
 						if ownsLock {
-							Debug(name, fmt.Sprint("Unlock"))
+							Debug(name, fmt.Sprintf("(Relays[%d]) Unlocking", index))
 							mu.Unlock()
 						}
 						e.Done()
@@ -307,7 +320,7 @@ func NewNORGate(name string, pins ...pwrEmitter) *NORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v) having sequence (%v)", e.powerState, e.name, chState, e.seqNum))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e.powerState, e.seqNum)
@@ -364,7 +377,7 @@ func NewXORGate(name string, pin1, pin2 pwrEmitter) *XORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v) having sequence (%v)", e.powerState, e.name, chState, e.seqNum))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e.powerState, e.seqNum)
@@ -420,7 +433,7 @@ func NewXNORGate(name string, pin1, pin2 pwrEmitter) *XNORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v)", e.powerState, e.name, chState))
+				Debug(name, fmt.Sprintf("Received (%t) from (%s) on (%v) having sequence (%v)", e.powerState, e.name, chState, e.seqNum))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, would not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e.powerState, e.seqNum)

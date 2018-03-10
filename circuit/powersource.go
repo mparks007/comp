@@ -11,7 +11,6 @@ import (
 type pwrSource struct {
 	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
 	isPowered   atomic.Value    // core state flag to know of the components current state
-	seqNum int64
 	chStop      chan bool       // listen/transmit loop shutdown channel
 	Name        string          // name of component for debug purposes
 }
@@ -19,7 +18,6 @@ type pwrSource struct {
 // Init will do initialization code for all pwrSource-based objects
 func (p *pwrSource) Init() {
 	p.isPowered.Store(false)
-	p.seqNum = -1
 	p.chStop = make(chan bool, 1)
 }
 
@@ -30,14 +28,14 @@ func (p *pwrSource) WireUp(ch chan Electron) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	Debug(p.Name, fmt.Sprintf("Transmitting (%t) to (%v) due to WireUp", p.isPowered.Load().(bool), ch))
-	ch <- Electron{name: p.Name, powerState: p.isPowered.Load().(bool), seqNum: p.seqNum, wg: wg}
+	ch <- Electron{name: p.Name, powerState: p.isPowered.Load().(bool), seqNum: atomic.AddInt64(&globalSeqNum, 1), wg: wg}
 	wg.Wait()
 }
 
 // Transmit will push out the power source's new power state (IF state changed) to each wired up component
-func (p *pwrSource) Transmit(newPowerState bool, seqNum int64) {
+func (p *pwrSource) Transmit(e Electron) {
 
-	Debug(p.Name, fmt.Sprintf("Transmit (%t)...maybe", newPowerState))
+	Debug(p.Name, fmt.Sprintf("Transmit (%t)...maybe", e.powerState))
 
 	if p.isPowered.Load().(bool) == newPowerState {
 		Debug(p.Name, "Skipping Transmit (no state change)")
@@ -53,16 +51,18 @@ func (p *pwrSource) Transmit(newPowerState bool, seqNum int64) {
 		return
 	}
 
-	wg := &sync.WaitGroup{}                                                        // will use this to ensure all immediate listeners finish their OWN transmits before returning from this one
-	e := Electron{name: p.Name, powerState: newPowerState, seqNum: seqNum, wg: wg} // use common electron object for all immediate listeners (each listener's channel select must call their own Done)
+//	wg := &sync.WaitGroup{}                                                        // will use this to ensure all immediate listeners finish their OWN transmits before returning from this one
+	//e := Electron{name: p.Name, powerState: e.powerState, seqNum: seqNum, wg: wg} // use common electron object for all immediate listeners (each listener's channel select must call their own Done)
+e.wg = &sync.WaitGroup{}                                                        // will use this to ensure all immediate listeners finish their OWN transmits before returning from this one
+e.name = p.Name
 
 	for i, ch := range p.outChannels {
-		wg.Add(1)
+		e.wg.Add(1)
 		go func(i int, ch chan Electron) {
 			Debug(p.Name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", newPowerState, i, ch))
 			ch <- e
 		}(i, ch)
 	}
 
-	wg.Wait()
+	e.wg.Wait()
 }
