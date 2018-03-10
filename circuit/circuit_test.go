@@ -41,11 +41,11 @@ func TestPwrsource(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron <%s>", ch1, e1.String()))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron <%s>", ch2, e2.String()))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -120,11 +120,11 @@ func TestWire_NoDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron <%s>", ch1, e1.String()))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron <%s>", ch2, e2.String()))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -201,11 +201,11 @@ func TestWire_WithDelay(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron <%s>", ch1, e1.String()))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron <%s>", ch2, e2.String()))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -302,11 +302,11 @@ func TestRibbonCable(t *testing.T) {
 		for {
 			select {
 			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received Electron <%s> on channel (%v)", e1.String(), ch1))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron <%s>", ch1, e1.String()))
 				got1.Store(e1.powerState)
 				e1.Done()
 			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received Electron <%s> on channel (%v)", e2.String(), ch2))
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron <%s>", ch2, e2.String()))
 				got2.Store(e2.powerState)
 				e2.Done()
 			case <-chStop:
@@ -345,7 +345,7 @@ func TestBattery(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -424,11 +424,11 @@ func TestRelay_WithBatteries(t *testing.T) {
 		for {
 			select {
 			case eOpen := <-chOpen:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Open) Received Electron <%s> on channel (%v)", eOpen.String(), chOpen))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Electron <%s>", chOpen, eOpen.String()))
 				gotOpenOut.Store(eOpen.powerState)
 				eOpen.Done()
 			case eClosed := <-chClosed:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Closed) Received Electron <%s> on channel (%v)", eClosed.String(), chClosed))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Electron <%s>", chClosed, eClosed.String()))
 				gotClosedOut.Store(eClosed.powerState)
 				eClosed.Done()
 			case <-chStop:
@@ -494,7 +494,7 @@ func TestSwitch(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -606,7 +606,7 @@ func TestNSwitchBank_GoodInputs(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -676,7 +676,7 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -763,11 +763,11 @@ func TestRelay_WithSwitches(t *testing.T) {
 		for {
 			select {
 			case eOpen := <-chOpen:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Open) Received Electron <%s> on channel (%v)", eOpen.String(), chOpen))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Electron <%s>", chOpen, eOpen.String()))
 				gotOpenOut.Store(eOpen.powerState)
 				eOpen.Done()
 			case eClosed := <-chClosed:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Closed) Received Electron <%s> on channel (%v)", eClosed.String(), chClosed))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Electron <%s>", chClosed, eClosed.String()))
 				gotClosedOut.Store(eClosed.powerState)
 				eClosed.Done()
 			case <-chStop:
@@ -849,7 +849,7 @@ func TestANDGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -924,7 +924,7 @@ func TestORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -999,7 +999,7 @@ func TestNANDGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1074,7 +1074,7 @@ func TestNORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1141,7 +1141,7 @@ func TestXORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1199,7 +1199,7 @@ func TestInverter(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1263,7 +1263,7 @@ func TestXNORGate(t *testing.T) {
 		for {
 			select {
 			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch) Received Electron <%s> on channel (%v)", e.String(), ch))
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", ch, e.String()))
 				got.Store(e.powerState)
 				e.Done()
 			case <-chStop:
@@ -1332,11 +1332,11 @@ func TestHalfAdder(t *testing.T) {
 		for {
 			select {
 			case eSum := <-chSum:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Sum) Received Electron <%s> on channel (%v)", eSum.String(), chSum))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Electron <%s>", chSum, eSum.String()))
 				gotSum.Store(eSum.powerState)
 				eSum.Done()
 			case eCarry := <-chCarry:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Carry) Received Electron <%s> on channel (%v)", eCarry.String(), chCarry))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Electron <%s>", chCarry, eCarry.String()))
 				gotCarry.Store(eCarry.powerState)
 				eCarry.Done()
 			case <-chStop:
@@ -1502,11 +1502,11 @@ func TestFullAdder(t *testing.T) {
 		for {
 			select {
 			case eSum := <-chSum:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Sum) Received Electron <%s> on channel (%v)", eSum.String(), chSum))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Electron <%s>", chSum, eSum.String()))
 				gotSum.Store(eSum.powerState)
 				eSum.Done()
 			case eCarry := <-chCarry:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Carry) Received Electron <%s> on channel (%v)", eCarry.String(), chCarry))
+				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Electron <%s>", chCarry, eCarry.String()))
 				gotCarry.Store(eCarry.powerState)
 				eCarry.Done()
 			case <-chStop:
@@ -1550,7 +1550,6 @@ func TestFullAdder(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
-/*
 func TestNBitAdder_BadInputLengths(t *testing.T) {
 	testCases := []struct {
 		byte1     string
@@ -1563,15 +1562,20 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 		{"111111111", "11111111", "Mismatched addend lengths.  Addend1 len: 9, Addend2 len: 8"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
-			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.byte1, tc.byte2), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.byte1, tc.byte2))
+
+			addend1Switches, _ := NewNSwitchBank(testName(t, "addend1Switches"), tc.byte1)
 			defer addend1Switches.Shutdown()
 
-			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+			addend2Switches, _ := NewNSwitchBank(testName(t, "addend2Switches"), tc.byte2)
 			defer addend2Switches.Shutdown()
 
-			addr, err := NewNBitAdder(addend1Switches.Switches(), addend2Switches.Switches(), nil)
+			addr, err := NewNBitAdder(testName(t, "NBitAdder"), addend1Switches.Switches(), addend2Switches.Switches(), nil)
 
 			if addr != nil {
 				addr.Shutdown()
@@ -1587,6 +1591,7 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestNBitAdder_EightBit(t *testing.T) {
@@ -1613,18 +1618,20 @@ func TestNBitAdder_EightBit(t *testing.T) {
 		{"10101010", "01010101", true, "00000000", true},
 	}
 
+	Debug(testName(t, ""), "Initial Setup")
+
 	// start with off switches
-	addend1Switches, _ := NewNSwitchBank("00000000")
+	addend1Switches, _ := NewNSwitchBank(testName(t, "addend1Switches"), "00000000")
 	defer addend1Switches.Shutdown()
 
-	addend2Switches, _ := NewNSwitchBank("00000000")
+	addend2Switches, _ := NewNSwitchBank(testName(t, "addend2Switches"), "00000000")
 	defer addend2Switches.Shutdown()
 
-	carryInSwitch := NewSwitch(false)
+	carryInSwitch := NewSwitch(testName(t, "carryInSwitch"), false)
 	defer carryInSwitch.Shutdown()
 
 	// create the adder based on those switches
-	addr, err := NewNBitAdder(addend1Switches.Switches(), addend2Switches.Switches(), carryInSwitch)
+	addr, err := NewNBitAdder(testName(t, "NBitAdder"), addend1Switches.Switches(), addend2Switches.Switches(), carryInSwitch)
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1643,11 +1650,12 @@ func TestNBitAdder_EightBit(t *testing.T) {
 		gots[i].Store(false)
 		chStates = append(chStates, make(chan Electron, 1))
 		chStops = append(chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Electron, chStop chan bool, i int) {
 			for {
 				select {
 				case e := <-chState:
-					gots[index].Store(e.powerState)
+					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+					gots[i].Store(e.powerState)
 					e.Done()
 				case <-chStop:
 					return
@@ -1667,11 +1675,15 @@ func TestNBitAdder_EightBit(t *testing.T) {
 
 	addr.CarryOut.WireUp(chStates[8])
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", tc.byte1, tc.byte2, tc.carryInPowered), func(t *testing.T) {
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
-			setSwitches(addend1Switches, tc.byte1)
-			setSwitches(addend2Switches, tc.byte2)
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.byte1, tc.byte2, tc.carryInPowered), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.byte1, tc.byte2, tc.carryInPowered))
+
+			addend1Switches.SetSwitches(tc.byte1)
+			addend2Switches.SetSwitches(tc.byte2)
 			carryInSwitch.Set(tc.carryInPowered)
 
 			// build a string based on each sum's state
@@ -1693,8 +1705,10 @@ func TestNBitAdder_EightBit(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
+/*
 func TestNBitAdder_SixteenBit(t *testing.T) {
 	testCases := []struct {
 		bytes1         string

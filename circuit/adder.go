@@ -70,7 +70,7 @@ func (f *FullAdder) Shutdown() {
 	f.halfAdder2.Shutdown()
 	f.halfAdder1.Shutdown()
 }
-/*
+
 // NBitAdder allows the summing of two binary numbers
 //	Handles a Carry bit in and holds potential Carry bit after summing all
 //
@@ -84,7 +84,7 @@ type NBitAdder struct {
 }
 
 // NewNBitAdder returns a NBitAdder which will add up the values of the two sets of input pins, but also accepts a carry-in pin to include in the addition
-func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) (*NBitAdder, error) {
+func NewNBitAdder(name string, addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) (*NBitAdder, error) {
 
 	if len(addend1Pins) != len(addend2Pins) {
 		return nil, fmt.Errorf("Mismatched addend lengths.  Addend1 len: %d, Addend2 len: %d", len(addend1Pins), len(addend2Pins))
@@ -97,11 +97,11 @@ func NewNBitAdder(addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) 
 
 		// if at least significant pin
 		if i == len(addend1Pins)-1 {
-			full = NewFullAdder(addend1Pins[i], addend2Pins[i], carryInPin) // carry-in is the actual (potential) carry from an adjoining circuit
+			full = NewFullAdder(fmt.Sprintf("%s-FullAdders[%d]", name, i), addend1Pins[i], addend2Pins[i], carryInPin) // carry-in is the actual (potential) carry from an adjoining circuit
 		} else {
 			// [carry-in (third param in NewFullAdder) is the neighboring, less significant adder's carry-out]
 			//   since inserting at the front of the slice, the neighbor is always the one at the current front per the prior insert
-			full = NewFullAdder(addend1Pins[i], addend2Pins[i], addr.fullAdders[0].Carry)
+			full = NewFullAdder(fmt.Sprintf("%s-FullAdders[%d]", name, i), addend1Pins[i], addend2Pins[i], addr.fullAdders[0].Carry)
 		}
 
 		// prepend since going in reverse order
@@ -123,7 +123,7 @@ func (a *NBitAdder) Shutdown() {
 		a.fullAdders[i].Shutdown()
 	}
 }
-
+/*
 // ThreeNumberAdder allows the summing of three binary numbers
 type ThreeNumberAdder struct {
 	latchStore    *NBitLevelTriggeredDTypeLatch

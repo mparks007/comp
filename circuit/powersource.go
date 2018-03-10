@@ -27,8 +27,8 @@ func (p *pwrSource) WireUp(ch chan Electron) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	Debug(p.Name, fmt.Sprintf("Transmitting (%t) to (%v) due to WireUp", p.isPowered.Load().(bool), ch))
-	ch <- Electron{name: p.Name, powerState: p.isPowered.Load().(bool), wg: wg}
+	Debug(p.Name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", p.isPowered.Load().(bool), ch))
+	ch <- Electron{sender: p.Name, powerState: p.isPowered.Load().(bool), wg: wg}
 	wg.Wait()
 }
 
@@ -52,8 +52,8 @@ func (p *pwrSource) Transmit(e Electron) {
 	}
 
 	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners
-	e.wg = &sync.WaitGroup{} 
-	e.name = p.Name
+	e.wg = &sync.WaitGroup{}
+	e.sender = p.Name
 
 	for i, ch := range p.outChannels {
 		e.wg.Add(1)

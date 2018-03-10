@@ -39,7 +39,7 @@ func NewWire(name string, length uint) *Wire {
 		for {
 			select {
 			case e := <-w.Input:
-				Debug(w.name, fmt.Sprintf("Received (%t) from (%s) on channel (%v) having lockContexts (%v)", e.powerState, e.name, w.Input, e.lockContexts))
+				Debug(w.name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", w.Input, e.String()))
 				go func(e Electron) {
 					w.Transmit(e)
 					e.Done()
@@ -66,8 +66,8 @@ func (w *Wire) WireUp(ch chan Electron) {
 	// go ahead and transmit to the new subscriber immediately as if something just connected to the wire's potentially hot current
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	Debug(w.name, fmt.Sprintf("Transmitting (%t) to (%v) due to WireUp", w.isPowered.Load().(bool), ch))
-	ch <- Electron{name: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
+	Debug(w.name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", w.isPowered.Load().(bool), ch))
+	ch <- Electron{sender: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
 	wg.Wait()
 }
 
@@ -92,7 +92,7 @@ func (w *Wire) Transmit(e Electron) {
 
 	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners (but keeping the lockContexts list intact)
 	e.wg = &sync.WaitGroup{}
-	e.name = w.name
+	e.sender = w.name
 
 	for i, ch := range w.outChannels {
 		if w.length > 0 {
