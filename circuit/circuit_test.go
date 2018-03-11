@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -2169,7 +2170,7 @@ func TestRSFlipFlop(t *testing.T) {
 	sPinBattery = NewBattery(testName(t, "sBattery"), false)
 
 	// starting with no input signals (R and S are off)
-	ff := NewRSFlipFLop(testName(t, "RSFlipFlop"), rPinBattery, sPinBattery)
+	ff := NewRSFlipFlop(testName(t, "RSFlipFlop"), rPinBattery, sPinBattery)
 	defer ff.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
@@ -2248,7 +2249,6 @@ func TestRSFlipFlop(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
-/*
 func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
 		clkIn    bool
@@ -2271,7 +2271,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		{true, false, false, true},  // clkIn on with no dataIn causes Q off (QBar on)
 	}
 
-	testName := func(i int) string {
+	testNameDetail := func(i int) string {
 		var priorClkIn bool
 		var priorDataIn bool
 
@@ -2284,36 +2284,44 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			priorDataIn = testCases[i-1].dataIn
 		}
 
-		return fmt.Sprintf("Stage#%d: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i+1, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
+		return fmt.Sprintf("testCases[%d]: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
 	}
 
-	var clkBattery, dataBattery *Battery
-	clkBattery = NewBattery(true)
-	dataBattery = NewBattery(true)
+	Debug(testName(t, ""), "Initial Setup")
 
-	chQ := make(chan bool, 1)
-	chQBar := make(chan bool, 1)
+	var clkBattery, dataBattery *Battery
+	clkBattery = NewBattery(testName(t, "clkBattery"), true)
+	dataBattery = NewBattery(testName(t, "dataBattery"), true)
+
+	chQ := make(chan Electron, 1)
+	chQBar := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
 
 	// starting with true input signals (Clk and Data are on)
-	latch := NewLevelTriggeredDTypeLatch(clkBattery, dataBattery)
+	latch := NewLevelTriggeredDTypeLatch(testName(t, "LevelTriggeredDTypeLatch"), clkBattery, dataBattery)
 	defer latch.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
 	go func() {
 		for {
 			select {
-			case newQ := <-chQ:
-				gotQ.Store(newQ)
-			case newQBar := <-chQBar:
-				gotQBar.Store(newQBar)
+			case eQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
+				gotQBar.Store(eQBar.powerState)
+				eQBar.Done()
+			case eQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
+				gotQ.Store(eQ.powerState)
+				eQ.Done()
+			case <-chStop:
+				return
 			}
 		}
 	}()
+	defer func() { chStop <- true }()
 
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
-
-	time.Sleep(time.Millisecond * 75)
 
 	if gotQ.Load().(bool) != true {
 		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
@@ -2323,24 +2331,25 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		t.Errorf("Wanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
 	}
 
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	var summary string
 	for i, tc := range testCases {
-		t.Run(testName(i), func(t *testing.T) {
+		summary = testNameDetail(i)
+		t.Run(summary, func(t *testing.T) {
+
+			Debug(testName(t, ""), summary)
 
 			if tc.clkIn {
 				clkBattery.Charge()
 			} else {
 				clkBattery.Discharge()
 			}
-
-			time.Sleep(time.Millisecond * 200)
-
 			if tc.dataIn {
 				dataBattery.Charge()
 			} else {
 				dataBattery.Discharge()
 			}
-
-			time.Sleep(time.Millisecond * 200)
 
 			if gotQ.Load().(bool) != tc.wantQ {
 				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
@@ -2351,6 +2360,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
@@ -2358,87 +2368,100 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 		input string
 		want  [8]bool
 	}{
-		{"00000001", [8]bool{false, false, false, false, false, false, false, true}},
-		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
-		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
-		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
+	// {"00000001", [8]bool{false, false, false, false, false, false, false, true}},
+	// {"11111111", [8]bool{true, true, true, true, true, true, true, true}},
+	// {"10101010", [8]bool{true, false, true, false, true, false, true, false}},
+	// {"10000001", [8]bool{true, false, false, false, false, false, false, true}},
 	}
 
-	latchSwitches, _ := NewNSwitchBank("00011000")
+	Debug(testName(t, ""), "Initial Setup")
+
+	latchSwitches, _ := NewNSwitchBank(testName(t, "latchSwitches"), "00011000")
 	defer latchSwitches.Shutdown()
 
-	clkSwitch := NewSwitch(true)
+	clkSwitch := NewSwitch(testName(t, "clkSwitch"), true)
 	defer clkSwitch.Shutdown()
 
-	latch := NewNBitLevelTriggeredDTypeLatch(clkSwitch, latchSwitches.Switches())
+	latch := NewNBitLevelTriggeredDTypeLatch(testName(t, "NBitLevelTriggeredDTypeLatch"), clkSwitch, latchSwitches.Switches())
 	defer latch.Shutdown()
 
-	// for use in a dynamic select statement (a case per Q of the latch array) and bool results per case
+	// for use in a dynamic select statement (a case per Q of the latch array) and Electron results per case (to pull power state out of)
 	cases := make([]reflect.SelectCase, 8)
-	got := make([]atomic.Value, 8)
+	gots := make([]atomic.Value, 8)
 
-	// built the case statements to deal with each Q in the latch array
-	for i, q := range latch.Qs {
+	// built the case statements to deal with each Q in the latch array (and while looping, initialize the gots slice as default bool value would do)
+	for i := range latch.Qs {
 
-		ch := make(chan bool, 1)
+		ch := make(chan Electron, 1)
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-
-		q.WireUp(ch)
+		gots[i].Store(false)
 	}
 
 	go func() {
 		for {
 			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
 			chosenCase, caseValue, _ := reflect.Select(cases)
-			got[chosenCase].Store(caseValue.Bool())
+			//Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", chosenCase, cases[chosenCase].Chan, caseValue.(Electron).String()))
+			gots[chosenCase].Store(caseValue.Bool())
+			//	caseValue.(Electron).Done()
 		}
 	}()
 
+	for i, q := range latch.Qs {
+		q.WireUp(cases[i].Chan.(Electron))
+	}
+
 	// let the above settle down before testing
-	time.Sleep(time.Millisecond * 100)
+	//time.Sleep(time.Millisecond * 100)
 
 	priorWant := [8]bool{false, false, false, true, true, false, false, false}
 	for i := 0; i < 8; i++ {
-		if got := got[i].Load().(bool); got != priorWant[i] {
-			t.Errorf("Latch[%d] wanted (%t) but got (%t).\n", i, priorWant[i], got)
+		if got := gots[i].Load().(bool); got != priorWant[i] {
+			t.Errorf("Latches[%d] wanted (%t) but got (%t).\n", i, priorWant[i], got)
 		}
 	}
 
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Stage#%d: Setting switches to %s", i+1, tc.input), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting switches to %s", i, tc.input), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting switches to %s", i, tc.input))
 
 			// set to OFF to test that nothing will change in the latches store
 
 			clkSwitch.Set(false)
-			time.Sleep(time.Millisecond * 125)
+			//time.Sleep(time.Millisecond * 125)
 
-			setSwitches(latchSwitches, tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
+			latchSwitches.SetSwitches(tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
 
 			for i := range latch.Qs {
-				if got := got[i].Load().(bool); got != priorWant[i] {
-					t.Errorf("Latch[%d], with clkSwitch off, wanted %t but got %t", i, priorWant[i], got)
+				if got := gots[i].Load().(bool); got != priorWant[i] {
+					t.Errorf("Latches[%d], with clkSwitch off, wanted %t but got %t", i, priorWant[i], got)
 				}
 			}
 
 			// Now set to ON to test that requested changes DID occur in the latches store
 
 			clkSwitch.Set(true)
-			time.Sleep(time.Millisecond * 200) // need to allow all the latches to settle down (transmit their new Q values)
+			//time.Sleep(time.Millisecond * 200) // need to allow all the latches to settle down (transmit their new Q values)
 
 			for i := range latch.Qs {
-				if got := got[i].Load().(bool); got != tc.want[i] {
-					t.Errorf("Latch[%d], with clkSwitch ON, wanted %t but got %t", i, tc.want[i], got)
+				if got := gots[i].Load().(bool); got != tc.want[i] {
+					t.Errorf("Latches[%d], with clkSwitch ON, wanted %t but got %t", i, tc.want[i], got)
 				}
 			}
 
 			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (ie matches prior)
 			for i := range latch.Qs {
-				priorWant[i] = got[i].Load().(bool)
+				priorWant[i] = gots[i].Load().(bool)
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
+/*
 func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 	testCases := []struct {
 		byte1     string

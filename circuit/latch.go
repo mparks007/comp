@@ -20,7 +20,7 @@ type RSFlipFlop struct {
 }
 
 // NewRSFlipFLop returns an RSFlipFlop circuit which will be controlled by the passed in Reset/Set pins, resulting in varying states of its two outputs, Q and QBar
-func NewRSFlipFLop(name string, rPin, sPin pwrEmitter) *RSFlipFlop {
+func NewRSFlipFlop(name string, rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
 	ff.wireQOut = NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
@@ -43,7 +43,6 @@ func (f *RSFlipFlop) Shutdown() {
 	f.wireQOut.Shutdown()
 }
 
-/*
 // LevelTriggeredDTypeLatch is a type of latch/flipflop which will store the value of data only when the clock is high (on) ("Level" = clock high/low, "D" = data 0/1)
 //
 // Truth Table
@@ -61,15 +60,15 @@ type LevelTriggeredDTypeLatch struct {
 }
 
 // NewLevelTriggeredDTypeLatch returns a LevelTriggeredDTypeLatch circuit which will be controlled by the passed in Clock and Data pins, resulting in varying states of its two outputs, Q and QBar
-func NewLevelTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatch {
+func NewLevelTriggeredDTypeLatch(name string, clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatch {
 	latch := &LevelTriggeredDTypeLatch{}
 
-	latch.inverter = NewInverter(dataInPin)
+	latch.inverter = NewInverter(fmt.Sprintf("%s-Inverter", name), dataInPin)
 
-	latch.rAnd = NewANDGate(clkInPin, latch.inverter)
-	latch.sAnd = NewANDGate(clkInPin, dataInPin)
+	latch.rAnd = NewANDGate(fmt.Sprintf("%s-rANDGate", name), clkInPin, latch.inverter)
+	latch.sAnd = NewANDGate(fmt.Sprintf("%s-sANDGate", name), clkInPin, dataInPin)
 
-	latch.rs = NewRSFlipFLop(latch.rAnd, latch.sAnd)
+	latch.rs = NewRSFlipFlop(fmt.Sprintf("%s-RSFlipFlop", name), latch.rAnd, latch.sAnd)
 
 	// refer to the inner-flipflop's outputs for easier external access
 	latch.Q = latch.rs.Q
@@ -93,11 +92,11 @@ type NBitLevelTriggeredDTypeLatch struct {
 }
 
 // NewNBitLevelTriggeredDTypeLatch returns an NBitLevelTriggeredDTypeLatch whose storing of the data pin value of EVERY internal latch will occur when the clock pin is on
-func NewNBitLevelTriggeredDTypeLatch(clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLevelTriggeredDTypeLatch {
+func NewNBitLevelTriggeredDTypeLatch(name string, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLevelTriggeredDTypeLatch {
 	latch := &NBitLevelTriggeredDTypeLatch{}
 
-	for _, dataInPin := range dataInPins {
-		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(clkInPin, dataInPin))
+	for i, dataInPin := range dataInPins {
+		latch.latches = append(latch.latches, NewLevelTriggeredDTypeLatch(fmt.Sprintf("%s-Latches[%d]", name, i), clkInPin, dataInPin))
 
 		// refer to the inner-latches's Qs output for easier external access
 		latch.Qs = append(latch.Qs, latch.latches[len(latch.latches)-1].Q)
@@ -113,6 +112,7 @@ func (l *NBitLevelTriggeredDTypeLatch) Shutdown() {
 	}
 }
 
+/*
 // LevelTriggeredDTypeLatchWithClear is a type of latch/flipflop which will store the value of data only when the clock is high (on) and Clear is off ("Level" = clock high/low, "D" = data 0/1)
 //	This is almost like a NewLevelTriggeredDTypeLatch, BUT it adds a Clear input, which if on, will force Q off no matter what else is going on
 //
