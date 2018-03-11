@@ -41,7 +41,7 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, to not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e)
@@ -107,7 +107,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received on Channel (%v), Electron <%s>", index, chState, e.String()))
+					Debug(name, fmt.Sprintf("(Relays[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
 
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, to not be blocked by the select/case
 					go func(e Electron) {
@@ -222,7 +222,7 @@ func NewNANDGate(name string, pins ...pwrEmitter) *NANDGate {
 			for {
 				select {
 				case e := <-chState:
-					Debug(name, fmt.Sprintf("(Relays[%d]) Received on Channel (%v), Electron <%s>", index, chState, e.String()))
+					Debug(name, fmt.Sprintf("(Relays[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
 
 					// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, to not be blocked by the select/case
 					go func(e Electron) {
@@ -331,7 +331,7 @@ func NewNORGate(name string, pins ...pwrEmitter) *NORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, to not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e)
@@ -388,7 +388,7 @@ func NewXORGate(name string, pin1, pin2 pwrEmitter) *XORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, to not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e)
@@ -444,7 +444,7 @@ func NewXNORGate(name string, pin1, pin2 pwrEmitter) *XNORGate {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
 				// putting this in a new go func() will allow any loopbacks triggered by the transmit, that end up feeding back into THIS gate, to not be blocked by the select/case
 				go func(e Electron) {
 					gate.Transmit(e)

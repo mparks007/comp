@@ -39,7 +39,7 @@ func NewWire(name string, length uint) *Wire {
 		for {
 			select {
 			case e := <-w.Input:
-				Debug(w.name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", w.Input, e.String()))
+				Debug(w.name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", w.Input, e.String()))
 				go func(e Electron) {
 					w.Transmit(e)
 					e.Done()

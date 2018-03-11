@@ -53,7 +53,7 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 		for {
 			select {
 			case e := <-rel.aInCh:
-				Debug(name, fmt.Sprintf("(aIn) Received on Channel (%v), Electron <%s>", rel.aInCh, e.String()))
+				Debug(name, fmt.Sprintf("(aIn) Received on Channel (%v), Electron {%s}", rel.aInCh, e.String()))
 				rel.aInIsPowered.Store(e.powerState)
 				transmit(e)
 				e.Done()
@@ -67,7 +67,7 @@ func NewRelay(name string, pin1, pin2 pwrEmitter) *Relay {
 		for {
 			select {
 			case e := <-rel.bInCh:
-				Debug(name, fmt.Sprintf("(bIn) Received on Channel (%v), Electron <%s>", rel.bInCh, e.String()))
+				Debug(name, fmt.Sprintf("(bIn) Received on Channel (%v), Electron {%s}", rel.bInCh, e.String()))
 				rel.bInIsPowered.Store(e.powerState)
 				transmit(e)
 				e.Done()

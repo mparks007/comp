@@ -27,7 +27,7 @@ func NewInverter(name string, pin pwrEmitter) *Inverter {
 		for {
 			select {
 			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
 				inv.Transmit(e)
 				e.Done()
 			case <-inv.chStop:
