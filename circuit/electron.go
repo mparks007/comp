@@ -14,15 +14,27 @@ type Electron struct {
 	lockContexts []uuid.UUID
 	//	lockContexts atomic.Value
 	wg *sync.WaitGroup
+	sync.RWMutex
 }
+
+// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
+var conLock sync.RWMutex
 
 // AddContext will allow a component to indicate it will be involved in a lock of itself associated to the electron flow
 func (e *Electron) AddContext(context uuid.UUID) {
+	conLock.Lock()
+	defer conLock.Unlock()
 	e.lockContexts = append(e.lockContexts, context)
 }
 
 // HasContext will allow a component to check and see if it isn't already present in the electron's tracker of locked contexts (i.e. the components)...and therefore would be safe to lock itelf
 func (e *Electron) HasContext(context uuid.UUID) bool {
+	conLock.Lock()
+	defer conLock.Unlock()
 	for _, c := range e.lockContexts {
 		if uuid.Equal(c, context) {
 			return true
@@ -33,6 +45,8 @@ func (e *Electron) HasContext(context uuid.UUID) bool {
 
 // String will display most of the Electron fields
 func (e *Electron) String() string {
+	conLock.Lock()
+	defer conLock.Unlock()
 	return fmt.Sprintf("sender (%s), powerState (%t), lockContexts (%v)", e.sender, e.powerState, e.lockContexts)
 }
 
@@ -40,37 +54,3 @@ func (e *Electron) String() string {
 func (e *Electron) Done() {
 	e.wg.Done()
 }
-
-/*
-// HasContext will allow a component to check and see if it isn't already present in the electron's tracker of locked contexts (i.e. the components)...and therefore would be safe to lock itelf
-func (e *Electron) HasContext(context uuid.UUID) bool {
-	if _, ok := e.lockContexts.Load().([]uuid.UUID); !ok {
-		e.lockContexts.Store(uuid.Must(uuid.NewV4()))
-	}
-
-	for i := 0; i < len(e.lockContexts.Load().([]uuid.UUID)); i++ {
-
-		if uuid.Equal(e.lockContexts.Load().([]uuid.UUID)[i], context) {
-			return true
-		}
-	}
-	return false
-}
-
-// AddContext will allow a component to indicate it will be involved in a lock of itself associated to the electron flow
-func (e *Electron) AddContext(context uuid.UUID) {
-	if _, ok := e.lockContexts.Load().([]uuid.UUID); !ok {
-		e.lockContexts.Store(uuid.Must(uuid.NewV4()))
-	}
-	e.lockContexts.Store(append(e.lockContexts.Load().([]uuid.UUID), context))
-}
-
-// String will display most of the Electron fields
-func (e *Electron) String() string {
-	locks, ok := e.lockContexts.Load().([]uuid.UUID)
-	if !ok {
-		e.lockContexts.Store(uuid.Must(uuid.NewV4()))
-	}
-	return fmt.Sprintf("sender (%s), powerState (%t), lockContexts (%v)", e.sender, e.powerState, locks)
-}
-*/

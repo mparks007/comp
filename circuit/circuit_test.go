@@ -1708,7 +1708,6 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
-/*
 func TestNBitAdder_SixteenBit(t *testing.T) {
 	testCases := []struct {
 		bytes1         string
@@ -1734,18 +1733,20 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 		{"1001110110011101", "1101011011010110", false, "0111010001110011", true},
 	}
 
+	Debug(testName(t, ""), "Initial Setup")
+
 	// start with off switches
-	addend1Switches, _ := NewNSwitchBank("0000000000000000")
+	addend1Switches, _ := NewNSwitchBank(testName(t, "addend1Switches"), "0000000000000000")
 	defer addend1Switches.Shutdown()
 
-	addend2Switches, _ := NewNSwitchBank("0000000000000000")
+	addend2Switches, _ := NewNSwitchBank(testName(t, "addend2Switches"), "0000000000000000")
 	defer addend2Switches.Shutdown()
 
-	carryInSwitch := NewSwitch(false)
+	carryInSwitch := NewSwitch(testName(t, "carryInSwitch"), false)
 	defer carryInSwitch.Shutdown()
 
 	// create the adder based on those switches
-	addr, err := NewNBitAdder(addend1Switches.Switches(), addend2Switches.Switches(), carryInSwitch)
+	addr, err := NewNBitAdder(testName(t, "NBitAdder"), addend1Switches.Switches(), addend2Switches.Switches(), carryInSwitch)
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1764,11 +1765,12 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 		gots[i].Store(false)
 		chStates = append(chStates, make(chan Electron, 1))
 		chStops = append(chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Electron, chStop chan bool, i int) {
 			for {
 				select {
 				case e := <-chState:
-					gots[index].Store(e.powerState)
+					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
+					gots[i].Store(e.powerState)
 					e.Done()
 				case <-chStop:
 					return
@@ -1788,11 +1790,15 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 
 	addr.CarryOut.WireUp(chStates[16])
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Adding %s to %s with carry in of %t", tc.bytes1, tc.bytes2, tc.carryInPowered), func(t *testing.T) {
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
-			setSwitches(addend1Switches, tc.bytes1)
-			setSwitches(addend2Switches, tc.bytes2)
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.bytes1, tc.bytes2, tc.carryInPowered), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.bytes1, tc.bytes2, tc.carryInPowered))
+
+			addend1Switches.SetSwitches(tc.bytes1)
+			addend2Switches.SetSwitches(tc.bytes2)
 			carryInSwitch.Set(tc.carryInPowered)
 
 			// build a string based on each sum's state
@@ -1814,6 +1820,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestOnesCompliment(t *testing.T) {
@@ -1836,15 +1843,20 @@ func TestOnesCompliment(t *testing.T) {
 		{"1010101010101010101010101010101010101010", true, "0101010101010101010101010101010101010101"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Executing complementer against %s with compliment signal of %t", tc.bits, tc.signalIsPowered), func(t *testing.T) {
-			bitSwitches, _ := NewNSwitchBank(tc.bits)
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Executing complementer against (%s) with compliment signal of (%t)", i, tc.bits, tc.signalIsPowered), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Executing complementer against (%s) with compliment signal of (%t)", i, tc.bits, tc.signalIsPowered))
+
+			bitSwitches, _ := NewNSwitchBank(testName(t, "bitSwitches"), tc.bits)
 			defer bitSwitches.Shutdown()
 
-			signalSwitch := NewSwitch(tc.signalIsPowered)
+			signalSwitch := NewSwitch(testName(t, "signalSwitch"), tc.signalIsPowered)
 			defer signalSwitch.Shutdown()
 
-			comp := NewOnesComplementer(bitSwitches.Switches(), signalSwitch)
+			comp := NewOnesComplementer(testName(t, "OnesComplementer"), bitSwitches.Switches(), signalSwitch)
 
 			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
@@ -1863,6 +1875,7 @@ func TestOnesCompliment(t *testing.T) {
 					for {
 						select {
 						case e := <-chState:
+							Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
 							gotCompliments[index].Store(e.powerState)
 							e.Done()
 						case <-chStop:
@@ -1896,6 +1909,7 @@ func TestOnesCompliment(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestNBitSubtractor_BadInputLengths(t *testing.T) {
@@ -1910,15 +1924,20 @@ func TestNBitSubtractor_BadInputLengths(t *testing.T) {
 		{"111111111", "11111111", "Mismatched input lengths.  Minuend len: 9, Subtrahend len: 8"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
-			minuendSwitches, _ := NewNSwitchBank(tc.byte1)
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.byte1, tc.byte2), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.byte1, tc.byte2))
+
+			minuendSwitches, _ := NewNSwitchBank(testName(t, "minuendSwitches"), tc.byte1)
 			defer minuendSwitches.Shutdown()
 
-			subtrahendSwitches, _ := NewNSwitchBank(tc.byte2)
+			subtrahendSwitches, _ := NewNSwitchBank(testName(t, "subtrahendSwitches"), tc.byte2)
 			defer subtrahendSwitches.Shutdown()
 
-			sub, err := NewNBitSubtractor(minuendSwitches.Switches(), subtrahendSwitches.Switches())
+			sub, err := NewNBitSubtractor(testName(t, "NBitSubtractor"), minuendSwitches.Switches(), subtrahendSwitches.Switches())
 
 			if sub != nil {
 				sub.Shutdown()
@@ -1934,6 +1953,7 @@ func TestNBitSubtractor_BadInputLengths(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestNBitSubtractor_EightBit(t *testing.T) {
@@ -1958,14 +1978,16 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 		{"10000001", "01111110", "00000011", true},  // -127 - 126 = 3 signed or (129 - 126 = 3 unsigned)
 	}
 
+	Debug(testName(t, ""), "Initial Setup")
+
 	// start with off switches
-	minuendwitches, _ := NewNSwitchBank("00000000")
+	minuendwitches, _ := NewNSwitchBank(testName(t, "minuendSwitches"), "00000000")
 	defer minuendwitches.Shutdown()
 
-	subtrahendSwitches, _ := NewNSwitchBank("00000000")
+	subtrahendSwitches, _ := NewNSwitchBank(testName(t, "subtrahendSwitches"), "00000000")
 	defer subtrahendSwitches.Shutdown()
 
-	sub, err := NewNBitSubtractor(minuendwitches.Switches(), subtrahendSwitches.Switches())
+	sub, err := NewNBitSubtractor(testName(t, "NBitSubtractor"), minuendwitches.Switches(), subtrahendSwitches.Switches())
 
 	if err != nil {
 		t.Errorf("Expected no error on construction, but got: %s", err.Error())
@@ -1988,6 +2010,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 			for {
 				select {
 				case e := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron <%s>", chState, e.String()))
 					gots[index].Store(e.powerState)
 					e.Done()
 				case <-chStop:
@@ -2008,11 +2031,15 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 
 	sub.CarryOut.WireUp(chStates[8])
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Subtracting %s from %s", tc.subtrahend, tc.minuend), func(t *testing.T) {
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
-			setSwitches(minuendwitches, tc.minuend)
-			setSwitches(subtrahendSwitches, tc.subtrahend)
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Subtracting %s from %s", i, tc.subtrahend, tc.minuend), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Subtracting %s from %s", i, tc.subtrahend, tc.minuend))
+
+			minuendwitches.SetSwitches(tc.minuend)
+			subtrahendSwitches.SetSwitches(tc.subtrahend)
 
 			// build a string based on each dif's state
 			gotAnswer := ""
@@ -2033,6 +2060,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 /*
