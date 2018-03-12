@@ -189,7 +189,6 @@ func (a *ThreeNumberAdder) Shutdown() {
 	a.loopRibbon.Shutdown()
 }
 
-/*
 // NNumberAdder allows the summing of any number of binary numbers
 type NNumberAdder struct {
 	latches    *NBitLevelTriggeredDTypeLatchWithClear
@@ -209,18 +208,18 @@ type NNumberAdder struct {
 //		2. TODO: finish the steps once I have the TestNewNNumberAdder unit test working
 //		3. TODO:
 //		4. TODO: ...
-func NewNNumberAdder(inputs []pwrEmitter) (*NNumberAdder, error) {
+func NewNNumberAdder(name string, inputs []pwrEmitter) (*NNumberAdder, error) {
 
 	addr := &NNumberAdder{}
 
-	addr.Clear = NewSwitch(false)
-	addr.Add = NewSwitch(false)
+	addr.Clear = NewSwitch(fmt.Sprintf("%s-Clear", name), false)
+	addr.Add = NewSwitch(fmt.Sprintf("%s-Add", name), false)
 
-	addr.loopRibbon = NewRibbonCable(uint(len(inputs)), 10)
+	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbon", name), uint(len(inputs)), 5)
 
-	addr.adder, _ = NewNBitAdder(inputs, addr.loopRibbon.Wires, nil)
+	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, nil)
 
-	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(addr.Clear, addr.Add, addr.adder.Sums)
+	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(fmt.Sprintf("%s-NBitLevelTriggeredDTypeLatchWithClear", name), addr.Clear, addr.Add, addr.adder.Sums)
 
 	addr.loopRibbon.SetInputs(addr.latches.Qs...)
 
@@ -238,4 +237,3 @@ func (a *NNumberAdder) Shutdown() {
 	a.Add.Shutdown()
 	a.Clear.Shutdown()
 }
-*/

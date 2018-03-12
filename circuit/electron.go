@@ -22,10 +22,13 @@ type Electron struct {
 // why can't I get an Electron owned field mutext to avoid the race?  had to use global...
 // why can't I get an Electron owned field mutext to avoid the race?  had to use global...
 // why can't I get an Electron owned field mutext to avoid the race?  had to use global...
-var conLock sync.RWMutex
+var conLock *sync.RWMutex
 
 // AddContext will allow a component to indicate it will be involved in a lock of itself associated to the electron flow
 func (e *Electron) AddContext(context uuid.UUID) {
+	if conLock == nil {
+		conLock = new(sync.RWMutex)
+	}
 	conLock.Lock()
 	defer conLock.Unlock()
 	e.lockContexts = append(e.lockContexts, context)
@@ -33,6 +36,9 @@ func (e *Electron) AddContext(context uuid.UUID) {
 
 // HasContext will allow a component to check and see if it isn't already present in the electron's tracker of locked contexts (i.e. the components)...and therefore would be safe to lock itelf
 func (e *Electron) HasContext(context uuid.UUID) bool {
+	if conLock == nil {
+		conLock = new(sync.RWMutex)
+	}
 	conLock.Lock()
 	defer conLock.Unlock()
 	for _, c := range e.lockContexts {
@@ -45,6 +51,9 @@ func (e *Electron) HasContext(context uuid.UUID) bool {
 
 // String will display most of the Electron fields
 func (e *Electron) String() string {
+	if conLock == nil {
+		conLock = new(sync.RWMutex)
+	}
 	conLock.Lock()
 	defer conLock.Unlock()
 	return fmt.Sprintf("sender (%s), powerState (%t), lockContexts (%v)", e.sender, e.powerState, e.lockContexts)
