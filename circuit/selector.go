@@ -1,6 +1,7 @@
 package circuit
 
-/*
+import "fmt"
+
 // TwoToOneSelector is a circuit which takes two sets of input pins and exposes a switch to decide with of those input sets will be sent to the output
 //
 // Truth Table
@@ -18,7 +19,7 @@ type TwoToOneSelector struct {
 
 // NewTwoToOneSelector will return an 2-to-1 Selector component whose output will depend on the state of the selector signal input pin
 //	With selector off, the first set of pins will be the output.  If on, the second set is the output.
-func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
+func NewTwoToOneSelector(name string, signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
 
 	if len(aPins) != len(bPins) {
 		return nil, fmt.Errorf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins))
@@ -27,10 +28,10 @@ func NewTwoToOneSelector(signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOn
 	sel := &TwoToOneSelector{}
 
 	for i := range aPins {
-		sel.inverters = append(sel.inverters, NewInverter(signal)) // having to make inverters as named objects so they can be Shutdown later (vs. just feeding NewInverter(signal) into NewANDGate())
-		sel.aANDs = append(sel.aANDs, NewANDGate(sel.inverters[i], aPins[i]))
-		sel.bANDs = append(sel.bANDs, NewANDGate(signal, bPins[i]))
-		sel.Outs = append(sel.Outs, NewORGate(sel.aANDs[i], sel.bANDs[i]))
+		sel.inverters = append(sel.inverters, NewInverter(fmt.Sprintf("%s-Inverters[%d]", name, i), signal)) // having to make inverters as named objects so they can be Shutdown later (vs. just feeding NewInverter(signal) into NewANDGate())
+		sel.aANDs = append(sel.aANDs, NewANDGate(fmt.Sprintf("%s-aANDGates[%d]", name, i), sel.inverters[i], aPins[i]))
+		sel.bANDs = append(sel.bANDs, NewANDGate(fmt.Sprintf("%s-bANDGates[%d]", name, i), signal, bPins[i]))
+		sel.Outs = append(sel.Outs, NewORGate(fmt.Sprintf("%s-Outs[%d]", name, i), sel.aANDs[i], sel.bANDs[i]))
 	}
 
 	return sel, nil
@@ -45,4 +46,3 @@ func (s *TwoToOneSelector) Shutdown() {
 		s.inverters[i].Shutdown()
 	}
 }
-*/

@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -2368,6 +2367,106 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 		input string
 		want  [8]bool
 	}{
+		{"00000001", [8]bool{false, false, false, false, false, false, false, true}},
+		{"11111111", [8]bool{true, true, true, true, true, true, true, true}},
+		{"10101010", [8]bool{true, false, true, false, true, false, true, false}},
+		{"10000001", [8]bool{true, false, false, false, false, false, false, true}},
+	}
+
+	Debug(testName(t, ""), "Initial Setup")
+
+	latchSwitches, _ := NewNSwitchBank(testName(t, "latchSwitches"), "00011000")
+	defer latchSwitches.Shutdown()
+
+	clkSwitch := NewSwitch(testName(t, "clkSwitch"), true)
+	defer clkSwitch.Shutdown()
+
+	latch := NewNBitLevelTriggeredDTypeLatch(testName(t, "NBitLevelTriggeredDTypeLatch"), clkSwitch, latchSwitches.Switches())
+	defer latch.Shutdown()
+
+	// build listen/transmit funcs to deal with each latch's Q
+	gots := make([]atomic.Value, len(latch.Qs))
+	var chStates []chan Electron
+	var chStops []chan bool
+	for i, q := range latch.Qs {
+
+		chStates = append(chStates, make(chan Electron, 1))
+		chStops = append(chStops, make(chan bool, 1))
+
+		go func(chState chan Electron, chStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
+
+					go func(e Electron) {
+						gots[index].Store(e.powerState)
+						e.Done()
+					}(e)
+				case <-chStop:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Stopped", index))
+					return
+				}
+			}
+		}(chStates[i], chStops[i], i)
+
+		q.WireUp(chStates[i])
+	}
+	defer func() {
+		for i := 0; i < len(latch.Qs); i++ {
+			chStops[i] <- true
+		}
+	}()
+
+	priorWant := [8]bool{false, false, false, true, true, false, false, false}
+	for i := 0; i < 8; i++ {
+		if got := gots[i].Load().(bool); got != priorWant[i] {
+			t.Errorf("Latches[%d] wanted (%t) but got (%t).\n", i, priorWant[i], got)
+		}
+	}
+
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting switches to %s", i, tc.input), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting switches to %s", i, tc.input))
+
+			// set to OFF to test that nothing will change in the latches store
+			clkSwitch.Set(false)
+
+			latchSwitches.SetSwitches(tc.input) // setting switches AFTER the clk goes to off to test that nothing actually would happen to the latches
+
+			for i := range latch.Qs {
+				if got := gots[i].Load().(bool); got != priorWant[i] {
+					t.Errorf("Latches[%d], with clkSwitch off, wanted %t but got %t", i, priorWant[i], got)
+				}
+			}
+
+			// Now set to ON to test that requested changes DID occur in the latches store
+			clkSwitch.Set(true)
+
+			for i := range latch.Qs {
+				if got := gots[i].Load().(bool); got != tc.want[i] {
+					t.Errorf("Latches[%d], with clkSwitch ON, wanted %t but got %t", i, tc.want[i], got)
+				}
+			}
+
+			// now update the prior tracker bools to ensure next pass (with cklIn as OFF at the top) proves it didn't change (ie matches prior)
+			for i := range latch.Qs {
+				priorWant[i] = gots[i].Load().(bool)
+			}
+		})
+	}
+	Debug(testName(t, ""), "End Test Cases Loop")
+}
+
+/*
+func TestNBitLevelTriggeredDTypeLatch_DynSelect(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  [8]bool
+	}{
 	// {"00000001", [8]bool{false, false, false, false, false, false, false, true}},
 	// {"11111111", [8]bool{true, true, true, true, true, true, true, true}},
 	// {"10101010", [8]bool{true, false, true, false, true, false, true, false}},
@@ -2395,20 +2494,23 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 		ch := make(chan Electron, 1)
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 		gots[i].Store(false)
+		//q.WireUp(ch)
 	}
 
 	go func() {
 		for {
 			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
 			chosenCase, caseValue, _ := reflect.Select(cases)
-			//Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", chosenCase, cases[chosenCase].Chan, caseValue.(Electron).String()))
-			gots[chosenCase].Store(caseValue.Bool())
-			//	caseValue.(Electron).Done()
+			e := reflect.ValueOf(caseValue).Interface().(Electron)
+			Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", chosenCase, cases[chosenCase].Chan, e.String()))
+			gots[chosenCase].Store(e.powerState)
+			e.Done()
 		}
 	}()
 
 	for i, q := range latch.Qs {
-		q.WireUp(cases[i].Chan.(Electron))
+		ch := reflect.Value(cases[i].Chan)
+		q.WireUp(ch.Interface().(chan Electron))
 	}
 
 	// let the above settle down before testing
@@ -2460,8 +2562,8 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 	}
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
+*/
 
-/*
 func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 	testCases := []struct {
 		byte1     string
@@ -2472,15 +2574,20 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 		{"000", "1111", "Mismatched input lengths. aPins len: 3, bPins len: 4"},
 	}
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Adding %s to %s", tc.byte1, tc.byte2), func(t *testing.T) {
-			addend1Switches, _ := NewNSwitchBank(tc.byte1)
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.byte1, tc.byte2), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.byte1, tc.byte2))
+
+			addend1Switches, _ := NewNSwitchBank(testName(t, "addend1Switches"), tc.byte1)
 			defer addend1Switches.Shutdown()
 
-			addend2Switches, _ := NewNSwitchBank(tc.byte2)
+			addend2Switches, _ := NewNSwitchBank(testName(t, "addend2Switches"), tc.byte2)
 			defer addend2Switches.Shutdown()
 
-			sel, err := NewTwoToOneSelector(nil, addend1Switches.Switches(), addend2Switches.Switches())
+			sel, err := NewTwoToOneSelector(testName(t, "TwoToOneSelector"), nil, addend1Switches.Switches(), addend2Switches.Switches())
 
 			if sel != nil {
 				t.Error("Did not expect a Selector to be created, but got one")
@@ -2496,6 +2603,7 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestTwoToOneSelector(t *testing.T) {
@@ -2515,134 +2623,164 @@ func TestTwoToOneSelector(t *testing.T) {
 		{"110", "111", false, []bool{true, true, false}},
 	}
 
+	Debug(testName(t, ""), "Initial Setup")
+
 	// start with these switches to verify uses A intially
-	aInSwitches, _ := NewNSwitchBank("111")
+	aInSwitches, _ := NewNSwitchBank(testName(t, "aInSwitches"), "111")
 	defer aInSwitches.Shutdown()
 
-	bInSwitches, _ := NewNSwitchBank("000")
+	bInSwitches, _ := NewNSwitchBank(testName(t, "bInSwitches"), "000")
 	defer bInSwitches.Shutdown()
 
-	selectBSwitch := NewSwitch(false)
+	selectBSwitch := NewSwitch(testName(t, "selectBSwitch"), false)
 	defer selectBSwitch.Shutdown()
 
-	// for use in a dynamic select statement (a case per selector output) and bool results per case
-	cases := make([]reflect.SelectCase, 3)
-	got := make([]atomic.Value, 3)
-
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches(), bInSwitches.Switches())
+	sel, _ := NewTwoToOneSelector(testName(t, "TwoToOneSelector"), selectBSwitch, aInSwitches.Switches(), bInSwitches.Switches())
 	defer sel.Shutdown()
 
-	// built the case statements to deal with each selector output
-	for i, s := range sel.Outs {
+	// build listen/transmit funcs to deal with each of the selector's outputs
+	gots := make([]atomic.Value, len(sel.Outs))
+	var chStates []chan Electron
+	var chStops []chan bool
+	for i, o := range sel.Outs {
 
-		ch := make(chan bool, 1)
-		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+		chStates = append(chStates, make(chan Electron, 1))
+		chStops = append(chStops, make(chan bool, 1))
 
-		s.WireUp(ch)
+		go func(chState chan Electron, chStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
+
+					go func(e Electron) {
+						gots[index].Store(e.powerState)
+						e.Done()
+					}(e)
+				case <-chStop:
+					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
+					return
+				}
+			}
+		}(chStates[i], chStops[i], i)
+
+		o.WireUp(chStates[i])
 	}
-
-	go func() {
-		for {
-			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-			chosenCase, caseValue, _ := reflect.Select(cases)
-			got[chosenCase].Store(caseValue.Bool())
+	defer func() {
+		for i := 0; i < len(sel.Outs); i++ {
+			chStops[i] <- true
 		}
 	}()
 
-	// let the above settle down before testing
-	time.Sleep(time.Millisecond * 75)
-
 	want := true
 	for i := 0; i < 3; i++ {
-		if got := got[i].Load().(bool); got != want {
+		if got := gots[i].Load().(bool); got != want {
 			t.Errorf("Selector Output[%d]: A(111), B(000), use B?(false).  Wanted (%t) but got (%v).\n", i, want, got)
 		}
 	}
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("Stage[%d]: A(%s), B(%s), use B?(%t)", i, tc.aIn, tc.bIn, tc.selectB), func(t *testing.T) {
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
-			setSwitches(aInSwitches, tc.aIn)
-			setSwitches(bInSwitches, tc.bIn)
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: A(%s), B(%s), use B?(%t)", i, tc.aIn, tc.bIn, tc.selectB), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: A(%s), B(%s), use B?(%t)", i, tc.aIn, tc.bIn, tc.selectB))
+
+			aInSwitches.SetSwitches(tc.aIn)
+			bInSwitches.SetSwitches(tc.bIn)
 			selectBSwitch.Set(tc.selectB)
 
-			time.Sleep(time.Millisecond * 75)
-
 			for i := range sel.Outs {
-				if got := got[i].Load().(bool); got != tc.want[i] {
+				if got := gots[i].Load().(bool); got != tc.want[i] {
 					t.Errorf("Selector Output[%d]: Wanted (%t) but got (%t).\n", i, tc.want[i], got)
 				}
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
+	Debug(testName(t, ""), "Initial Setup")
+
 	// start with off for A but on for B, but selecting A
-	aInSwitches, _ := NewNSwitchBank("000")
+	aInSwitches, _ := NewNSwitchBank(testName(t, "aInSwitches"), "000")
 	defer aInSwitches.Shutdown()
 
-	bInSwitches, _ := NewNSwitchBank("111")
+	bInSwitches, _ := NewNSwitchBank(testName(t, "bInSwitches"), "111")
 	defer bInSwitches.Shutdown()
 
-	selectBSwitch := NewSwitch(false)
+	selectBSwitch := NewSwitch(testName(t, "selectBSwitch"), false)
 	defer selectBSwitch.Shutdown()
 
-	// for use in a dynamic select statement (a case per selector output) and bool results per case
-	cases := make([]reflect.SelectCase, 3)
-	got := make([]atomic.Value, 3)
-
-	sel, _ := NewTwoToOneSelector(selectBSwitch, aInSwitches.Switches(), bInSwitches.Switches())
+	sel, _ := NewTwoToOneSelector(testName(t, "TwoToOneSelector"), selectBSwitch, aInSwitches.Switches(), bInSwitches.Switches())
 	defer sel.Shutdown()
 
-	// built the case statements to deal with each selector output
-	for i, s := range sel.Outs {
+	// build listen/transmit funcs to deal with each of the selector's outputs
+	gots := make([]atomic.Value, len(sel.Outs))
+	var chStates []chan Electron
+	var chStops []chan bool
+	for i, o := range sel.Outs {
 
-		ch := make(chan bool, 1)
-		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
+		chStates = append(chStates, make(chan Electron, 1))
+		chStops = append(chStops, make(chan bool, 1))
 
-		s.WireUp(ch)
+		go func(chState chan Electron, chStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
+
+					go func(e Electron) {
+						gots[index].Store(e.powerState)
+						e.Done()
+					}(e)
+				case <-chStop:
+					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
+					return
+				}
+			}
+		}(chStates[i], chStops[i], i)
+
+		o.WireUp(chStates[i])
 	}
-
-	go func() {
-		for {
-			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-			chosenCase, caseValue, _ := reflect.Select(cases)
-			got[chosenCase].Store(caseValue.Bool())
+	defer func() {
+		for i := 0; i < len(sel.Outs); i++ {
+			chStops[i] <- true
 		}
 	}()
 
-	time.Sleep(time.Millisecond * 75)
-
+	Debug(testName(t, ""), "Start Test Cases")
+	
 	// starting with selecting A, get A's state
 
 	for i := 0; i < 3; i++ {
-		if got[i].Load().(bool) == true {
+		if gots[i].Load().(bool) == true {
 			t.Error("Expecting false on all Outs of selector but got a true")
 		}
 	}
 
 	selectBSwitch.Set(true)
-	time.Sleep(time.Millisecond * 75)
 
 	// selecting B, get B's state
 	for i := 0; i < 3; i++ {
-		if got[i].Load().(bool) == false {
+		if gots[i].Load().(bool) == false {
 			t.Error("Expecting true on all Outs of selector but got a false")
 		}
 	}
 
-	setSwitches(aInSwitches, "101")
-	time.Sleep(time.Millisecond * 75)
+	aInSwitches.SetSwitches("101")
 
 	// still selecting B, get B's state, regardless of A's state changing
 	for i := 0; i < 3; i++ {
-		if got[i].Load().(bool) == false {
+		if gots[i].Load().(bool) == false {
 			t.Error("Expecting true on all Outs of selector but got a false")
 		}
 	}
+	Debug(testName(t, ""), "End Test Cases")
 }
 
+/*
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"
 
@@ -2664,6 +2802,7 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	}
 }
 
+/*
 func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	testCases := []struct {
 		aIn          string
@@ -2753,6 +2892,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	}
 }
 
+/*
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	aInSwitches, _ := NewNSwitchBank("00000010")
@@ -2863,6 +3003,7 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	//     OR....would an extra "barrier" latch between the current latch and the 2-1-Selector allow more control over the stages of the loopback? Hmmmm
 }
 
+/*
 func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	testCases := []struct {
 		clrIn    bool
@@ -2977,6 +3118,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	}
 }
 
+/*
 func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	testCases := []struct {
 		input string
@@ -3191,7 +3333,7 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		})
 	}
 }
-
+/*
 func TestFrequencyDivider(t *testing.T) {
 	var gotQBarResults string
 

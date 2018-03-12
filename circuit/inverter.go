@@ -19,7 +19,7 @@ func NewInverter(name string, pin pwrEmitter) *Inverter {
 	inv.Init()
 	inv.Name = name
 
-	bat := NewBattery(fmt.Sprintf("%s-Relay-Battery", name), true)
+	bat := NewBattery(fmt.Sprintf("%s-Relay-pin1Battery", name), true)
 	inv.relay = NewRelay(fmt.Sprintf("%s-Relay", name), bat, pin)
 
 	chState := make(chan Electron, 1)

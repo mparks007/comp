@@ -19,8 +19,8 @@ func NewSwitch(name string, startState bool) *Switch {
 	sw.Name = name
 
 	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.pin2Battery = NewBattery(fmt.Sprintf("%s-pin2Battery", name), startState)
-	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewBattery(fmt.Sprintf("%s-pin1Battery", name), true), sw.pin2Battery)
+	sw.pin2Battery = NewBattery(fmt.Sprintf("%s-Relay-pin2Battery", name), startState)
+	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewBattery(fmt.Sprintf("%s-Relay-pin1Battery", name), true), sw.pin2Battery)
 
 	chState := make(chan Electron, 1)
 	go func() {
