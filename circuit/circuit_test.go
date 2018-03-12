@@ -2398,11 +2398,8 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-
-					go func(e Electron) {
-						gots[index].Store(e.powerState)
-						e.Done()
-					}(e)
+					gots[index].Store(e.powerState)
+					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Stopped", index))
 					return
@@ -2652,11 +2649,8 @@ func TestTwoToOneSelector(t *testing.T) {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-
-					go func(e Electron) {
-						gots[index].Store(e.powerState)
-						e.Done()
-					}(e)
+					gots[index].Store(e.powerState)
+					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
 					return
@@ -2730,11 +2724,8 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-
-					go func(e Electron) {
-						gots[index].Store(e.powerState)
-						e.Done()
-					}(e)
+					gots[index].Store(e.powerState)
+					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
 					return
@@ -2751,7 +2742,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	}()
 
 	Debug(testName(t, ""), "Start Test Cases")
-	
+
 	// starting with selecting A, get A's state
 
 	for i := 0; i < 3; i++ {
@@ -2780,17 +2771,16 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases")
 }
 
-/*
 func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	wantError := "Mismatched input lengths. Addend1 len: 8, Addend2 len: 4"
 
-	aInSwitches, _ := NewNSwitchBank("00000000")
+	aInSwitches, _ := NewNSwitchBank(testName(t, "aInSwitches"), "00000000")
 	defer aInSwitches.Shutdown()
 
-	bInSwitches, _ := NewNSwitchBank("0000")
+	bInSwitches, _ := NewNSwitchBank(testName(t, "bInSwitches"), "0000")
 	defer bInSwitches.Shutdown()
 
-	addr, err := NewThreeNumberAdder(aInSwitches.Switches(), bInSwitches.Switches())
+	addr, err := NewThreeNumberAdder(testName(t, "ThreeNumberAdder"), aInSwitches.Switches(), bInSwitches.Switches())
 
 	if addr != nil {
 		t.Error("Did not expect an adder back but got one.")
@@ -2802,7 +2792,6 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	}
 }
 
-/*
 func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	testCases := []struct {
 		aIn          string
@@ -2816,60 +2805,79 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 		{"11111111", "11111111", "11111110", true},
 	}
 
-	aInSwitches, _ := NewNSwitchBank("00000000")
+	Debug(testName(t, ""), "Initial Setup")
+
+	aInSwitches, _ := NewNSwitchBank(testName(t, "aInSwitches"), "00000000")
 	defer aInSwitches.Shutdown()
 
-	bInSwitches, _ := NewNSwitchBank("00000000")
+	bInSwitches, _ := NewNSwitchBank(testName(t, "bInSwitches"), "00000000")
 	defer bInSwitches.Shutdown()
 
-	addr, _ := NewThreeNumberAdder(aInSwitches.Switches(), bInSwitches.Switches())
+	addr, _ := NewThreeNumberAdder(testName(t, "ThreeNumberAdder"), aInSwitches.Switches(), bInSwitches.Switches())
 	defer addr.Shutdown()
 
-	// setup the Sum results bool array (default all to false to match the initial switch states above)
+	// build listen/transmit funcs to deal with each of the adder's sum outputs
 	var gotSums [8]atomic.Value
-	for i := 0; i < len(gotSums); i++ {
+	var chSumStates []chan Electron
+	var chSumStops []chan bool
+	for i, s := range addr.Sums {
+
+		chSumStates = append(chSumStates, make(chan Electron, 1))
+		chSumStops = append(chSumStops, make(chan bool, 1))
 		gotSums[i].Store(false)
-	}
 
-	// setup the channels for listening to channel changes (doing dynamic select-case vs. a stack of 8 channels)
-	cases := make([]reflect.SelectCase, len(addr.Sums)+1) // one for each sum, BUT a +1 to hold the CarryOut channel read
-
-	// setup a case for each sum
-	for i, sum := range addr.Sums {
-		ch := make(chan bool, 1)
-		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
-		sum.WireUp(ch)
-	}
-
-	// setup the single CarryOut result
-	var gotCarryOut atomic.Value
-
-	// add a case for the single CarryOut channel
-	chCarryOut := make(chan bool, 1)
-	cases[len(cases)-1] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(chCarryOut)}
-	addr.CarryOut.WireUp(chCarryOut)
-
-	go func() {
-		for {
-			// run the dynamic select statement to see which case index hit and the value we got off the associated channel
-			chosen, value, _ := reflect.Select(cases)
-
-			// if know the selected case was within the range of Sums, set the matching Sums bool array element
-			if chosen < len(cases)-1 {
-				gotSums[chosen].Store(value.Bool())
-			} else {
-				gotCarryOut.Store(value.Bool())
+		go func(chSumState chan Electron, chSumStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chSumState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
+					gotSums[index].Store(e.powerState)
+					e.Done()
+				case <-chSumStop:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
+					return
+				}
 			}
+		}(chSumStates[i], chSumStops[i], i)
+
+		s.WireUp(chSumStates[i])
+	}
+	defer func() {
+		for i := 0; i < len(addr.Sums); i++ {
+			chSumStops[i] <- true
 		}
 	}()
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("Adding %s to %s", tc.aIn, tc.bIn), func(t *testing.T) {
+	// build listen/transmit func to deal with the adder's carryout
+	var gotCarryOut atomic.Value
+	chCarryOutState := make(chan Electron, 1)
+	chCarryOutStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-chCarryOutState:
+				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Electron {%s}", chCarryOutState, e.String()))
+				gotCarryOut.Store(e.powerState)
+				e.Done()
+			case <-chCarryOutStop:
+				Debug(testName(t, "Select"), "(CarryOut) Stopped")
+				return
+			}
+		}
+	}()
+	defer func() { chCarryOutStop <- true }()
 
-			setSwitches(aInSwitches, tc.aIn)
-			setSwitches(bInSwitches, tc.bIn)
+	addr.CarryOut.WireUp(chCarryOutState)
 
-			time.Sleep(time.Millisecond * 350)
+	Debug(testName(t, ""), "Start Test Cases")
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.aIn, tc.bIn), func(t *testing.T) {
+
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.aIn, tc.bIn))
+
+			aInSwitches.SetSwitches(tc.aIn)
+			bInSwitches.SetSwitches(tc.bIn)
 
 			// build a string based on each sum's state
 			gotAnswer := ""
@@ -2890,6 +2898,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases")
 }
 
 /*

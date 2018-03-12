@@ -123,7 +123,7 @@ func (a *NBitAdder) Shutdown() {
 		a.fullAdders[i].Shutdown()
 	}
 }
-/*
+
 // ThreeNumberAdder allows the summing of three binary numbers
 type ThreeNumberAdder struct {
 	latchStore    *NBitLevelTriggeredDTypeLatch
@@ -145,7 +145,7 @@ type ThreeNumberAdder struct {
 //		3. Set SaveToLatch back to false to prevent a chance for adding in a fourth number (which ThreeNumberAdder is not designed to do)
 //		4. Update the first parameter inputs to be the third number to add in
 //		5. Set ReadFromLatch to true to allow the saved original sum to be added to the new number entered in step 4
-func NewThreeNumberAdder(aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, error) {
+func NewThreeNumberAdder(name string, aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, error) {
 
 	if len(aInputs) != len(bInputs) {
 		return nil, fmt.Errorf("Mismatched input lengths. Addend1 len: %d, Addend2 len: %d", len(aInputs), len(bInputs))
@@ -154,19 +154,19 @@ func NewThreeNumberAdder(aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, erro
 	addr := &ThreeNumberAdder{}
 
 	// set of wires that will lead from the adder outputs back up to the latch inputs
-	addr.loopRibbon = NewRibbonCable(uint(len(aInputs)), 10)
+	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbon", name), uint(len(aInputs)), 10)
 
 	// build the latch, handing it the wires from the adder output
-	addr.SaveToLatch = NewSwitch(false)
-	addr.latchStore = NewNBitLevelTriggeredDTypeLatch(addr.SaveToLatch, addr.loopRibbon.Wires)
+	addr.SaveToLatch = NewSwitch(fmt.Sprintf("%s-SaveToLatch", name), false)
+	addr.latchStore = NewNBitLevelTriggeredDTypeLatch(fmt.Sprintf("%s-latchStore", name), addr.SaveToLatch, addr.loopRibbon.Wires)
 
 	// build the selector
-	addr.ReadFromLatch = NewSwitch(false)
-	addr.selector, _ = NewTwoToOneSelector(addr.ReadFromLatch, bInputs, addr.latchStore.Qs)
+	addr.ReadFromLatch = NewSwitch(fmt.Sprintf("%s-ReadFromLatch", name), false)
+	addr.selector, _ = NewTwoToOneSelector(fmt.Sprintf("%s-selector", name), addr.ReadFromLatch, bInputs, addr.latchStore.Qs)
 
 	// build the adder, handing it the selector for the B pins
-	addr.carryIn = NewSwitch(false)
-	addr.adder, _ = NewNBitAdder(aInputs, addr.selector.Outs, addr.carryIn)
+	addr.carryIn = NewSwitch(fmt.Sprintf("%s-carryIn", name), false)
+	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), aInputs, addr.selector.Outs, addr.carryIn)
 
 	// set adder sums to be the input to the loopback ribbon cable
 	addr.loopRibbon.SetInputs(addr.adder.Sums...)
@@ -189,6 +189,7 @@ func (a *ThreeNumberAdder) Shutdown() {
 	a.loopRibbon.Shutdown()
 }
 
+/*
 // NNumberAdder allows the summing of any number of binary numbers
 type NNumberAdder struct {
 	latches    *NBitLevelTriggeredDTypeLatchWithClear
