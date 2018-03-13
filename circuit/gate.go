@@ -150,7 +150,7 @@ func NewORGate(name string, pins ...pwrEmitter) *ORGate {
 								}
 							}
 						}
-						Debug(name, fmt.Sprintf("Final date answer to transmit (%t)", answer))
+						Debug(name, fmt.Sprintf("Final gate answer to transmit (%t)", answer))
 
 						e.powerState = answer
 						gate.Transmit(e)

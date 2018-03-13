@@ -20,8 +20,8 @@ type HalfAdder struct {
 func NewHalfAdder(name string, pin1, pin2 pwrEmitter) *HalfAdder {
 	h := &HalfAdder{}
 
-	h.Sum = NewXORGate(fmt.Sprintf("%s-XORGate", name), pin1, pin2)
-	h.Carry = NewANDGate(fmt.Sprintf("%s-ANDGate", name), pin1, pin2)
+	h.Sum = NewXORGate(fmt.Sprintf("%s-SumXORGate", name), pin1, pin2)
+	h.Carry = NewANDGate(fmt.Sprintf("%s-CarryANDGate", name), pin1, pin2)
 
 	return h
 }
@@ -59,7 +59,7 @@ func NewFullAdder(name string, pin1, pin2, carryInPin pwrEmitter) *FullAdder {
 	f.halfAdder1 = NewHalfAdder(fmt.Sprintf("%s-LeftHalfAdder", name), pin1, pin2)
 	f.halfAdder2 = NewHalfAdder(fmt.Sprintf("%s-RightHalfAdder", name), f.halfAdder1.Sum, carryInPin)
 	f.Sum = f.halfAdder2.Sum
-	f.Carry = NewORGate(fmt.Sprintf("%s-ORGate", name), f.halfAdder1.Carry, f.halfAdder2.Carry)
+	f.Carry = NewORGate(fmt.Sprintf("%s-CarryORGate", name), f.halfAdder1.Carry, f.halfAdder2.Carry)
 
 	return f
 }
@@ -154,18 +154,18 @@ func NewThreeNumberAdder(name string, aInputs, bInputs []pwrEmitter) (*ThreeNumb
 	addr := &ThreeNumberAdder{}
 
 	// set of wires that will lead from the adder outputs back up to the latch inputs
-	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbon", name), uint(len(aInputs)), 10)
+	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(aInputs)), 10)
 
 	// build the latch, handing it the wires from the adder output
-	addr.SaveToLatch = NewSwitch(fmt.Sprintf("%s-SaveToLatch", name), false)
+	addr.SaveToLatch = NewSwitch(fmt.Sprintf("%s-SaveToLatchSwitch", name), false)
 	addr.latchStore = NewNBitLevelTriggeredDTypeLatch(fmt.Sprintf("%s-latchStore", name), addr.SaveToLatch, addr.loopRibbon.Wires)
 
 	// build the selector
-	addr.ReadFromLatch = NewSwitch(fmt.Sprintf("%s-ReadFromLatch", name), false)
+	addr.ReadFromLatch = NewSwitch(fmt.Sprintf("%s-ReadFromLatchSwitch", name), false)
 	addr.selector, _ = NewTwoToOneSelector(fmt.Sprintf("%s-selector", name), addr.ReadFromLatch, bInputs, addr.latchStore.Qs)
 
 	// build the adder, handing it the selector for the B pins
-	addr.carryIn = NewSwitch(fmt.Sprintf("%s-carryIn", name), false)
+	addr.carryIn = NewSwitch(fmt.Sprintf("%s-carryInSwitch", name), false)
 	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), aInputs, addr.selector.Outs, addr.carryIn)
 
 	// set adder sums to be the input to the loopback ribbon cable
@@ -212,10 +212,10 @@ func NewNNumberAdder(name string, inputs []pwrEmitter) (*NNumberAdder, error) {
 
 	addr := &NNumberAdder{}
 
-	addr.Clear = NewSwitch(fmt.Sprintf("%s-Clear", name), false)
-	addr.Add = NewSwitch(fmt.Sprintf("%s-Add", name), false)
+	addr.Clear = NewSwitch(fmt.Sprintf("%s-ClearSwitch", name), false)
+	addr.Add = NewSwitch(fmt.Sprintf("%s-AddSwitch", name), true)
 
-	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbon", name), uint(len(inputs)), 5)
+	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(inputs)), 5)
 
 	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewBattery(fmt.Sprintf("%s-carryInBattery", name), false))
 

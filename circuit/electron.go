@@ -31,6 +31,7 @@ func (e *Electron) AddContext(context uuid.UUID) {
 	}
 	conLock.Lock()
 	defer conLock.Unlock()
+	Debug("Electron", fmt.Sprintf("(%v) adding context (%s)", &e, context))
 	e.lockContexts = append(e.lockContexts, context)
 }
 
@@ -56,7 +57,7 @@ func (e *Electron) String() string {
 	}
 	conLock.Lock()
 	defer conLock.Unlock()
-	return fmt.Sprintf("sender (%s), powerState (%t), lockContexts (%v)", e.sender, e.powerState, e.lockContexts)
+	return fmt.Sprintf("self (%v), sender (%s), powerState (%t), lockContexts (%v)", &e, e.sender, e.powerState, e.lockContexts)
 }
 
 // Done will let the internal waitgroup know the processing for the Electron has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls)

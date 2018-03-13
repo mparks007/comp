@@ -3110,12 +3110,12 @@ func TestNNumberAdder(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	switches, _ := NewNSwitchBank(testName(t, "switches"), "01")
+	switches, _ := NewNSwitchBank(testName(t, "switches"), "1")
 	addr, _ := NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
 	//NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
 
 	// build listen/transmit funcs to deal with each of the adder's sum outputs
-	var gotSums [2]atomic.Value
+	var gotSums [1]atomic.Value
 	var chSumStates []chan Electron
 	var chSumStops []chan bool
 	for i, s := range addr.Sums {
@@ -3148,10 +3148,10 @@ func TestNNumberAdder(t *testing.T) {
 
 	Debug(testName(t, ""), "Start Test Cases")
 
-//	addr.Clear.Set(true)
-//	addr.Clear.Set(false)
+	//	addr.Clear.Set(true)
+	//	addr.Clear.Set(false)
 
-	want := "00"
+	want := "0"
 
 	if got := getAnswerString(gotSums[:]); got != want {
 		t.Errorf("[Initial setup] Wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
@@ -3163,7 +3163,7 @@ func TestNNumberAdder(t *testing.T) {
 	// }
 
 	// addr.Add.Set(true)
-	 //addr.Add.Set(false)
+	//addr.Add.Set(false)
 
 	// want = "01"
 	// if got := getAnswerString(gotSums[:]); got != want {
