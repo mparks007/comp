@@ -217,7 +217,7 @@ func NewNNumberAdder(name string, inputs []pwrEmitter) (*NNumberAdder, error) {
 
 	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbon", name), uint(len(inputs)), 5)
 
-	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, nil)
+	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewBattery(fmt.Sprintf("%s-carryInBattery", name), false))
 
 	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(fmt.Sprintf("%s-NBitLevelTriggeredDTypeLatchWithClear", name), addr.Clear, addr.Add, addr.adder.Sums)
 

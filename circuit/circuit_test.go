@@ -2747,7 +2747,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 
 	addr.CarryOut.WireUp(chCarryOutState)
 
-	Debug(testName(t, ""), "Start Test Cases")
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s)", i, tc.aIn, tc.bIn), func(t *testing.T) {
@@ -2766,7 +2766,7 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 			}
 		})
 	}
-	Debug(testName(t, ""), "End Test Cases")
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
@@ -2956,7 +2956,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		t.Errorf("Wanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
 	}
 
-	Debug(testName(t, ""), "Start Test Cases")
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
 		t.Run(testNameDetail(i), func(t *testing.T) {
@@ -2988,7 +2988,7 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			}
 		})
 	}
-	Debug(testName(t, ""), "End Test Cases")
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
@@ -3054,7 +3054,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		}
 	}
 
-	Debug(testName(t, ""), "Start Test Cases")
+	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("testCases[%d]: Setting switches to %s", i, tc.input), func(t *testing.T) {
@@ -3100,7 +3100,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			}
 		})
 	}
-	Debug(testName(t, ""), "End Test Cases")
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
 // TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
@@ -3108,37 +3108,76 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 //     fatal error: stack overflow
 func TestNNumberAdder(t *testing.T) {
 
-	switches, _ := NewNSwitchBank(testName(t, "switches"), "00000001")
+	Debug(testName(t, ""), "Initial Setup")
+
+	switches, _ := NewNSwitchBank(testName(t, "switches"), "01")
 	addr, _ := NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
+	//NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
 
-	addr.Clear.Set(true)
-	addr.Clear.Set(false)
+	// build listen/transmit funcs to deal with each of the adder's sum outputs
+	var gotSums [2]atomic.Value
+	var chSumStates []chan Electron
+	var chSumStops []chan bool
+	for i, s := range addr.Sums {
 
-	want := "00000000"
+		chSumStates = append(chSumStates, make(chan Electron, 1))
+		chSumStops = append(chSumStops, make(chan bool, 1))
+		gotSums[i].Store(false)
+
+		go func(chSumState chan Electron, chSumStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chSumState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
+					gotSums[index].Store(e.powerState)
+					e.Done()
+				case <-chSumStop:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
+					return
+				}
+			}
+		}(chSumStates[i], chSumStops[i], i)
+
+		s.WireUp(chSumStates[i])
+	}
+	defer func() {
+		for i := 0; i < len(addr.Sums); i++ {
+			chSumStops[i] <- true
+		}
+	}()
+
+	Debug(testName(t, ""), "Start Test Cases")
+
+//	addr.Clear.Set(true)
+//	addr.Clear.Set(false)
+
+	want := "00"
 
 	if got := getAnswerString(gotSums[:]); got != want {
 		t.Errorf("[Initial setup] Wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
 	}
 
-	want = "00000001"
-	if got := addr.adder.AsAnswerString(); got != want {
-		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
-	}
+	// want = "00000001"
+	// if got := getAnswerString(gotSums[:]); got != want {
+	// 	t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
+	// }
 
-	addr.Add.Set(true)
-	addr.Add.Set(false)
+	// addr.Add.Set(true)
+	 //addr.Add.Set(false)
 
-	want = "00000001"
-	if got := addr.AsAnswerString(); got != want {
-		t.Errorf("After an add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
-	}
+	// want = "01"
+	// if got := getAnswerString(gotSums[:]); got != want {
+	// 	t.Errorf("After an add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+	// }
 
-	switches.SetSwitches("00000010")
+	// switches.SetSwitches("00000010")
 
-	want = "00000011"
-	if got := addr.AsAnswerString(); got != want {
-		t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
-	}
+	// want = "00000011"
+	// if got := getAnswerString(gotSums[:]); got != want {
+	// 	t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+	// }
+
+	Debug(testName(t, ""), "End Test Cases")
 }
 
 /*
