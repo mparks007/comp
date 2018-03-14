@@ -213,7 +213,7 @@ func NewNNumberAdder(name string, inputs []pwrEmitter) (*NNumberAdder, error) {
 	addr := &NNumberAdder{}
 
 	addr.Clear = NewSwitch(fmt.Sprintf("%s-ClearSwitch", name), false)
-	addr.Add = NewSwitch(fmt.Sprintf("%s-AddSwitch", name), true)
+	addr.Add = NewSwitch(fmt.Sprintf("%s-AddSwitch", name), false)
 
 	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(inputs)), 5)
 
