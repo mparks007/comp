@@ -107,8 +107,8 @@ func NewNBitLevelTriggeredDTypeLatch(name string, clkInPin pwrEmitter, dataInPin
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each latch, to exit
 func (l *NBitLevelTriggeredDTypeLatch) Shutdown() {
-	for i := range l.latches {
-		l.latches[i].Shutdown()
+	for _, l := range l.latches {
+		l.Shutdown()
 	}
 }
 
@@ -184,8 +184,8 @@ func NewNBitLevelTriggeredDTypeLatchWithClear(name string, clrPin, clkInPin pwrE
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each latch, to exit
 func (l *NBitLevelTriggeredDTypeLatchWithClear) Shutdown() {
-	for i := range l.latches {
-		l.latches[i].Shutdown()
+	for _, l := range l.latches {
+		l.Shutdown()
 	}
 }
 
@@ -252,7 +252,7 @@ func (l *EdgeTriggeredDTypeLatch) Shutdown() {
 
 // FrequencyDivider is a special type of EdgeTriggeredDTypeLatch whose Clock pin is controlled by an Oscillator and whose Data pin is fed from its own QBar output
 //    Every time the clock oscillates to 1, the Q/QBar outputs will output their state change, where Q is the FrequencyDivider's output and QBar feeds back to flip the value of Q for the next clock oscillation
-//    On its own, it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter)
+//    On its own (though fragile), it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter)
 type FrequencyDivider struct {
 	wireLoopBack *Wire
 	latch        *EdgeTriggeredDTypeLatch
@@ -281,22 +281,24 @@ func (d *FrequencyDivider) Shutdown() {
 	d.wireLoopBack.Shutdown()
 }
 
-/*
+// NBitRippleCounter is a chain of N number of frequency dividers where each divider's clock will be controlled by the left-side neighboring divider's QBar out
+//   This should allow a rudimentary binary counter operation to occur, ticking at the rate of the outside driver clock
 type NBitRippleCounter struct {
 	freqDivs []*FrequencyDivider
 	Qs       []*NORGate
 }
 
-func NewNBitRippleCounter(oscillator pwrEmitter, size int) *NBitRippleCounter {
+// NewNBitRippleCounter returns an NBitRippleCounter which will user the oscillator pin as the driving counter rate to control a string of chained frequency dividers (the width of the size input)
+func NewNBitRippleCounter(name string, oscillator pwrEmitter, size int) *NBitRippleCounter {
 	counter := &NBitRippleCounter{}
 
 	for i := size - 1; i >= 0; i-- {
 		var freqDiv *FrequencyDivider
 
 		if i == size-1 {
-			freqDiv = NewFrequencyDivider(oscillator)
+			freqDiv = NewFrequencyDivider(fmt.Sprintf("%s-Dividers[%d]", name, i), oscillator) // setup the outer oscillation aspect
 		} else {
-			freqDiv = NewFrequencyDivider(counter.freqDivs[0].QBar)
+			freqDiv = NewFrequencyDivider(fmt.Sprintf("%s-Dividers[%d]", name, i), counter.freqDivs[0].QBar) // the rest chain together
 		}
 
 		// prepend since going in reverse order
@@ -308,4 +310,10 @@ func NewNBitRippleCounter(oscillator pwrEmitter, size int) *NBitRippleCounter {
 
 	return counter
 }
-*/
+
+// Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
+func (c *NBitRippleCounter) Shutdown() {
+	for _, d := range c.freqDivs {
+		d.Shutdown()
+	}
+}

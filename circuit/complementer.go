@@ -21,7 +21,7 @@ func NewOnesComplementer(name string, pins []pwrEmitter, signal pwrEmitter) *One
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on the sub-gates, to exit
 func (o *OnesComplementer) Shutdown() {
-	for i := range o.Complements {
-		o.Complements[i].(*XORGate).Shutdown()
+	for _, c := range o.Complements {
+		c.(*XORGate).Shutdown()
 	}
 }

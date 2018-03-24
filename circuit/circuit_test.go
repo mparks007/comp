@@ -3341,24 +3341,36 @@ func TestFrequencyDivider(t *testing.T) {
 	osc := NewOscillator(testName(t, "Oscillator"), false)
 	freqDiv := NewFrequencyDivider(testName(t, "FrequencyDivider"), osc)
 
-	var gotResults atomic.Value
-	ch := make(chan Electron, 1)
+	var gotOscResults, gotDivResults atomic.Value
+	chOsc := make(chan Electron, 1)
+	chDiv := make(chan Electron, 1)
 
-	gotResults.Store("")
+	gotOscResults.Store("")
+	gotDivResults.Store("")
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
-			result := gotResults.Load().(string)
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				if e.powerState {
+			case eO := <-chOsc:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, eO.String()))
+				result := gotOscResults.Load().(string)
+				if eO.powerState {
 					result += "1"
 				} else {
 					result += "0"
 				}
-				gotResults.Store(result)
-				e.Done()
+				gotOscResults.Store(result)
+				eO.Done()
+			case eD := <-chDiv:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chDiv, eD.String()))
+				result := gotDivResults.Load().(string)
+				if eD.powerState {
+					result += "1"
+				} else {
+					result += "0"
+				}
+				gotDivResults.Store(result)
+				eD.Done()
 			case <-chStop:
 				return
 			}
@@ -3366,26 +3378,37 @@ func TestFrequencyDivider(t *testing.T) {
 	}()
 	defer func() { chStop <- true }()
 
-	freqDiv.Q.WireUp(ch)
+	freqDiv.Q.WireUp(chDiv)
+	osc.WireUp(chOsc)
 
-	want := "0"
-	if !strings.HasPrefix(gotResults.Load().(string), want) {
-		t.Errorf("Wanted results %s but got %s.", want, gotResults.Load().(string))
+	wantOsc := "0"
+	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
+		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+	}
+
+	wantDiv := "0"
+	if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
+		t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
 	}
 
 	Debug(testName(t, ""), "Start Test Case")
-	
-	osc.Oscillate(5)
 
-	time.Sleep(time.Second * 3)
+	osc.Oscillate(5) // 5 times a second
+
+	time.Sleep(time.Second * 4) // for 4 seconds, should give me 20 oscillations and 10 divider pulses
 
 	osc.Stop()
 
-	want = "01010101"
-	if !strings.HasPrefix(gotResults.Load().(string), want) {
-		t.Errorf("Wanted results %s but got %s.", want, gotResults.Load().(string))
+	wantOsc = "01010101010101010101"
+	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
+		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
+	wantDiv = "01010101"
+	if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
+		t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
+	}
+	
 	Debug(testName(t, ""), "End Test Case")
 }
 

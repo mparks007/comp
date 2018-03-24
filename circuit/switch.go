@@ -98,7 +98,7 @@ func (sb *NSwitchBank) SetSwitches(bits string) {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each switch, to exit
 func (sb *NSwitchBank) Shutdown() {
-	for i := range sb.switches {
-		sb.switches[i].(*Switch).Shutdown()
+	for _, sw := range sb.switches {
+		sw.(*Switch).Shutdown()
 	}
 }

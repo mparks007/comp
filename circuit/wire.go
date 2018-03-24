@@ -128,8 +128,8 @@ func NewRibbonCable(name string, width, len uint) *RibbonCable {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each wire, to exit
 func (r *RibbonCable) Shutdown() {
-	for i := range r.Wires {
-		r.Wires[i].(*Wire).Shutdown()
+	for _, w := range r.Wires {
+		w.(*Wire).Shutdown()
 	}
 }
 

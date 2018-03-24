@@ -62,8 +62,8 @@ func NewANDGate(name string, pins ...pwrEmitter) *ANDGate {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
 func (g *ANDGate) Shutdown() {
-	for i := range g.relays {
-		g.relays[i].Shutdown()
+	for _, r := range g.relays {
+		r.Shutdown()
 	}
 	g.chStop <- true
 }
@@ -352,8 +352,8 @@ func NewNORGate(name string, pins ...pwrEmitter) *NORGate {
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each relay and the gate itself, to exit
 func (g *NORGate) Shutdown() {
-	for i := range g.relays {
-		g.relays[i].Shutdown()
+	for _, r := range g.relays {
+		r.Shutdown()
 	}
 	g.chStop <- true
 }

@@ -119,8 +119,8 @@ func NewNBitAdder(name string, addend1Pins, addend2Pins []pwrEmitter, carryInPin
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each full adder, to exit
 func (a *NBitAdder) Shutdown() {
-	for i := range a.fullAdders {
-		a.fullAdders[i].Shutdown()
+	for _, f := range a.fullAdders {
+		f.Shutdown()
 	}
 }
 
