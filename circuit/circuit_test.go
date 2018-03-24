@@ -3408,8 +3408,107 @@ func TestFrequencyDivider(t *testing.T) {
 	if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
 		t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
 	}
-	
+
 	Debug(testName(t, ""), "End Test Case")
+}
+
+func TestNBitRippleCounter_EightBit(t *testing.T) {
+	Debug(testName(t, ""), "Initial Setup")
+
+	osc := NewOscillator(testName(t, "Oscillator"), false)
+	counter := NewNBitRippleCounter(testName(t, "NBitRippleCounter"), osc, 2)
+	defer counter.Shutdown()
+
+	var gotOscResults atomic.Value
+	gotOscResults.Store("")
+
+	// build listen/transmit func to deal with the oscillator
+	chOsc := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-chOsc:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, e.String()))
+				result := gotOscResults.Load().(string)
+				if e.powerState {
+					result += "1"
+				} else {
+					result += "0"
+				}
+				gotOscResults.Store(result)
+				e.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	osc.WireUp(chOsc)
+
+	// build listen/transmit funcs to deal with each of the Counter's Q outputs
+	var gotQs [2]atomic.Value
+	var chCounterStates []chan Electron
+	var chCounterStops []chan bool
+
+	for i, q := range counter.Qs {
+
+		chCounterStates = append(chCounterStates, make(chan Electron, 1))
+		chCounterStops = append(chCounterStops, make(chan bool, 1))
+		gotQs[i].Store(false)
+
+		go func(chCounterState chan Electron, chCounterStop chan bool, index int) {
+			for {
+				select {
+				case e := <-chCounterState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Received on Channel (%v), Electron {%s}", index, chCounterState, e.String()))
+					gotQs[i].Store(e.powerState)
+					e.Done()
+				case <-chCounterStop:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Stopped", index))
+					return
+				}
+			}
+		}(chCounterStates[i], chCounterStops[i], i)
+
+		q.WireUp(chCounterStates[i])
+	}
+	defer func() {
+		for i := 0; i < len(counter.Qs); i++ {
+			chCounterStops[i] <- true
+		}
+	}()
+
+	wantOsc := "0"
+	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
+		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+	}
+
+	wantCounterAnswer := "00"
+	if gotAnswer := getAnswerString(gotQs[:]); gotAnswer != wantCounterAnswer {
+		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
+	}
+
+	// Debug(testName(t, ""), "Start Test Case")
+
+	// osc.Oscillate(5) // 5 times a second
+
+	// time.Sleep(time.Second * 4) // for 4 seconds, should give me 20 oscillations and something or other final answer from all the counter's Q states
+
+	// osc.Stop()
+
+	// wantOsc = "01010101010101010101"
+	// if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
+	// 	t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+	// }
+
+	// // wantDiv = "01010101"
+	// // if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
+	// // 	t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
+	// // }
+
+	// Debug(testName(t, ""), "End Test Case")
 }
 
 /*
