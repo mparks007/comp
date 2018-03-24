@@ -3233,15 +3233,15 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-	 {false, true, false, true},  // clkIn staying false should cause no change
-	 {false, false, false, true}, // clkIn staying false should cause no change
-	 {false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
-	 {true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
-	 {true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
-	 {false, false, true, false}, // clkIn going to false should cause no change
-	 {false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
-	 {true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
-	 {true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
+		{false, true, false, true},  // clkIn staying false should cause no change
+		{false, false, false, true}, // clkIn staying false should cause no change
+		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
+		{true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
+		{true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
+		{false, false, true, false}, // clkIn going to false should cause no change
+		{false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
+		{true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
+		{true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
 	}
 
 	testNameDetail := func(i int) string {
@@ -3335,33 +3335,61 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
-/*
 func TestFrequencyDivider(t *testing.T) {
-	var gotQBarResults string
+	Debug(testName(t, ""), "Initial Setup")
 
-	osc := NewOscillator(false)
-	freqDiv := NewFrequencyDivider(osc)
+	osc := NewOscillator(testName(t, "Oscillator"), false)
+	freqDiv := NewFrequencyDivider(testName(t, "FrequencyDivider"), osc)
 
-	freqDiv.QBar.WireUp(func(state bool) {
-		if state {
-			gotQBarResults += "1"
-		} else {
-			gotQBarResults += "0"
+	var gotResults atomic.Value
+	ch := make(chan Electron, 1)
+
+	gotResults.Store("")
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			result := gotResults.Load().(string)
+			select {
+			case e := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
+				if e.powerState {
+					result += "1"
+				} else {
+					result += "0"
+				}
+				gotResults.Store(result)
+				e.Done()
+			case <-chStop:
+				return
+			}
 		}
-	})
+	}()
+	defer func() { chStop <- true }()
 
+	freqDiv.Q.WireUp(ch)
+
+	want := "0"
+	if !strings.HasPrefix(gotResults.Load().(string), want) {
+		t.Errorf("Wanted results %s but got %s.", want, gotResults.Load().(string))
+	}
+
+	Debug(testName(t, ""), "Start Test Case")
+	
 	osc.Oscillate(5)
 
 	time.Sleep(time.Second * 3)
 
 	osc.Stop()
 
-	want := "10101010"
-	if !strings.HasPrefix(gotQBarResults, want) {
-		t.Errorf("Wanted results %s but got %s.", want, gotQBarResults)
+	want = "01010101"
+	if !strings.HasPrefix(gotResults.Load().(string), want) {
+		t.Errorf("Wanted results %s but got %s.", want, gotResults.Load().(string))
 	}
+
+	Debug(testName(t, ""), "End Test Case")
 }
 
+/*
 func TestFrequencyDivider2(t *testing.T) {
 
 	sw1 := NewSwitch(false)

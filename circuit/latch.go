@@ -250,24 +250,35 @@ func (l *EdgeTriggeredDTypeLatch) Shutdown() {
 	l.wireLeftQOut.Shutdown()
 }
 
-/*
+// FrequencyDivider is a special type of EdgeTriggeredDTypeLatch whose Clock pin is controlled by an Oscillator and whose Data pin is fed from its own QBar output
+//    Every time the clock oscillates to 1, the Q/QBar outputs will output their state change, where Q is the FrequencyDivider's output and QBar feeds back to flip the value of Q for the next clock oscillation
+//    On its own, it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter)
 type FrequencyDivider struct {
-	latch *EdgeTriggeredDTypeLatch
-	Q     *NORGate
-	QBar  *NORGate
+	wireLoopBack *Wire
+	latch        *EdgeTriggeredDTypeLatch
+	Q            *NORGate
+	QBar         *NORGate
 }
 
-func NewFrequencyDivider(oscillator pwrEmitter) *FrequencyDivider {
+// NewFrequencyDivider returns a FrequencyDivider controlled by the passed in Oscillator
+func NewFrequencyDivider(name string, oscillator pwrEmitter) *FrequencyDivider {
 	freqDiv := &FrequencyDivider{}
 
-	freqDiv.latch = NewEdgeTriggeredDTypeLatch(oscillator, nil)
-	freqDiv.latch.UpdateDataPin(freqDiv.latch.QBar)
+	freqDiv.wireLoopBack = NewWire(fmt.Sprintf("%s-wireQBarLoopBack", name), 0)
+	freqDiv.latch = NewEdgeTriggeredDTypeLatch(fmt.Sprintf("%s-Latch", name), oscillator, freqDiv.wireLoopBack)
+	freqDiv.latch.QBar.WireUp(freqDiv.wireLoopBack.Input)
 
 	// refer to the inner-right-flipflop's outputs for easier external access
 	freqDiv.Q = freqDiv.latch.Q
 	freqDiv.QBar = freqDiv.latch.QBar
 
 	return freqDiv
+}
+
+// Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
+func (d *FrequencyDivider) Shutdown() {
+	d.latch.Shutdown()
+	d.wireLoopBack.Shutdown()
 }
 
 /*
