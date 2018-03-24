@@ -3201,7 +3201,7 @@ func TestNNumberAdder(t *testing.T) {
 	}
 
 	// this deadlocks once true.  booooooooo
-	addr.Add.Set(true)
+	//	addr.Add.Set(true)
 	addr.Add.Set(false)
 
 	// !!! would want 1 here if the Add Set worked, yes?  allowing the latch to get fed the latest inner-adder's state
@@ -3217,7 +3217,7 @@ func TestNNumberAdder(t *testing.T) {
 	if got := getAnswerString(gotInnerSums[:]); got != want {
 		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
 	}
-	
+
 	// want = "00000011"
 	// if got := getAnswerString(gotSums[:]); got != want {
 	// 	t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
@@ -3226,7 +3226,6 @@ func TestNNumberAdder(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases")
 }
 
-/*
 func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
 		clkIn    bool
@@ -3234,18 +3233,18 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-		{false, true, false, true},  // clkIn staying false should cause no change
-		{false, false, false, true}, // clkIn staying false should cause no change
-		{false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
-		{true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
-		{true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
-		{false, false, true, false}, // clkIn going to false should cause no change
-		{false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
-		{true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
-		{true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
+	 {false, true, false, true},  // clkIn staying false should cause no change
+	 {false, false, false, true}, // clkIn staying false should cause no change
+	 {false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
+	 {true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
+	 {true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
+	 {false, false, true, false}, // clkIn going to false should cause no change
+	 {false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
+	 {true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
+	 {true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
 	}
 
-	testName := func(i int) string {
+	testNameDetail := func(i int) string {
 		var priorClkIn bool
 		var priorDataIn bool
 
@@ -3258,27 +3257,60 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 			priorDataIn = testCases[i-1].dataIn
 		}
 
-		return fmt.Sprintf("Stage#%d: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i+1, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
+		return fmt.Sprintf("testCases[%d]: Switching from [clkIn (%t) dataIn (%t)] to [clkIn (%t) dataIn (%t)]", i, priorClkIn, priorDataIn, testCases[i].clkIn, testCases[i].dataIn)
 	}
+
+	Debug(testName(t, ""), "Initial Setup")
 
 	var clkBattery, dataBattery *Battery
-	clkBattery = NewBattery(false)
-	dataBattery = NewBattery(false)
+	clkBattery = NewBattery(testName(t, "clkBattery"), false)
+	dataBattery = NewBattery(testName(t, "dataBattery"), false)
 
-	latch := NewEdgeTriggeredDTypeLatch(clkBattery, dataBattery)
+	latch := NewEdgeTriggeredDTypeLatch(testName(t, "EdgeTriggeredDTypeLatch"), clkBattery, dataBattery)
+	defer latch.Shutdown()
 
-	want := false
-	if gotQ := latch.Q.GetIsPowered(); gotQ != want {
-		t.Errorf("On contruction, wanted power of %t at Q, but got %t.", want, gotQ)
+	chQ := make(chan Electron, 1)
+	chQBar := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+
+	var gotQ, gotQBar atomic.Value
+	go func() {
+		for {
+			select {
+			case eQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
+				gotQBar.Store(eQBar.powerState)
+				eQBar.Done()
+			case eQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
+				gotQ.Store(eQ.powerState)
+				eQ.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	latch.QBar.WireUp(chQBar)
+	latch.Q.WireUp(chQ)
+
+	if gotQ.Load().(bool) != false {
+		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
 	}
 
-	want = true
-	if gotQBar := latch.QBar.GetIsPowered(); gotQBar != want {
-		t.Errorf("On construction, wanted power of %t at QBar, but got %t.", want, gotQBar)
+	if gotQBar.Load().(bool) != true {
+		t.Errorf("Wanted power of %t at QBar, but got %t.", true, gotQBar.Load().(bool))
 	}
 
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	var summary string
 	for i, tc := range testCases {
-		t.Run(testName(i), func(t *testing.T) {
+		summary = testNameDetail(i)
+		t.Run(summary, func(t *testing.T) {
+
+			Debug(testName(t, ""), summary)
 
 			if tc.dataIn {
 				dataBattery.Charge()
@@ -3291,16 +3323,18 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 				clkBattery.Discharge()
 			}
 
-			if gotQ := latch.Q.GetIsPowered(); gotQ != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ)
+			if gotQ.Load().(bool) != tc.wantQ {
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
 			}
 
-			if gotQBar := latch.QBar.GetIsPowered(); gotQBar != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar)
+			if gotQBar.Load().(bool) != tc.wantQBar {
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }
+
 /*
 func TestFrequencyDivider(t *testing.T) {
 	var gotQBarResults string

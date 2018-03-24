@@ -189,40 +189,47 @@ func (l *NBitLevelTriggeredDTypeLatchWithClear) Shutdown() {
 	}
 }
 
-/*
-// Edge-triggered D-Type Latch ("Level" = clock high/low, "D" = data 0/1)
-
+// Edge-triggered D-Type Latch is like a Level-triggered, but the ouputs only change when the clock goes from 0 to 1 ("Edge" = clock going high, "D" = data 0/1)
+//
 // d clk   q  !q
 // 0  ^    0  1
 // 1  ^    1  0
 // X  1    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
 // X  0    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
-
 type EdgeTriggeredDTypeLatch struct {
-	lRAnd *ANDGate
-	lSAnd *ANDGate
-	lRS   *RSFlipFlop
-	rRAnd *ANDGate
-	rSAnd *ANDGate
-	rRS   *RSFlipFlop
-	Q     *NORGate
-	QBar  *NORGate
+	wireLeftQOut    *Wire
+	wireLeftQBarOut *Wire
+	lRAnd           *ANDGate
+	lSAnd           *ANDGate
+	lRS             *RSFlipFlop
+	rRAnd           *ANDGate
+	rSAnd           *ANDGate
+	rRS             *RSFlipFlop
+	Q               *NORGate
+	QBar            *NORGate
 }
 
-func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
+// NewEdgeTriggeredDTypeLatch returns an EdgeTriggeredDTypeLatch component controlled by a Clock pin, which will control how the Data pin is handled
+//   (where Data will only get transferred to the output when the Clock transitions from 0 to 1)
+func NewEdgeTriggeredDTypeLatch(name string, clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
-	// for this to work, the clock wiring up has to be done against the right-side flipflop aspects FIRST
-	latch.rRAnd = NewANDGate(clkInPin, nil)
-	latch.rSAnd = NewANDGate(clkInPin, nil)
-	latch.rRS = NewRSFlipFLop(latch.rRAnd, latch.rSAnd)
+	latch.wireLeftQOut = NewWire(fmt.Sprintf("%s-LeftQOutWire", name), 0)
+	latch.wireLeftQBarOut = NewWire(fmt.Sprintf("%s-LeftQBarOutWire", name), 0)
 
-	latch.lRAnd = NewANDGate(NewInverter(clkInPin), dataInPin)
-	latch.lSAnd = NewANDGate(NewInverter(clkInPin), NewInverter(dataInPin))
-	latch.lRS = NewRSFlipFlop(latch.lRAnd, latch.lSAnd)
+	// setup the right-side flipflop aspects
+	latch.rRAnd = NewANDGate(fmt.Sprintf("%s-rRANDGate", name), clkInPin, latch.wireLeftQOut)
+	latch.rSAnd = NewANDGate(fmt.Sprintf("%s-rSANDGate", name), clkInPin, latch.wireLeftQBarOut)
+	latch.rRS = NewRSFlipFlop(fmt.Sprintf("%s-rRSFlipFlop", name), latch.rRAnd, latch.rSAnd)
 
-	latch.rRAnd.UpdatePin(2, 2, latch.lRS.Q)
-	latch.rSAnd.UpdatePin(2, 2, latch.lRS.QBar)
+	// setup the left-side flipflop aspects
+	latch.lRAnd = NewANDGate(fmt.Sprintf("%s-lRANDGate", name), NewInverter(fmt.Sprintf("%s-ClockInverter-lRANDGate", name), clkInPin), dataInPin)
+	latch.lSAnd = NewANDGate(fmt.Sprintf("%s-lSANDGate", name), NewInverter(fmt.Sprintf("%s-ClockInverter-lSANDGate", name), clkInPin), NewInverter(fmt.Sprintf("%s-DataInverter-lSANDGate", name), dataInPin))
+	latch.lRS = NewRSFlipFlop(fmt.Sprintf("%s-lRSFlipFlop", name), latch.lRAnd, latch.lSAnd)
+
+	// join the flip-flops together
+	latch.lRS.Q.WireUp(latch.wireLeftQOut.Input)
+	latch.lRS.QBar.WireUp(latch.wireLeftQBarOut.Input)
 
 	// refer to the inner-right-flipflop's outputs for easier external access
 	latch.Q = latch.rRS.Q
@@ -230,6 +237,19 @@ func NewEdgeTriggeredDTypeLatch(clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDT
 
 	return latch
 }
+
+// Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
+func (l *EdgeTriggeredDTypeLatch) Shutdown() {
+	l.lRS.Shutdown()
+	l.lSAnd.Shutdown()
+	l.lRAnd.Shutdown()
+	l.rRS.Shutdown()
+	l.rSAnd.Shutdown()
+	l.rRAnd.Shutdown()
+	l.wireLeftQBarOut.Shutdown()
+	l.wireLeftQOut.Shutdown()
+}
+
 /*
 type FrequencyDivider struct {
 	latch *EdgeTriggeredDTypeLatch
