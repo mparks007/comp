@@ -3416,7 +3416,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	osc := NewOscillator(testName(t, "Oscillator"), false)
-	counter := NewNBitRippleCounter(testName(t, "NBitRippleCounter"), osc, 2)
+	counter := NewNBitRippleCounter(testName(t, "NBitRippleCounter"), osc, 8)
 	defer counter.Shutdown()
 
 	var gotOscResults atomic.Value
@@ -3448,7 +3448,8 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	osc.WireUp(chOsc)
 
 	// build listen/transmit funcs to deal with each of the Counter's Q outputs
-	var gotQs [2]atomic.Value
+	var gotCounterQs [8]atomic.Value
+	var gotDivResults [8]atomic.Value
 	var chCounterStates []chan Electron
 	var chCounterStops []chan bool
 
@@ -3456,14 +3457,22 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 		chCounterStates = append(chCounterStates, make(chan Electron, 1))
 		chCounterStops = append(chCounterStops, make(chan bool, 1))
-		gotQs[i].Store(false)
+		gotCounterQs[i].Store(false)
+		gotDivResults[i].Store("")
 
 		go func(chCounterState chan Electron, chCounterStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chCounterState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Received on Channel (%v), Electron {%s}", index, chCounterState, e.String()))
-					gotQs[i].Store(e.powerState)
+					result := gotDivResults[index].Load().(string)
+					if e.powerState {
+						result += "1"
+					} else {
+						result += "0"
+					}
+					gotDivResults[index].Store(result)
+					gotCounterQs[i].Store(e.powerState)
 					e.Done()
 				case <-chCounterStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Stopped", index))
@@ -3485,127 +3494,32 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
-	wantCounterAnswer := "00"
-	if gotAnswer := getAnswerString(gotQs[:]); gotAnswer != wantCounterAnswer {
+	wantCounterAnswer := "00000000"
+	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
 		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
 	}
 
-	// Debug(testName(t, ""), "Start Test Case")
+	Debug(testName(t, ""), "Start Test Case")
 
-	// osc.Oscillate(5) // 5 times a second
+	osc.Oscillate(1) // 5 times a second
 
-	// time.Sleep(time.Second * 4) // for 4 seconds, should give me 20 oscillations and something or other final answer from all the counter's Q states
+	time.Sleep(time.Second * 5) // for 4 seconds, should give me 20 oscillations and something or other final answer from all the counter's Q states
 
-	// osc.Stop()
+	osc.Stop()
 
-	// wantOsc = "01010101010101010101"
-	// if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-	// 	t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
-	// }
-
-	// // wantDiv = "01010101"
-	// // if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
-	// // 	t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
-	// // }
-
-	// Debug(testName(t, ""), "End Test Case")
-}
-
-/*
-func TestFrequencyDivider2(t *testing.T) {
-
-	sw1 := NewSwitch(false)
-	freqDiv0 := NewFrequencyDivider(sw1)
-	freqDiv1 := NewFrequencyDivider(freqDiv0.QBar)
-
-	var result0 = ""
-	var result1 = ""
-
-	if freqDiv1.Q.GetIsPowered() {
-		result1 = "1"
-	} else {
-		result1 = "0"
-	}
-	if freqDiv0.Q.GetIsPowered() {
-		result0 = "1"
-	} else {
-		result0 = "0"
+	wantOsc = "01010101010101010101"
+	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
+		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
-	fmt.Println("==Just Created==")
-	fmt.Println(freqDiv0.latch.StateDump("freqDiv0"))
-	fmt.Println(freqDiv1.latch.StateDump("freqDiv1"))
-	fmt.Println("\n==Ripple Value==\n" + result1 + result0 + "\n")
+	wantCounterAnswer = "01010101"
+	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
+		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
+	}
 
-	fmt.Println("==Wiring Up freqDiv0.Q==")
-	freqDiv0.Q.WireUp(func(state bool) {
-		if state {
-			result0 = "1"
-		} else {
-			result0 = "0"
-		}
-		fmt.Printf("freqDiv0.Q:    %v\n", state)
-		fmt.Println(freqDiv0.latch.StateDump("freqDiv0"))
-	})
+	for i := 0; i < len(gotDivResults); i++ {
+		Debug(testName(t, "Inner-Div-Results"), fmt.Sprintf("(Divs[%d]) %s", i, gotDivResults[i].Load().(string)))
 
-	fmt.Println("\n==Wiring Up freqDiv0.QBar==")
-	freqDiv0.QBar.WireUp(func(state bool) {
-		fmt.Printf("freqDiv0.QBar: %v\n", state)
-		fmt.Println(freqDiv0.latch.StateDump("freqDiv0"))
-	})
-
-	fmt.Println("\n==Wiring Up freqDiv1.Q==")
-	freqDiv1.Q.WireUp(func(state bool) {
-		if state {
-			result1 = "1"
-		} else {
-			result1 = "0"
-		}
-		fmt.Printf("freqDiv1.Q:    %v\n", state)
-		fmt.Println(freqDiv1.latch.StateDump("freqDiv1"))
-	})
-	fmt.Println("\n==Wiring Up freqDiv1.QBar==")
-	freqDiv1.QBar.WireUp(func(state bool) {
-		fmt.Printf("freqDiv1.QBar: %v\n", state)
-		fmt.Println(freqDiv1.latch.StateDump("freqDiv1"))
-	})
-
-	fmt.Println("\n==Ripple Value==\n" + result1 + result0 + "\n")
-
-	fmt.Println("==Clock On==")
-	sw1.Set(true)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-	fmt.Println("==Clock Off==")
-	sw1.Set(false)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-
-	fmt.Println("==Clock On==")
-	sw1.Set(true)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-	fmt.Println("==Clock Off==")
-	sw1.Set(false)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-
-	fmt.Println("==Clock On==")
-	sw1.Set(true)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-	fmt.Println("==Clock Off==")
-	sw1.Set(false)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-
-	fmt.Println("==Clock On==")
-	sw1.Set(true)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-	fmt.Println("==Clock Off==")
-	sw1.Set(false)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-
-	fmt.Println("==Clock On==")
-	sw1.Set(true)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-	fmt.Println("==Clock Off==")
-	sw1.Set(false)
-	fmt.Println("==Ripple Value==\n" + result1 + result0 + "\n")
-
+	}
+	Debug(testName(t, ""), "End Test Case")
 }
-*/
