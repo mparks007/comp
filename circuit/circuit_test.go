@@ -1651,9 +1651,9 @@ func TestNBitAdder_EightBit(t *testing.T) {
 
 	if addr == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+	} else {
+		defer addr.Shutdown()
 	}
-
-	defer addr.Shutdown()
 
 	var gots [9]atomic.Value // 0-7 for sums, 8 for carryout
 	var chStates []chan Electron
@@ -1756,9 +1756,9 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 
 	if addr == nil {
 		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+	} else {
+		defer addr.Shutdown()
 	}
-
-	defer addr.Shutdown()
 
 	var gots [17]atomic.Value // 0-15 for sums, 16 for carryout
 	var chStates []chan Electron
@@ -1852,9 +1852,9 @@ func TestOnesCompliment(t *testing.T) {
 
 			if comp == nil {
 				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
+			} else {
+				defer comp.Shutdown()
 			}
-
-			defer comp.Shutdown()
 
 			gotCompliments := make([]atomic.Value, len(tc.bits))
 			var chStates []chan Electron
@@ -1987,9 +1987,9 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 
 	if sub == nil {
 		t.Error("Expected a subtractor to return due to good inputs, but got a nil one.")
+	} else {
+		defer sub.Shutdown()
 	}
-
-	defer sub.Shutdown()
 
 	var gots [9]atomic.Value // 0-7 for diffs, 8 for carryout
 	var chStates []chan Electron
@@ -2465,8 +2465,8 @@ func TestTwoToOneSelector_BadInputLengths(t *testing.T) {
 			sel, err := NewTwoToOneSelector(testName(t, "TwoToOneSelector"), nil, addend1Switches.Switches(), addend2Switches.Switches())
 
 			if sel != nil {
-				t.Error("Did not expect a Selector to be created, but got one")
 				sel.Shutdown()
+				t.Error("Did not expect a Selector to be created, but got one")
 			}
 
 			if err == nil {
@@ -2661,8 +2661,8 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 	addr, err := NewThreeNumberAdder(testName(t, "ThreeNumberAdder"), aInSwitches.Switches(), bInSwitches.Switches())
 
 	if addr != nil {
-		t.Error("Did not expect an adder back but got one.")
 		addr.Shutdown()
+		t.Error("Did not expect an adder back but got one.")
 	}
 
 	if err != nil && err.Error() != wantError {
@@ -3103,6 +3103,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
+/*
 // TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
 //     runtime: goroutine stack exceeds 1000000000-byte limit
 //     fatal error: stack overflow
@@ -3111,7 +3112,10 @@ func TestNNumberAdder(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	switches, _ := NewNSwitchBank(testName(t, "switches"), "1")
+	defer switches.Shutdown()
+
 	addr, _ := NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
+	defer addr.Shutdown()
 
 	// build listen/transmit funcs to deal with each of the NNumberAdder's Q outputs (the latest inner-adder's Sum sent through)
 	var gotSums [1]atomic.Value
@@ -3225,7 +3229,7 @@ func TestNNumberAdder(t *testing.T) {
 
 	Debug(testName(t, ""), "End Test Cases")
 }
-
+*/
 func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
 		clkIn    bool
@@ -3340,6 +3344,7 @@ func TestFrequencyDivider(t *testing.T) {
 
 	osc := NewOscillator(testName(t, "Oscillator"), false)
 	freqDiv := NewFrequencyDivider(testName(t, "FrequencyDivider"), osc)
+	defer freqDiv.Shutdown()
 
 	var gotOscResults, gotDivResults atomic.Value
 	chOsc := make(chan Electron, 1)
@@ -3393,18 +3398,18 @@ func TestFrequencyDivider(t *testing.T) {
 
 	Debug(testName(t, ""), "Start Test Case")
 
-	osc.Oscillate(5) // 5 times a second
+	osc.Oscillate(2) // 2 times a second
 
-	time.Sleep(time.Second * 4) // for 4 seconds, should give me 20 oscillations and 10 divider pulses
+	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and 4 divider pulses
 
 	osc.Stop()
 
-	wantOsc = "01010101010101010101"
+	wantOsc = "01010101"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+		t.Errorf("Wanted oscillator results of at least %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
-	wantDiv = "01010101"
+	wantDiv = "0101"
 	if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
 		t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
 	}
@@ -3501,18 +3506,18 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	Debug(testName(t, ""), "Start Test Case")
 
-	osc.Oscillate(1) // 5 times a second
+	osc.Oscillate(2) // 2 times a second
 
-	time.Sleep(time.Second * 5) // for 4 seconds, should give me 20 oscillations and something or other final answer from all the counter's Q states
+	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and something or other final answer from all the counter's Q states
 
 	osc.Stop()
 
-	wantOsc = "01010101010101010101"
+	wantOsc = "01010101"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+		t.Errorf("Wanted oscillator results of at least %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
-	wantCounterAnswer = "01010101"
+	wantCounterAnswer = "00001000"
 	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
 		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
 	}
