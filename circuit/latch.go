@@ -367,5 +367,16 @@ func NewEdgeTriggeredDTypeLatchWithPresetAndClear(name string, presetPin, clrPin
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
 func (l *EdgeTriggeredDTypeLatchWithPresetAndClear) Shutdown() {
-	//	l..Shutdown()
+		l.QBar.Shutdown()
+		l.Q.Shutdown()
+		l.llQBar.Shutdown()
+		l.llQ.Shutdown()
+		l.luQBar.Shutdown()
+		l.luQ.Shutdown()
+		l.wireQBarOut.Shutdown()
+		l.wireQOut.Shutdown()
+		l.wirellQBarOut.Shutdown()
+		l.wirellQOut.Shutdown()
+		l.wireluQBarOut.Shutdown()
+		l.wireluQOut.Shutdown()
 }
