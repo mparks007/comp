@@ -3346,45 +3346,57 @@ func TestFrequencyDivider(t *testing.T) {
 	freqDiv := NewFrequencyDivider(testName(t, "FrequencyDivider"), osc)
 	defer freqDiv.Shutdown()
 
-	var gotOscResults, gotDivResults atomic.Value
+	var gotOscResults atomic.Value
 	chOsc := make(chan Electron, 1)
-	chDiv := make(chan Electron, 1)
-
 	gotOscResults.Store("")
-	gotDivResults.Store("")
-	chStop := make(chan bool, 1)
+	chStopOsc := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case eO := <-chOsc:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, eO.String()))
+			case e := <-chOsc:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, e.String()))
 				result := gotOscResults.Load().(string)
-				if eO.powerState {
+				if e.powerState {
 					result += "1"
 				} else {
 					result += "0"
 				}
 				gotOscResults.Store(result)
-				eO.Done()
-			case eD := <-chDiv:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chDiv, eD.String()))
+				e.Done()
+			case <-chStopOsc:
+				return
+			}
+		}
+	}()
+	defer func() { chStopOsc <- true }()
+
+	osc.WireUp(chOsc)
+
+	var gotDivResults atomic.Value
+	chDiv := make(chan Electron, 1)
+	gotDivResults.Store("")
+	chStopDiv := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case e := <-chDiv:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chDiv, e.String()))
 				result := gotDivResults.Load().(string)
-				if eD.powerState {
+				if e.powerState {
 					result += "1"
 				} else {
 					result += "0"
 				}
 				gotDivResults.Store(result)
-				eD.Done()
-			case <-chStop:
+				e.Done()
+			case <-chStopDiv:
 				return
 			}
 		}
 	}()
-	defer func() { chStop <- true }()
+	defer func() { chStopDiv <- true }()
 
 	freqDiv.Q.WireUp(chDiv)
-	osc.WireUp(chOsc)
 
 	wantOsc := "0"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
@@ -3500,7 +3512,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
-	wantCounterAnswer := "00000000"
+	wantCounterAnswer := "10101010"
 	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
 		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
 	}
@@ -3509,7 +3521,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	osc.Oscillate(2) // 2 times a second
 
-	time.Sleep(time.Second * 8) // for 4 seconds, should give me 8 oscillations and something or other final answer from all the counter's Q states
+	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and something or other final answer from all the counter's Q states
 
 	osc.Stop()
 
@@ -3518,7 +3530,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 		t.Errorf("Wanted oscillator results of at least %s but got %s.", wantOsc, gotOscResults.Load().(string))
 	}
 
-	wantCounterAnswer = "00001000"
+	wantCounterAnswer = "10101110"
 	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
 		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
 	}
@@ -3533,21 +3545,21 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	testCases := []struct {
 		presetIn bool
-		clearIn bool
+		clearIn  bool
 		clkIn    bool
 		dataIn   bool
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-		// {false, false, false, true, false, true},  // clkIn staying false should cause no change
-		// {false, false, false, false, false, true}, // clkIn staying false should cause no change
-		// {false, false, false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
-		// {false, false, true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
-		// {false, false, true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
-		// {false, false, false, false, true, false}, // clkIn going to false should cause no change
-		// {false, false, false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
-		// {false, false, true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
-		// {false, false, true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
+		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change
+		// {false, false, false, false, false, true}, // preset and clear OFF, clkIn staying false should cause no change
+		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
+		// {false, false, true, true, true, false},   // preset and clear OFF, clkIn going to true, with dataIn, causes Q on (QBar off)
+		// {false, false, true, false, true, false},  // preset and clear OFF, clkIn staying true should cause no change, regardless of data change
+		// {false, false, false, false, true, false}, // preset and clear OFF, clkIn going to false should cause no change
+		// {false, false, false, true, true, false},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
+		// {false, false, true, false, false, true},  // preset and clear OFF, clkIn going to true, with no dataIn, causes Q off (QBar on)
+		// {false, false, true, true, false, true},   // preset and clear OFF, clkIn staying true should cause no change, regardless of data change
 	}
 
 	testNameDetail := func(i int) string {
