@@ -31,7 +31,7 @@ func testName(t *testing.T, subtext string) string {
 func getAnswerString(gots []atomic.Value) string {
 	answer := ""
 	for i := 0; i < len(gots); i++ {
-		if gots[i].Load().(bool) {
+		if gots[i].Load() != nil && gots[i].Load().(bool) {
 			answer += "1"
 		} else {
 			answer += "0"
@@ -3478,6 +3478,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 					}
 					gotDivResults[index].Store(result)
 					gotCounterQs[i].Store(e.powerState)
+					Debug(testName(t, "Latest Answer"), fmt.Sprintf("(Qs[%d]) Caused {%s}", index, getAnswerString(gotCounterQs[:])))
 					e.Done()
 				case <-chCounterStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Stopped", index))
@@ -3508,7 +3509,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	osc.Oscillate(2) // 2 times a second
 
-	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and something or other final answer from all the counter's Q states
+	time.Sleep(time.Second * 8) // for 4 seconds, should give me 8 oscillations and something or other final answer from all the counter's Q states
 
 	osc.Stop()
 
@@ -3527,4 +3528,133 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	}
 	Debug(testName(t, ""), "End Test Case")
+}
+
+func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
+	testCases := []struct {
+		presetIn bool
+		clearIn bool
+		clkIn    bool
+		dataIn   bool
+		wantQ    bool
+		wantQBar bool
+	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
+		// {false, false, false, true, false, true},  // clkIn staying false should cause no change
+		// {false, false, false, false, false, true}, // clkIn staying false should cause no change
+		// {false, false, false, true, false, true},  // clkIn staying false should cause no change, regardless of data change
+		// {false, false, true, true, true, false},   // clkIn going to true, with dataIn, causes Q on (QBar off)
+		// {false, false, true, false, true, false},  // clkIn staying true should cause no change, regardless of data change
+		// {false, false, false, false, true, false}, // clkIn going to false should cause no change
+		// {false, false, false, true, true, false},  // clkIn staying false should cause no change, regardless of data change
+		// {false, false, true, false, false, true},  // clkIn going to true, with no dataIn, causes Q off (QBar on)
+		// {false, false, true, true, false, true},   // clkIn staying true should cause no change, regardless of data change
+	}
+
+	testNameDetail := func(i int) string {
+		var priorPresetIn bool
+		var priorClearIn bool
+		var priorClkIn bool
+		var priorDataIn bool
+
+		if i == 0 {
+			// trues since starting with charged batteries when Newing thew Latch initially
+			priorPresetIn = false
+			priorClearIn = false
+			priorClkIn = false
+			priorDataIn = false
+		} else {
+			priorPresetIn = testCases[i-1].presetIn
+			priorClearIn = testCases[i-1].clearIn
+			priorClkIn = testCases[i-1].clkIn
+			priorDataIn = testCases[i-1].dataIn
+		}
+
+		return fmt.Sprintf("testCases[%d]: Switching from [presetIn (%t) clearIn (%t) clkIn (%t) dataIn (%t)] to [presetIn (%t) clearIn (%t) clkIn (%t) dataIn (%t)]", i, priorPresetIn, priorClearIn, priorClkIn, priorDataIn, testCases[i].presetIn, testCases[i].clearIn, testCases[i].clkIn, testCases[i].dataIn)
+	}
+
+	Debug(testName(t, ""), "Initial Setup")
+
+	var presetBattery, clearBattery, clkBattery, dataBattery *Battery
+	presetBattery = NewBattery(testName(t, "presetBattery"), false)
+	clearBattery = NewBattery(testName(t, "clearBattery"), false)
+	clkBattery = NewBattery(testName(t, "clkBattery"), false)
+	dataBattery = NewBattery(testName(t, "dataBattery"), false)
+
+	latch := NewEdgeTriggeredDTypeLatchWithPresetAndClear(testName(t, "EdgeTriggeredDTypeLatchWithPresetAndClear"), presetBattery, clearBattery, clkBattery, dataBattery)
+	defer latch.Shutdown()
+
+	chQ := make(chan Electron, 1)
+	chQBar := make(chan Electron, 1)
+	chStop := make(chan bool, 1)
+
+	var gotQ, gotQBar atomic.Value
+	go func() {
+		for {
+			select {
+			case eQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
+				gotQBar.Store(eQBar.powerState)
+				eQBar.Done()
+			case eQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
+				gotQ.Store(eQ.powerState)
+				eQ.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	latch.QBar.WireUp(chQBar)
+	latch.Q.WireUp(chQ)
+
+	if gotQ.Load().(bool) != false {
+		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
+	}
+
+	if gotQBar.Load().(bool) != true {
+		t.Errorf("Wanted power of %t at QBar, but got %t.", true, gotQBar.Load().(bool))
+	}
+
+	Debug(testName(t, ""), "Start Test Cases Loop")
+
+	var summary string
+	for i, tc := range testCases {
+		summary = testNameDetail(i)
+		t.Run(summary, func(t *testing.T) {
+
+			Debug(testName(t, ""), summary)
+
+			if tc.presetIn {
+				presetBattery.Charge()
+			} else {
+				presetBattery.Discharge()
+			}
+			if tc.clearIn {
+				clearBattery.Charge()
+			} else {
+				clearBattery.Discharge()
+			}
+			if tc.dataIn {
+				dataBattery.Charge()
+			} else {
+				dataBattery.Discharge()
+			}
+			if tc.clkIn {
+				clkBattery.Charge()
+			} else {
+				clkBattery.Discharge()
+			}
+
+			if gotQ.Load().(bool) != tc.wantQ {
+				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+			}
+
+			if gotQBar.Load().(bool) != tc.wantQBar {
+				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+			}
+		})
+	}
+	Debug(testName(t, ""), "End Test Cases Loop")
 }

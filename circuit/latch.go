@@ -197,16 +197,14 @@ func (l *NBitLevelTriggeredDTypeLatchWithClear) Shutdown() {
 // X  1    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
 // X  0    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
 type EdgeTriggeredDTypeLatch struct {
-	wireLeftQOut    *Wire
-	wireLeftQBarOut *Wire
-	lRAnd           *ANDGate
-	lSAnd           *ANDGate
-	lRS             *RSFlipFlop
-	rRAnd           *ANDGate
-	rSAnd           *ANDGate
-	rRS             *RSFlipFlop
-	Q               *NORGate
-	QBar            *NORGate
+	lRAnd *ANDGate
+	lSAnd *ANDGate
+	lRS   *RSFlipFlop
+	rRAnd *ANDGate
+	rSAnd *ANDGate
+	rRS   *RSFlipFlop
+	Q     *NORGate
+	QBar  *NORGate
 }
 
 // NewEdgeTriggeredDTypeLatch returns an EdgeTriggeredDTypeLatch component controlled by a Clock pin, which will control how the Data pin is handled
@@ -214,22 +212,15 @@ type EdgeTriggeredDTypeLatch struct {
 func NewEdgeTriggeredDTypeLatch(name string, clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
-	latch.wireLeftQOut = NewWire(fmt.Sprintf("%s-LeftQOutWire", name), 0)
-	latch.wireLeftQBarOut = NewWire(fmt.Sprintf("%s-LeftQBarOutWire", name), 0)
-
-	// setup the right-side flipflop aspects
-	latch.rRAnd = NewANDGate(fmt.Sprintf("%s-rRANDGate", name), clkInPin, latch.wireLeftQOut)
-	latch.rSAnd = NewANDGate(fmt.Sprintf("%s-rSANDGate", name), clkInPin, latch.wireLeftQBarOut)
-	latch.rRS = NewRSFlipFlop(fmt.Sprintf("%s-rRSFlipFlop", name), latch.rRAnd, latch.rSAnd)
-
 	// setup the left-side flipflop aspects
 	latch.lRAnd = NewANDGate(fmt.Sprintf("%s-lRANDGate", name), NewInverter(fmt.Sprintf("%s-ClockInverter-lRANDGate", name), clkInPin), dataInPin)
 	latch.lSAnd = NewANDGate(fmt.Sprintf("%s-lSANDGate", name), NewInverter(fmt.Sprintf("%s-ClockInverter-lSANDGate", name), clkInPin), NewInverter(fmt.Sprintf("%s-DataInverter-lSANDGate", name), dataInPin))
 	latch.lRS = NewRSFlipFlop(fmt.Sprintf("%s-lRSFlipFlop", name), latch.lRAnd, latch.lSAnd)
 
-	// join the flip-flops together
-	latch.lRS.Q.WireUp(latch.wireLeftQOut.Input)
-	latch.lRS.QBar.WireUp(latch.wireLeftQBarOut.Input)
+	// setup the right-side flipflop aspects
+	latch.rRAnd = NewANDGate(fmt.Sprintf("%s-rRANDGate", name), clkInPin, latch.lRS.Q)
+	latch.rSAnd = NewANDGate(fmt.Sprintf("%s-rSANDGate", name), clkInPin, latch.lRS.QBar)
+	latch.rRS = NewRSFlipFlop(fmt.Sprintf("%s-rRSFlipFlop", name), latch.rRAnd, latch.rSAnd)
 
 	// refer to the inner-right-flipflop's outputs for easier external access
 	latch.Q = latch.rRS.Q
@@ -240,14 +231,12 @@ func NewEdgeTriggeredDTypeLatch(name string, clkInPin, dataInPin pwrEmitter) *Ed
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
 func (l *EdgeTriggeredDTypeLatch) Shutdown() {
-	l.lRS.Shutdown()
-	l.lSAnd.Shutdown()
-	l.lRAnd.Shutdown()
 	l.rRS.Shutdown()
 	l.rSAnd.Shutdown()
 	l.rRAnd.Shutdown()
-	l.wireLeftQBarOut.Shutdown()
-	l.wireLeftQOut.Shutdown()
+	l.lRS.Shutdown()
+	l.lSAnd.Shutdown()
+	l.lRAnd.Shutdown()
 }
 
 // FrequencyDivider is a special type of EdgeTriggeredDTypeLatch whose Clock pin is controlled by an Oscillator and whose Data pin is fed from its own QBar output
@@ -316,4 +305,67 @@ func (c *NBitRippleCounter) Shutdown() {
 	for _, d := range c.freqDivs {
 		d.Shutdown()
 	}
+}
+
+// Edge-triggered D-Type Latch with Preset and Clear is like an Edge-triggered D-Type Latch, but with an added Preset and Clear input to force the state to 1 or 0 regardless of clock/data
+//
+// pre clr d clk   q  !q
+//  1   0  X  X    1  0   (preset makes data and clock not matter, forces Q)
+//  0   1  X  X    0  1   (clear makes data and clock not matter, forces QBar)
+//  0   0  0  ^    0  1
+//  0   0  1  ^    1  0
+//  0   0  X  0    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
+type EdgeTriggeredDTypeLatchWithPresetAndClear struct {
+	wireluQOut    *Wire
+	wireluQBarOut *Wire
+	luQ           *NORGate
+	luQBar        *NORGate
+	wirellQOut    *Wire
+	wirellQBarOut *Wire
+	llQ           *NORGate
+	llQBar        *NORGate
+	wireQOut      *Wire
+	wireQBarOut   *Wire
+	Q             *NORGate
+	QBar          *NORGate
+}
+
+// NewEdgeTriggeredDTypeLatchWithPresetAndClear returns an EdgeTriggeredDTypeLatch component with an added Preset and Clear input
+func NewEdgeTriggeredDTypeLatchWithPresetAndClear(name string, presetPin, clrPin, clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatchWithPresetAndClear {
+	latch := &EdgeTriggeredDTypeLatchWithPresetAndClear{}
+
+	latch.wireluQOut = NewWire(fmt.Sprintf("%s-LeftUpperQOutWire", name), 0)
+	latch.wireluQBarOut = NewWire(fmt.Sprintf("%s-LeftUpperQBarOutWire", name), 0)
+	latch.wirellQOut = NewWire(fmt.Sprintf("%s-LeftLowerQOutWire", name), 0)
+	latch.wirellQBarOut = NewWire(fmt.Sprintf("%s-LeftLowerQBarOutWire", name), 0)
+	latch.wireQOut = NewWire(fmt.Sprintf("%s-RightQOutWire", name), 0)
+	latch.wireQBarOut = NewWire(fmt.Sprintf("%s-RightQBarOutWire", name), 0)
+
+	// setup the left-side upper flipflop aspects
+	latch.luQ = NewNORGate(fmt.Sprintf("%s-LeftUpperQNORGate", name), clrPin, latch.wirellQBarOut, latch.wireluQBarOut)
+	latch.luQ.WireUp(latch.wireluQOut.Input)
+
+	latch.luQBar = NewNORGate(fmt.Sprintf("%s-LeftUpperQBarNORGate", name), latch.luQ, presetPin, NewInverter(fmt.Sprintf("%s-ClockInverter-LeftUpperQBarNORGate", name), clkInPin))
+	latch.luQBar.WireUp(latch.wireluQBarOut.Input)
+
+	// setup the left-side lower flipflop aspects
+	latch.llQ = NewNORGate(fmt.Sprintf("%s-LeftLowerQNORGate", name), latch.luQBar, NewInverter(fmt.Sprintf("%s-ClockInverter-LeftLowerQNORGate", name), clkInPin), latch.wirellQBarOut)
+	latch.llQ.WireUp(latch.wirellQOut.Input)
+
+	latch.llQBar = NewNORGate(fmt.Sprintf("%s-LeftLowerQBarNORGate", name), latch.llQ, presetPin, dataInPin)
+	latch.llQBar.WireUp(latch.wirellQBarOut.Input)
+
+	// setup the right-side flipflop aspects
+	latch.Q = NewNORGate(fmt.Sprintf("%s-RightQNORGate", name), clrPin, latch.luQBar, latch.wireQBarOut)
+	latch.Q.WireUp(latch.wireQOut.Input)
+
+	latch.QBar = NewNORGate(fmt.Sprintf("%s-RightQBarNORGate", name), latch.wireQOut, presetPin, latch.llQBar)
+	latch.QBar.WireUp(latch.wireQBarOut.Input)
+
+	return latch
+}
+
+// Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
+func (l *EdgeTriggeredDTypeLatchWithPresetAndClear) Shutdown() {
+	//	l..Shutdown()
 }
