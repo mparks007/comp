@@ -7,10 +7,10 @@ import (
 
 // Relay is the core circuit used to contruct logic gates
 type Relay struct {
-	aInIsPowered atomic.Value  // core state flag to track the relay arm path input's current state
-	bInIsPowered atomic.Value  // core state flag to track the electromagnet path input's current state
-	OpenOut      pwrSource     // external access point to inactive/disengaged relay
-	ClosedOut    pwrSource     // external access point to active/engaged relay
+	aInIsPowered atomic.Value  // core state flag to track the 'relay arm path' input's current state
+	bInIsPowered atomic.Value  // core state flag to track the 'electromagnet path' input's current state
+	OpenOut      pwrSource     // external access point to an inactive/disengaged relay
+	ClosedOut    pwrSource     // external access point to an active/engaged relay
 	aInCh        chan Electron // channel to track the relay arm path input
 	bInCh        chan Electron // channel to track the electromagnet path inpupt
 	chAStop      chan bool     // shutdown channel for listening loop

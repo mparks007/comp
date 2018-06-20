@@ -17,11 +17,11 @@ type Electron struct {
 	sync.RWMutex
 }
 
-// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
+// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
 var conLock *sync.RWMutex
 
 // AddContext will allow a component to indicate it will be involved in a lock of itself associated to the electron flow
@@ -31,6 +31,7 @@ func (e *Electron) AddContext(context uuid.UUID) {
 	}
 	conLock.Lock()
 	defer conLock.Unlock()
+
 	Debug("Electron", fmt.Sprintf("(%v) adding context (%s)", &e, context))
 	e.lockContexts = append(e.lockContexts, context)
 }
@@ -42,6 +43,8 @@ func (e *Electron) HasContext(context uuid.UUID) bool {
 	}
 	conLock.Lock()
 	defer conLock.Unlock()
+
+	// is this context already in play?
 	for _, c := range e.lockContexts {
 		if uuid.Equal(c, context) {
 			return true

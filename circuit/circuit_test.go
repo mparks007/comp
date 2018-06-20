@@ -3428,7 +3428,7 @@ func TestFrequencyDivider(t *testing.T) {
 
 	Debug(testName(t, ""), "End Test Case")
 }
-
+/*
 func TestNBitRippleCounter_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
@@ -3670,3 +3670,4 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	}
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
+*/

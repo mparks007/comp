@@ -47,7 +47,7 @@ func (p *pwrSource) Transmit(e Electron) {
 	p.isPowered.Store(e.powerState)
 
 	if len(p.outChannels) == 0 {
-		Debug(p.Name, "No Transmit, nothing wired up")
+		Debug(p.Name, "Skipping Transmit (nothing wired up)")
 		return
 	}
 

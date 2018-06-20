@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSS THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
+// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
 
 // Wire is a component connector, which will transmit between source and listeners (with an optional pause to simulate wire length)
 //	Most loop-back based compoound components will use a wire for the looping aspect.
@@ -86,10 +86,10 @@ func (w *Wire) Transmit(e Electron) {
 	w.isPowered.Store(e.powerState)
 
 	if len(w.outChannels) == 0 {
-		Debug(w.name, "No Transmit, nothing wired up")
+		Debug(w.name, "Skipping Transmit (nothing wired up)")
 		return
 	}
-
+	
 	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners (but keeping the lockContexts list intact)
 	e.wg = &sync.WaitGroup{}
 	e.sender = w.name

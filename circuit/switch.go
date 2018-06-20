@@ -8,7 +8,7 @@ import (
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
 	relay       *Relay   // innards of the switch are using a relay to control on/off
-	pin2Battery *Battery // switch on/off is controlled by charging/discharging this battery
+	pin2Battery *Battery // switch on/off is controlled by charging/discharging this battery (which controls how the inner relay outputs)
 	pwrSource            // switch gains all that is pwrSource too
 }
 
