@@ -19,6 +19,7 @@ import (
 // go test -run TestOscillator -count 100 -v (multi options)
 // go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
 // go test -race -cpu=1 -run TestFullAdder -count 5 -trace TestFullAdder_trace.txt > TestFullAdder_run.txt
+// go test -debug (my own flag to write all the debug to the console during test run)
 
 func init() {
 	flag.BoolVar(&Debugging, "debug", false, "Enable verbose debugging to console")
@@ -3541,7 +3542,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	}
 	Debug(testName(t, ""), "End Test Case")
 }
-
+*/
 func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	testCases := []struct {
 		presetIn bool
@@ -3670,4 +3671,3 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	}
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
-*/

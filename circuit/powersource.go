@@ -51,7 +51,7 @@ func (p *pwrSource) Transmit(e Electron) {
 		return
 	}
 
-	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners
+	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners (the passed in 'e' was only needed for the powerstate)
 	e.wg = &sync.WaitGroup{}
 	e.sender = p.Name
 
