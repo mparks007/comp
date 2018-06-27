@@ -7,31 +7,37 @@ type person struct {
 	age  int
 }
 
+// String makes person a Stringer, yes?
 func (p person) String() string {
 	return fmt.Sprintf("Name=%s, Age=%d", p.name, p.age)
 }
 
-func (p person) updateAgeAsValueReceiver(newAge int) {
+// updateAgeViaValueReceiver should ignore the field update in the caller since using value receiver
+func (p person) updateAgeViaValueReceiver(newAge int) {
 	p.age = newAge
 }
 
-func (p *person) updateAgeAsPointerReceiver(newAge int) {
-	*p = person{}
-	//	p.age = newAge
-}
-
-func updateAgeAsPersonValue(p person, newAge int) {
+// updateAgeViaPointerReceiver should reflect the field update in the caller since using pointer receiver
+func (p *person) updateAgeViaPointerReceiver(newAge int) {
 	p.age = newAge
 }
 
-func updateAgeAsPersonPointer(p *person, newAge int) {
+// updateAgeViaPersonValue should ignore the field update in the caller since using value param for person
+func updateAgeViaPersonValue(p person, newAge int) {
 	p.age = newAge
 }
 
-func reAllocPersonValue(p person, newAge int) {
+// updateAgeViaPersonPointer should reflect the field update in the caller since using pointer param for person
+func updateAgeViaPersonPointer(p *person, newAge int) {
+	p.age = newAge
+}
+
+// reAllocPersonViaValue should ignore the realloc of person since using value param for person
+func reAllocPersonViaValue(p person) {
 	p = person{}
 }
 
-func reAllocPersonPointer(p *person, newAge int) {
+// reAllocPersonViaPointer should reflect the realloc of person since using pointer param for person
+func reAllocPersonViaPointer(p *person) {
 	*p = person{}
 }

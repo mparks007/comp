@@ -3429,7 +3429,9 @@ func TestFrequencyDivider(t *testing.T) {
 
 	Debug(testName(t, ""), "End Test Case")
 }
+
 /*
+// This won't work until I can get all the bits in the counter to initialize to 0, then see how it works or not
 func TestNBitRippleCounter_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
@@ -3552,8 +3554,8 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 		wantQ    bool
 		wantQBar bool
 	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change
-		// {false, false, false, false, false, true}, // preset and clear OFF, clkIn staying false should cause no change
+		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
+		// {false, false, false, false, false, true}, // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
 		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
 		// {false, false, true, true, true, false},   // preset and clear OFF, clkIn going to true, with dataIn, causes Q on (QBar off)
 		// {false, false, true, false, true, false},  // preset and clear OFF, clkIn staying true should cause no change, regardless of data change
@@ -3570,7 +3572,7 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 		var priorDataIn bool
 
 		if i == 0 {
-			// trues since starting with charged batteries when Newing thew Latch initially
+			// false since starting with discharged batteries when Newing the Latch initially
 			priorPresetIn = false
 			priorClearIn = false
 			priorClkIn = false
