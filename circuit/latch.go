@@ -310,11 +310,11 @@ func (c *NBitRippleCounter) Shutdown() {
 // Edge-triggered D-Type Latch with Preset and Clear is like an Edge-triggered D-Type Latch, but with an added Preset and Clear input to force the state to 1 or 0 regardless of clock/data
 //
 // pre clr d clk   q  !q
-//  1   0  X  X    1  0   (preset makes data and clock not matter, forces Q)
-//  0   1  X  X    0  1   (clear makes data and clock not matter, forces QBar)
-//  0   0  0  ^    0  1
-//  0   0  1  ^    1  0
-//  0   0  X  0    q  !q  (data doesn't matter, no clock transition to trigger a store-it action)
+//  1   0  X  X    1  0   preset makes data and clock not matter, forces Q
+//  0   1  X  X    0  1   clear makes data and clock not matter, forces QBar
+//  0   0  0  ^    0  1	  should take the data value since clock was raised (transitioned to 1)
+//  0   0  1  ^    1  0   should take the data value since clock was raised (transitioned to 1)
+//  0   0  X  0    q  !q  data doesn't matter, no clock raise (to 1) transition to trigger a store-it action
 type EdgeTriggeredDTypeLatchWithPresetAndClear struct {
 	wireluQOut    *Wire
 	wireluQBarOut *Wire

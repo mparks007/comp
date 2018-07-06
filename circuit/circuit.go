@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// C:\gospace\src\github.com\mparks007\comp> go install .\circuit\
+// C:\gospace\src\github.com\mparks007\comp> godoc -http=":6060" // shows docs for all installed packages
+
 // Debugging is the master flag to control very verbose logging to the console
 var Debugging = false
 

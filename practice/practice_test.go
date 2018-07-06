@@ -44,7 +44,7 @@ func TestUpdateAgeViaPersonValue(t *testing.T) {
 	p := person{name: "Matt",
 		age: 47}
 
-	updateAgeViaPersonValue(p, 48)
+	updateAgeViaPersonValue(p, 48)// struct itself
 
 	want := 47
 	if got := p.age; got != want {
@@ -56,7 +56,7 @@ func TestUpdateAgeViaPersonPointer(t *testing.T) {
 	p := person{name: "Matt",
 		age: 47}
 
-	updateAgeViaPersonPointer(&p, 48)
+	updateAgeViaPersonPointer(&p, 48) // address of the struct
 
 	want := 48
 	if got := p.age; got != want {
@@ -68,7 +68,7 @@ func TestReAllocPersonViaValue(t *testing.T) {
 	p := person{name: "Matt",
 		age: 47}
 
-	reAllocPersonViaValue(p)
+	reAllocPersonViaValue(p) // struct itself
 
 	want := 47
 	if got := p.age; got != want {
@@ -80,9 +80,21 @@ func TestReAllocPersonViaPointer(t *testing.T) {
 	p := person{name: "Matt",
 		age: 47}
 
-	reAllocPersonViaPointer(&p)
+	reAllocPersonViaPointer(&p) // address of the struct
 
 	want := 0
+	if got := p.age; got != want {
+		t.Errorf("Wanted: %d, got: %d", want, got)
+	}
+}
+
+func TestReAllocPersonViaPointerToPointer(t *testing.T) {
+	p := &person{name: "Matt",
+		age: 47}
+
+	reAllocPersonViaPointerToPointer(&p) // address of the pointer to the struct
+
+	want := 50
 	if got := p.age; got != want {
 		t.Errorf("Wanted: %d, got: %d", want, got)
 	}

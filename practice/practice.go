@@ -22,6 +22,12 @@ func (p *person) updateAgeViaPointerReceiver(newAge int) {
 	p.age = newAge
 }
 
+// updateAgeViaPointerToPointerReceiver should reflect the pointing of the parameter to a different person struct
+// func (p **person) updateAgeViaPointerToPointerReceiver(newAge int) {
+// 	p2 := &person{"Bob", 50}
+// 	*p = p2 // one dereference level to get to the pointer of the parameter, then make it point elsewhere (to p2)
+// }
+
 // updateAgeViaPersonValue should ignore the field update in the caller since using value param for person
 func updateAgeViaPersonValue(p person, newAge int) {
 	p.age = newAge
@@ -40,4 +46,10 @@ func reAllocPersonViaValue(p person) {
 // reAllocPersonViaPointer should reflect the realloc of person since using pointer param for person
 func reAllocPersonViaPointer(p *person) {
 	*p = person{}
+}
+
+// reAllocPersonViaPointerToPointer should reflect the pointing of the parameter to a different person struct
+func reAllocPersonViaPointerToPointer(p **person) {
+	p2 := &person{"Bob", 50}
+	*p = p2 // one dereference level to get to the pointer of the parameter, then make it point elsewhere (to p2)
 }
