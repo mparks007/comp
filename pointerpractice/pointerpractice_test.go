@@ -1,4 +1,4 @@
-package practice
+package pointerpractice
 
 import (
 	"fmt"
