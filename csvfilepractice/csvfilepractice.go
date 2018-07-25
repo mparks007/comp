@@ -32,8 +32,17 @@ func main() {
 	defer f.Close()
 
 	// dump the results to the console
-	for _, st := range readAndParse(csv.NewReader(f)) {
+	states := readAndParse(csv.NewReader(f))
+	for _, st := range states {
 		fmt.Print(st)
+	}
+
+	if len(os.Args) == 3 {
+		if abbrev, ok := lookupState(os.Args[2], states); ok {
+			fmt.Printf("State \"%s\" is \"%s\"\n", os.Args[2], abbrev)
+		} else {
+			fmt.Printf("State \"%s\" not found in state table: %s\n", os.Args[2],  os.Args[1])
+		}
 	}
 }
 
@@ -61,7 +70,7 @@ func readAndParse(rdr *csv.Reader) []state {
 			// parse out some state data
 			st, err := parseState(columnXRef, fields)
 			if err != nil {
-				log.Fatalln("Error parsing csv row:", err)
+				log.Println("Error parsing csv row:", err)
 			}
 			states = append(states, st)
 		}
@@ -85,4 +94,15 @@ func parseState(columnXRef map[string]int, fields []string) (state, error) {
 		abbreviation:     abbreviation,
 		censusRegionName: censusRegionName,
 	}, nil
+}
+
+func lookupState(abbreviation string, states []state) (string, bool) {
+ 
+	for _, state := range states {
+		if state.abbreviation == abbreviation {
+			return state.name, true
+		}
+	}
+
+	return "", false
 }
