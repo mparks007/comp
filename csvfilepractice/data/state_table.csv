@@ -7,7 +7,7 @@ id,name,abbreviation,country,type,sort,status,occupied,notes,fips_state,assoc_pr
 6,Colorado,CO,USA,state,10,current,occupied,,8,Colo.,VIII,4,West,8,Mountain,10
 7,Connecticut,CT,USA,state,10,current,occupied,,9,Conn.,I,1,Northeast,1,New England,2
 8,Delaware,DE,USA,state,10,current,occupied,,10,Del.,III,3,South,5,South Atlantic,3
-9,Florida,FL,USA,state,10,current,occupied,,12,Fla.,IV,3,South,5,South Atlantic,11
+A9,Florida,FL,USA,state,10,current,occupied,,12,Fla.,IV,3,South,5,South Atlantic,11
 10,Georgia,GA,USA,state,10,current,occupied,,13,Ga.,IV,3,South,5,South Atlantic,11
 11,Hawaii,HI,USA,state,10,current,occupied,,15,Hawaii,IX,4,West,9,Pacific,9
 12,Idaho,ID,USA,state,10,current,occupied,,16,Idaho,X,4,West,8,Mountain,9

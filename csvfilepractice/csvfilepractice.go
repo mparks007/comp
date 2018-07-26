@@ -3,24 +3,16 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"strconv"
+
+	"github.com/mparks007/comp/csvfilepractice/states"
 )
 
-type state struct {
-	id               int
-	name             string
-	abbreviation     string
-	censusRegionName string
-}
-
-func (s state) String() string {
-	return fmt.Sprintf("ID:%d\tName:%-20s\tAbbreviation:%s\t\tCensus Region:%s\n", s.id, s.name, s.abbreviation, s.censusRegionName)
-}
+const stateInfoHtmlFile = "stateinfo.html"
 
 func main() {
+	// have to at least have a source state file
 	if len(os.Args) < 2 {
 		log.Fatalln("Missing source file parameter.")
 	}
@@ -31,78 +23,41 @@ func main() {
 	}
 	defer f.Close()
 
-	// dump the results to the console
-	states := readAndParse(csv.NewReader(f))
-	for _, st := range states {
-		fmt.Print(st)
-	}
-
-	if len(os.Args) == 3 {
-		if abbrev, ok := lookupState(os.Args[2], states); ok {
-			fmt.Printf("State \"%s\" is \"%s\"\n", os.Args[2], abbrev)
-		} else {
-			fmt.Printf("State \"%s\" not found in state table: %s\n", os.Args[2],  os.Args[1])
-		}
-	}
-}
-
-func readAndParse(rdr *csv.Reader) []state {
-	var states []state
-	columnXRef := make(map[string]int)
-
-	for lineCount := 0; ; lineCount++ {
-		// read a row at a time from the csv
-		fields, err := rdr.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatalln("Error reading from file:", err)
-		}
-
-		// if on header line
-		if lineCount == 0 {
-			// build a map that tracks which index in the csv fields corresponds to a column name
-			for i, columnName := range fields {
-				columnXRef[columnName] = i
-			}
-		} else { // non-header line
-
-			// parse out some state data
-			st, err := parseState(columnXRef, fields)
-			if err != nil {
-				log.Println("Error parsing csv row:", err)
-			}
-			states = append(states, st)
-		}
-	}
-	return states
-}
-
-func parseState(columnXRef map[string]int, fields []string) (state, error) {
-	id, err := strconv.Atoi(fields[columnXRef["id"]])
+	// read all the states info
+	var statesInfo states.StatesFileInfo
+	parseErrors, err := statesInfo.ReadAndParse(csv.NewReader(f))
 	if err != nil {
-		return state{}, err
+		log.Fatalln("Error reading from file:", err)
 	}
 
-	name := fields[columnXRef["name"]]
-	abbreviation := fields[columnXRef["abbreviation"]]
-	censusRegionName := fields[columnXRef["census_region_name"]]
+	// write out any line-specific parse issues
+	if parseErrors != nil {
+		fmt.Println("The following specific parse errors occurred:")
+		for _, parseError := range parseErrors {
+			log.Println(parseError)
+		}
+		fmt.Println()
+	}
 
-	return state{
-		id:               id,
-		name:             name,
-		abbreviation:     abbreviation,
-		censusRegionName: censusRegionName,
-	}, nil
-}
+	// write states info to console
+	fmt.Print(statesInfo.String())
 
-func lookupState(abbreviation string, states []state) (string, bool) {
- 
-	for _, state := range states {
-		if state.abbreviation == abbreviation {
-			return state.name, true
+	// optionally, lookup an abbreviation
+	if len(os.Args) == 3 {
+		if abbrev, ok := statesInfo.LookupState(os.Args[2]); ok {
+			fmt.Printf("\nState \"%s\" is \"%s\"\n", os.Args[2], abbrev)
+		} else {
+			fmt.Printf("\nState \"%s\" not found in state table: %s\n", os.Args[2], os.Args[1])
 		}
 	}
 
-	return "", false
+	f2, err := os.Create(stateInfoHtmlFile)
+	if err != nil {
+		log.Fatalln("Error opening %s: %s\n", stateInfoHtmlFile, err.Error())
+		return
+	}
+	defer f2.Close()
+
+	// dump the results to an html page
+	statesInfo.WriteHtmlPage(f2)
 }
