@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 )
 
@@ -88,13 +87,24 @@ func (s *StatesFileInfo) LookupState(abbreviation string) (string, bool) {
 	return "", false
 }
 
-func (s *StatesFileInfo) WriteHtmlPage(f *os.File) {
+func (s *StatesFileInfo) AsHtmlPage(cssFile string) string {
+
+	// early exit
+	if len(s.states) == 0 {
+		return ""
+	}
+
+	var buffer bytes.Buffer
 
 	// starting html
-	f.WriteString(fmt.Sprint(`
+	buffer.WriteString(fmt.Sprint(`
 <html>
-	<head>
-		<link rel="stylesheet" href="stateinfo.css">
+	<head>`))
+	
+	buffer.WriteString(fmt.Sprintf(`
+		<link rel="stylesheet" href="%s">`, cssFile))
+
+	buffer.WriteString(fmt.Sprint(`
 	</head>
 	<body>
 		<table>
@@ -107,7 +117,7 @@ func (s *StatesFileInfo) WriteHtmlPage(f *os.File) {
 
 	// specific state content
 	for _, state := range s.states {
-		f.WriteString(fmt.Sprintf(`
+		buffer.WriteString(fmt.Sprintf(`
 			<tr>
 				<td>%d</td>
 				<td>%s</td>
@@ -117,15 +127,21 @@ func (s *StatesFileInfo) WriteHtmlPage(f *os.File) {
 	}
 
 	// ending html
-	f.WriteString(fmt.Sprint(`
+	buffer.WriteString(fmt.Sprint(`
 		</table>
 	</body>
 </html>`))
 
-	fmt.Printf("\nWrote HTML summary as: %s\n", f.Name())
+	return buffer.String()
 }
 
 func (s *StatesFileInfo) String() string {
+
+	// early exit
+	if len(s.states) == 0 {
+		return ""
+	}
+
 	var buffer bytes.Buffer
 
 	for _, st := range s.states {

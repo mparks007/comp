@@ -10,6 +10,7 @@ import (
 )
 
 const stateInfoHtmlFile = "stateinfo.html"
+const stateInfoCssFile = "stateinfo.css"
 
 func main() {
 	// have to at least have a source state file
@@ -59,5 +60,5 @@ func main() {
 	defer f2.Close()
 
 	// dump the results to an html page
-	statesInfo.WriteHtmlPage(f2)
+	f2.WriteString(statesInfo.AsHtmlPage(stateInfoCssFile))
 }
