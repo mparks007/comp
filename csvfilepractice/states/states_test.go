@@ -114,10 +114,139 @@ func TestStatesFileInfoReadAndParseNoFieldsErrorNothingToParse(t *testing.T) {
 	}
 }
 
+// MultiReadTotalSuccess will allow the mockCsvReader to simulate a good header row, two good data lines, and end of file
+func MultiReadTotalSuccess() func() (record []string, err error) {
+	callCount := 1
+
+	return func() (record []string, err error) {
+		switch callCount {
+		case 1:
+			callCount++
+			return []string{"id", "name", "abbreviation", "country", "type", "status", "occupied", "census_region_name"}, nil
+		case 2:
+			callCount++
+			return []string{"1", "Alabama", "AL", "USA", "state", "current", "occupied", "South"}, nil
+		case 3:
+			callCount++
+			return []string{"50","Wyoming","WY","USA","state","current","occupied","West"}, nil
+		case 4:
+			callCount++
+			return nil, io.EOF
+		}
+		return nil, nil
+	}
+}
+
 func TestStatesFileInfoReadAndParseTotalSuccess(t *testing.T) {
+
+	info := StatesFileInfo{}
+
+	multiRead := MultiReadTotalSuccess()
+
+	parseErrors, err := info.ReadAndParse(&mockCsvReader{read: func() (record []string, err error) {
+		return multiRead()
+	}})
+
+	if err != nil {
+		t.Errorf("No major error expected but got: %v\n", err)
+	}
+
+	if len(parseErrors) != 0 {
+		t.Errorf("No minor parse errors expected but got: %v\n", parseErrors)
+	}
+
+	wantLen := 8
+	if gotLen := len(info.columnXRef); gotLen != wantLen {
+		t.Errorf("Expected column count %d but got %d\n", wantLen, gotLen)
+	}
+
+	wantIdx := 2
+	if gotIdx := info.columnXRef["abbreviation"]; gotIdx != wantIdx {
+		t.Errorf("Expected abbreviation to be located at column index %d but got: %d\n", wantIdx, gotIdx)
+	}
+
+	wantLen = 2
+	if gotLen := len(info.states); gotLen != wantLen {
+		t.Errorf("Expected states count %d but got %d\n", wantLen, gotLen)
+	}
+
+	wantName := "Wyoming"
+	if gotName := info.states[1].name; gotName != wantName {
+		t.Errorf("Expected second state name to be %s but got %s\n", wantName, gotName)
+	}
+
+	wantCrn := "South"
+	if gotCrn := info.states[0].censusRegionName; gotCrn != wantCrn {
+		t.Errorf("Expected second state census region name to be %s but got %s\n", wantCrn, gotCrn)
+	}
+}
+
+// MultiReadPartialSuccess will allow the mockCsvReader to simulate a good header row, one good data line, one bad data line, and end of file
+func MultiReadPartialSuccess() func() (record []string, err error) {
+	callCount := 1
+
+	return func() (record []string, err error) {
+		switch callCount {
+		case 1:
+			callCount++
+			return []string{"id", "name", "abbreviation", "country", "type", "status", "occupied", "census_region_name"}, nil
+		case 2:
+			callCount++
+			return []string{"1", "Alabama", "AL", "USA", "state", "current", "occupied", "South"}, nil
+		case 3:
+			callCount++
+			return []string{"XX","Wyoming","WY","USA","state","current","occupied","West"}, nil
+		case 4:
+			callCount++
+			return nil, io.EOF
+		}
+		return nil, nil
+	}
 }
 
 func TestStatesFileInfoReadAndParsePartialSuccess(t *testing.T) {
+
+	info := StatesFileInfo{}
+
+	multiRead := MultiReadPartialSuccess()
+
+	parseErrors, err := info.ReadAndParse(&mockCsvReader{read: func() (record []string, err error) {
+		return multiRead()
+	}})
+
+	if err != nil {
+		t.Errorf("No major error expected but got: %v\n", err)
+	}
+
+	wantLen := 1
+	if gotLen := len(parseErrors); gotLen != wantLen {
+		t.Errorf("No minor parse errors expected but got: %v\n", parseErrors)
+	}
+
+	wantErr := `Data:[XX Wyoming WY USA state current occupied West], Error:[strconv.Atoi: parsing "XX": invalid syntax]`
+	if gotErr := parseErrors[0]; gotErr != wantErr {
+		t.Errorf("Expected minor parse error of \"%s\" but got \"%s\"\n", wantErr, gotErr)
+	}
+
+	wantLen = 8
+	if gotLen := len(info.columnXRef); gotLen != wantLen {
+		t.Errorf("Expected column count %d but got %d\n", wantLen, gotLen)
+	}
+
+	wantIdx := 2
+	if gotIdx := info.columnXRef["abbreviation"]; gotIdx != wantIdx {
+		t.Errorf("Expected abbreviation to be located at column index %d but got: %d\n", wantIdx, gotIdx)
+	}
+
+	wantLen = 1
+	if gotLen := len(info.states); gotLen != wantLen {
+		t.Errorf("Expected states count %d but got %d\n", wantLen, gotLen)
+	}
+
+	wantName := "Alabama"
+	if gotName := info.states[0].name; gotName != wantName {
+		t.Errorf("Expected first state name to be %s but got %s\n", wantName, gotName)
+	}
 }
 
 func TestStatesFileInfoLookupStateNotFound(t *testing.T) {
