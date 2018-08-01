@@ -2,12 +2,17 @@ package states
 
 import (
 	"bytes"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"strconv"
 )
 
+// MyCsvReader is used to allow mocking of "encoding/csv.Reader"
+type MyCsvReader interface {
+	Read() (record []string, err error)
+}
+
+// basic struct to store a subset of state data
 type state struct {
 	id               int
 	name             string
@@ -15,16 +20,19 @@ type state struct {
 	censusRegionName string
 }
 
+// String returns a basic dump of the state data
 func (s state) String() string {
 	return fmt.Sprintf("ID:%d\tName:%-20s\tAbbreviation:%s\t\tCensus Region:%s\n", s.id, s.name, s.abbreviation, s.censusRegionName)
 }
 
+// StatesFileInfo wraps both a column-name-to-index map and states data into one handy object
 type StatesFileInfo struct {
 	columnXRef map[string]int
 	states     []state
 }
 
-func (s *StatesFileInfo) ReadAndParse(rdr *csv.Reader) (minorErrors []string, majorError error) {
+// ReadAndParse reads the csv file line by line to build up the header line map on first line then states data on the remaining lines
+func (s *StatesFileInfo) ReadAndParse(rdr MyCsvReader) (minorErrors []string, majorError error) {
 	s.columnXRef = make(map[string]int)
 	var parseErrors []string
 
@@ -35,6 +43,8 @@ func (s *StatesFileInfo) ReadAndParse(rdr *csv.Reader) (minorErrors []string, ma
 			break
 		} else if err != nil {
 			return nil, err
+		} else if len(fields) == 0 { // sanity check (maybe isn't possible without an error being set on Read)
+			return nil, fmt.Errorf("No fields read from file line: %d", lineCount+1)
 		}
 
 		// if on first line of file (header line)
@@ -58,6 +68,7 @@ func (s *StatesFileInfo) ReadAndParse(rdr *csv.Reader) (minorErrors []string, ma
 	return parseErrors, nil
 }
 
+// parseState takes a slice of state data and returns a state struct filled with it
 func (s *StatesFileInfo) parseState(fields []string) (state, error) {
 	id, err := strconv.Atoi(fields[s.columnXRef["id"]])
 	if err != nil {
@@ -76,6 +87,7 @@ func (s *StatesFileInfo) parseState(fields []string) (state, error) {
 	}, nil
 }
 
+// LookupState returns the state name associated with the passed in abbreviation value, or "" if fails lookup
 func (s *StatesFileInfo) LookupState(abbreviation string) (string, bool) {
 
 	for _, state := range s.states {
@@ -87,6 +99,7 @@ func (s *StatesFileInfo) LookupState(abbreviation string) (string, bool) {
 	return "", false
 }
 
+// AsHtmlPage generates a basic table of the state data
 func (s *StatesFileInfo) AsHtmlPage(cssFile string) string {
 
 	// early exit
@@ -100,7 +113,7 @@ func (s *StatesFileInfo) AsHtmlPage(cssFile string) string {
 	buffer.WriteString(fmt.Sprint(`
 <html>
 	<head>`))
-	
+
 	buffer.WriteString(fmt.Sprintf(`
 		<link rel="stylesheet" href="%s">`, cssFile))
 
@@ -135,6 +148,7 @@ func (s *StatesFileInfo) AsHtmlPage(cssFile string) string {
 	return buffer.String()
 }
 
+// Strings writes out a simple, tabbified table of state data
 func (s *StatesFileInfo) String() string {
 
 	// early exit

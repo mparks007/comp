@@ -1,14 +1,20 @@
 package states
 
-import "testing"
+import (
+	"errors"
+	"io"
+	"testing"
+)
 
-// StatesFileInfo
-// --------------
-// ReadAndParse(mock Reader) [Read method (return mock csv rows, return EOF, return other error)]
-//		nothing to parse (immediate EOF)
-//		major error
-//		states slice fully loaded / no minor parse erros
-//		states slice partially loaded / some minor parse errors
+// mockReader will allow the Read method to have its return value dynamically decided per test
+type mockCsvReader struct {
+	read func() (record []string, err error)
+}
+
+// Read method to "read a csv file line" .... or in this case, pretend it did and just return what the read() method says to return
+func (r *mockCsvReader) Read() (record []string, err error) {
+	return r.read()
+}
 
 func TestStateEmptyAsString(t *testing.T) {
 
@@ -35,24 +41,77 @@ func TestStateFilledAsString(t *testing.T) {
 	}
 }
 
-type mockReader struct {
-	read func (p []byte) (n int, err error)
-}
-
-func (r *mockReader) Read(p []byte) (n int, err error) {
-	return r.read(p)
-}
-
-func TestStatesFileInfoReadAndParseNothingToParse(t *testing.T) {
+func TestStatesFileInfoReadAndParseImmediateEOFNothingToParse(t *testing.T) {
 
 	info := StatesFileInfo{}
 
-	reader := mockReader{}
+	parseErrors, err := info.ReadAndParse(&mockCsvReader{read: func() (record []string, err error) { return nil, io.EOF }})
 
-	parseErrors, err := info.ReadAndParse(reader)
+	if err != nil {
+		t.Errorf("No major error expected but got: %v\n", err)
+	}
+
+	if len(parseErrors) != 0 {
+		t.Errorf("No minor parse errors expected but got: %v\n", parseErrors)
+	}
+
+	if len(info.columnXRef) != 0 {
+		t.Errorf("No column data expected but got: %v\n", info.columnXRef)
+	}
+
+	if len(info.states) != 0 {
+		t.Errorf("No states data expected but got: %v\n", info.states)
+	}
 }
 
-func TestStatesFileInfoReadAndParseMajorError(t *testing.T) {
+func TestStatesFileInfoReadAndParseMajorErrorNothingToParse(t *testing.T) {
+	info := StatesFileInfo{}
+
+	errorText := "Major Error"
+	parseErrors, err := info.ReadAndParse(&mockCsvReader{read: func() (record []string, err error) { return nil, errors.New(errorText) }})
+
+	if err == nil {
+		t.Error("Expected major error expected but nil")
+	} else if err.Error() != errorText {
+		t.Errorf("Expected error [%s] but got [%s]\n", errorText, err.Error())
+	}
+
+	if len(parseErrors) != 0 {
+		t.Errorf("No minor parse errors expected but got: %v\n", parseErrors)
+	}
+
+	if len(info.columnXRef) != 0 {
+		t.Errorf("No column data expected but got: %v\n", info.columnXRef)
+	}
+
+	if len(info.states) != 0 {
+		t.Errorf("No states data expected but got: %v\n", info.states)
+	}
+}
+
+func TestStatesFileInfoReadAndParseNoFieldsErrorNothingToParse(t *testing.T) {
+	info := StatesFileInfo{}
+
+	errorText := "No fields read from file line: 1"
+	parseErrors, err := info.ReadAndParse(&mockCsvReader{read: func() (record []string, err error) { return nil, nil }})
+
+	if err == nil {
+		t.Error("Expected major error expected but nil")
+	} else if err.Error() != errorText {
+		t.Errorf("Expected error [%s] but got [%s]\n", errorText, err.Error())
+	}
+
+	if len(parseErrors) != 0 {
+		t.Errorf("No minor parse errors expected but got: %v\n", parseErrors)
+	}
+
+	if len(info.columnXRef) != 0 {
+		t.Errorf("No column data expected but got: %v\n", info.columnXRef)
+	}
+
+	if len(info.states) != 0 {
+		t.Errorf("No states data expected but got: %v\n", info.states)
+	}
 }
 
 func TestStatesFileInfoReadAndParseTotalSuccess(t *testing.T) {
