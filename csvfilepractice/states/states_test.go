@@ -170,14 +170,14 @@ func TestStatesFileInfoReadAndParseTotalSuccess(t *testing.T) {
 		t.Errorf("Expected states count %d but got %d\n", wantLen, gotLen)
 	}
 
-	wantName := "Wyoming"
-	if gotName := info.states[1].name; gotName != wantName {
-		t.Errorf("Expected second state name to be %s but got %s\n", wantName, gotName)
+	wantState := "ID:1\tName:Alabama             \tAbbreviation:AL\t\tCensus Region:South\n"
+	if gotState := info.states[0].String(); gotState != wantState {
+		t.Errorf("Expected first state data \"%s\" but got \"%s\"\n", wantState, gotState)
 	}
 
-	wantCrn := "South"
-	if gotCrn := info.states[0].censusRegionName; gotCrn != wantCrn {
-		t.Errorf("Expected second state census region name to be %s but got %s\n", wantCrn, gotCrn)
+	wantState = "ID:50\tName:Wyoming             \tAbbreviation:WY\t\tCensus Region:West\n"
+	if gotState := info.states[1].String(); gotState != wantState {
+		t.Errorf("Expected scond state data \"%s\" but got \"%s\"\n", wantState, gotState)
 	}
 }
 
@@ -243,9 +243,9 @@ func TestStatesFileInfoReadAndParsePartialSuccess(t *testing.T) {
 		t.Errorf("Expected states count %d but got %d\n", wantLen, gotLen)
 	}
 
-	wantName := "Alabama"
-	if gotName := info.states[0].name; gotName != wantName {
-		t.Errorf("Expected first state name to be %s but got %s\n", wantName, gotName)
+	wantState := "ID:1\tName:Alabama             \tAbbreviation:AL\t\tCensus Region:South\n"
+	if gotState := info.states[0].String(); gotState != wantState {
+		t.Errorf("Expected first state data \"%s\" but got \"%s\"\n", wantState, gotState)
 	}
 }
 
