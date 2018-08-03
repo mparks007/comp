@@ -67,7 +67,7 @@ func (w *Wire) WireUp(ch chan Electron) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	Debug(w.name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", w.isPowered.Load().(bool), ch))
-	ch <- Electron{sender: w.name, powerState: w.isPowered.Load().(bool), wg: wg}
+	ch <- Electron{sender: w.name, powerState: w.isPowered.Load().(bool), wg: wg, mu: &sync.RWMutex{}}
 	wg.Wait()
 }
 
@@ -88,6 +88,11 @@ func (w *Wire) Transmit(e Electron) {
 	if len(w.outChannels) == 0 {
 		Debug(w.name, "Skipping Transmit (nothing wired up)")
 		return
+	}
+
+	// if someone passed in a fresh Electron, must init the mutex that protects lockContexts
+	if e.mu == nil {
+		e.mu = &sync.RWMutex{}
 	}
 	
 	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners (but keeping the lockContexts list intact)

@@ -22,7 +22,7 @@ func (p *person) updateAgeViaPointerReceiver(newAge int) {
 	p.age = newAge
 }
 
-// updateAgeViaPointerToPointerReceiver should reflect the pointing of the parameter to a different person struct
+// updateAgeViaPointerToPointerReceiver should reflect the pointing of the parameter to a different person struct (Not allowed perhaps?)
 // func (p **person) updateAgeViaPointerToPointerReceiver(newAge int) {
 // 	p2 := &person{"Bob", 50}
 // 	*p = p2 // one dereference level to get to the pointer of the parameter, then make it point elsewhere (to p2)

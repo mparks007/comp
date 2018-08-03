@@ -12,25 +12,14 @@ type Electron struct {
 	sender       string
 	powerState   bool
 	lockContexts []uuid.UUID
-	//	lockContexts atomic.Value
 	wg *sync.WaitGroup
-	sync.RWMutex
+	mu *sync.RWMutex
 }
-
-// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
-// why can't I get an Electron owned field mutext (lockContexts commented above) to avoid the race?  had to use global...
-var conLock *sync.RWMutex
 
 // AddContext will allow a component to indicate it will be involved in a lock of itself associated to the electron flow
 func (e *Electron) AddContext(context uuid.UUID) {
-	if conLock == nil {
-		conLock = new(sync.RWMutex)
-	}
-	conLock.Lock()
-	defer conLock.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	Debug("Electron", fmt.Sprintf("(%v) adding context (%s)", &e, context))
 	e.lockContexts = append(e.lockContexts, context)
@@ -38,11 +27,8 @@ func (e *Electron) AddContext(context uuid.UUID) {
 
 // HasContext will allow a component to check and see if it isn't already present in the electron's tracker of locked contexts (i.e. the components)...and therefore would be safe to lock itelf
 func (e *Electron) HasContext(context uuid.UUID) bool {
-	if conLock == nil {
-		conLock = new(sync.RWMutex)
-	}
-	conLock.Lock()
-	defer conLock.Unlock()
+	e.mu.Lock()
+	defer e.mu.Unlock()
 
 	// is this context already in play?
 	for _, c := range e.lockContexts {
@@ -55,12 +41,10 @@ func (e *Electron) HasContext(context uuid.UUID) bool {
 
 // String will display most of the Electron fields
 func (e *Electron) String() string {
-	if conLock == nil {
-		conLock = new(sync.RWMutex)
-	}
-	conLock.Lock()
-	defer conLock.Unlock()
-	return fmt.Sprintf("self (%v), sender (%s), powerState (%t), lockContexts (%v)", &e, e.sender, e.powerState, e.lockContexts)
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return fmt.Sprintf("self (%p), sender (%s), powerState (%t), lockContexts (%v)", e, e.sender, e.powerState, e.lockContexts)
 }
 
 // Done will let the internal waitgroup know the processing for the Electron has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls)

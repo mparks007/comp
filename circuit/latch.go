@@ -19,7 +19,7 @@ type RSFlipFlop struct {
 	QBar        *NORGate
 }
 
-// NewRSFlipFLop returns an RSFlipFlop circuit which will be controlled by the passed in Reset/Set pins, resulting in varying states of its two outputs, Q and QBar
+// NewRSFlipFlop returns an RSFlipFlop circuit which will be controlled by the passed in Reset/Set pins, resulting in varying states of its two outputs, Q and QBar
 func NewRSFlipFlop(name string, rPin, sPin pwrEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
@@ -189,7 +189,7 @@ func (l *NBitLevelTriggeredDTypeLatchWithClear) Shutdown() {
 	}
 }
 
-// Edge-triggered D-Type Latch is like a Level-triggered, but the ouputs only change when the clock goes from 0 to 1 ("Edge" = clock going high, "D" = data 0/1)
+// EdgeTriggeredDTypeLatch is like a Level-triggered, but the ouputs only change when the clock goes from 0 to 1 ("Edge" = clock going high, "D" = data 0/1)
 //
 // d clk   q  !q
 // 0  ^    0  1
@@ -307,7 +307,7 @@ func (c *NBitRippleCounter) Shutdown() {
 	}
 }
 
-// Edge-triggered D-Type Latch with Preset and Clear is like an Edge-triggered D-Type Latch, but with an added Preset and Clear input to force the state to 1 or 0 regardless of clock/data
+// EdgeTriggeredDTypeLatchWithPresetAndClear is like an Edge-triggered D-Type Latch, but with an added Preset and Clear input to force the state to 1 or 0 regardless of clock/data
 //
 // pre clr d clk   q  !q
 //  1   0  X  X    1  0   preset makes data and clock not matter, forces Q

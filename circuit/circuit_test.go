@@ -109,13 +109,13 @@ func TestPwrsource(t *testing.T) {
 
 	select {
 	case <-ch1:
-		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
 	default:
 	}
 
 	select {
 	case <-ch2:
-		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
 	default:
 	}
 }
@@ -188,13 +188,13 @@ func TestWire_NoDelay(t *testing.T) {
 
 	select {
 	case <-ch1:
-		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
 	default:
 	}
 
 	select {
 	case <-ch2:
-		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
 	default:
 	}
 }
@@ -289,13 +289,13 @@ func TestWire_WithDelay(t *testing.T) {
 
 	select {
 	case <-ch1:
-		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
 	default:
 	}
 
 	select {
 	case <-ch2:
-		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
 	default:
 	}
 }
@@ -398,7 +398,7 @@ func TestBattery(t *testing.T) {
 
 	select {
 	case <-ch:
-		t.Error("Transmit of same state as prior state should have never gotten to ch, but it did.")
+		t.Error("Transmit of same state as prior state should have never gotten to ch, but it did")
 	default:
 	}
 }
@@ -454,10 +454,10 @@ func TestRelay_WithBatteries(t *testing.T) {
 	rel.OpenOut.WireUp(chOpen)
 	rel.ClosedOut.WireUp(chClosed)
 
-	if gotOpenOut.Load().(bool) != false {
+	if gotOpenOut.Load().(bool) {
 		t.Error("Wanted no power at the open position but got some")
 	}
-	if gotClosedOut.Load().(bool) != true {
+	if !gotClosedOut.Load().(bool) {
 		t.Error("Wanted power at the closed position but got none")
 	}
 
@@ -579,7 +579,7 @@ func TestNSwitchBank_BadInputs(t *testing.T) {
 
 			if sb != nil {
 				sb.Shutdown()
-				t.Error("Didn't expected a Switch Bank back but got one.")
+				t.Error("Didn't expected a Switch Bank back but got one")
 			}
 
 			tc.wantError += "\"" + tc.input + "\""
@@ -793,10 +793,10 @@ func TestRelay_WithSwitches(t *testing.T) {
 	rel.OpenOut.WireUp(chOpen)
 	rel.ClosedOut.WireUp(chClosed)
 
-	if gotOpenOut.Load().(bool) != false {
+	if gotOpenOut.Load().(bool) {
 		t.Error("Wanted no power at the open position but got some")
 	}
-	if gotClosedOut.Load().(bool) != true {
+	if !gotClosedOut.Load().(bool) {
 		t.Error("Wanted power at the closed position but got none")
 	}
 
@@ -874,7 +874,7 @@ func TestANDGate(t *testing.T) {
 
 	gate.WireUp(ch)
 
-	if got.Load().(bool) != true {
+	if !got.Load().(bool) {
 		t.Error("Wanted power on the gate but got none")
 	}
 
@@ -949,7 +949,7 @@ func TestORGate(t *testing.T) {
 
 	gate.WireUp(ch)
 
-	if got.Load().(bool) != true {
+	if !got.Load().(bool) {
 		t.Error("Wanted power on the gate but got none")
 	}
 
@@ -1024,7 +1024,7 @@ func TestNANDGate(t *testing.T) {
 
 	gate.WireUp(ch)
 
-	if got.Load().(bool) != true {
+	if !got.Load().(bool) {
 		t.Error("Wanted power on the gate but got none")
 	}
 
@@ -1099,7 +1099,7 @@ func TestNORGate(t *testing.T) {
 
 	gate.WireUp(ch)
 
-	if got.Load().(bool) != false {
+	if got.Load().(bool) {
 		t.Error("Wanted no power on the gate but got some")
 	}
 
@@ -1166,7 +1166,7 @@ func TestXORGate(t *testing.T) {
 
 	gate.WireUp(ch)
 
-	if got.Load().(bool) != false {
+	if got.Load().(bool) {
 		t.Error("Wanted no power on the gate but got some")
 	}
 
@@ -1288,7 +1288,7 @@ func TestXNORGate(t *testing.T) {
 
 	gate.WireUp(ch)
 
-	if got.Load().(bool) != true {
+	if !got.Load().(bool) {
 		t.Error("Wanted power on the gate but got none")
 	}
 
@@ -1362,11 +1362,11 @@ func TestHalfAdder(t *testing.T) {
 	half.Sum.WireUp(chSum)
 	half.Carry.WireUp(chCarry)
 
-	if gotSum.Load().(bool) != false {
+	if gotSum.Load().(bool) {
 		t.Error("Wanted no Sum but got one")
 	}
 
-	if gotCarry.Load().(bool) != false {
+	if gotCarry.Load().(bool) {
 		t.Error("Wanted no Carry but got one")
 	}
 
@@ -1532,11 +1532,11 @@ func TestFullAdder(t *testing.T) {
 	full.Sum.WireUp(chSum)
 	full.Carry.WireUp(chCarry)
 
-	if gotSum.Load().(bool) != false {
+	if gotSum.Load().(bool) {
 		t.Error("Wanted no Sum but got one")
 	}
 
-	if gotCarry.Load().(bool) != false {
+	if gotCarry.Load().(bool) {
 		t.Error("Wanted no Carry but got one")
 	}
 
@@ -1651,7 +1651,7 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	}
 
 	if addr == nil {
-		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+		t.Error("Expected an adder to return due to good inputs, but got a nil one")
 	} else {
 		defer addr.Shutdown()
 	}
@@ -1756,7 +1756,7 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	}
 
 	if addr == nil {
-		t.Error("Expected an adder to return due to good inputs, but got a nil one.")
+		t.Error("Expected an adder to return due to good inputs, but got a nil one")
 	} else {
 		defer addr.Shutdown()
 	}
@@ -1852,7 +1852,7 @@ func TestOnesCompliment(t *testing.T) {
 			comp := NewOnesComplementer(testName(t, "OnesComplementer"), bitSwitches.Switches(), signalSwitch)
 
 			if comp == nil {
-				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one.")
+				t.Error("Expected a valid OnesComplementer to return due to good inputs, but got a nil one")
 			} else {
 				defer comp.Shutdown()
 			}
@@ -1987,7 +1987,7 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 	}
 
 	if sub == nil {
-		t.Error("Expected a subtractor to return due to good inputs, but got a nil one.")
+		t.Error("Expected a subtractor to return due to good inputs, but got a nil one")
 	} else {
 		defer sub.Shutdown()
 	}
@@ -2100,7 +2100,7 @@ func TestOscillator(t *testing.T) {
 			time.Sleep(time.Second * 3)
 
 			if !strings.HasPrefix(gotResults.Load().(string), tc.wantResults) {
-				t.Errorf("Wanted results of at least %s but got %s.", tc.wantResults, gotResults.Load().(string))
+				t.Errorf("Wanted results of at least %s but got %s", tc.wantResults, gotResults.Load().(string))
 			}
 		})
 	}
@@ -2189,12 +2189,12 @@ func TestRSFlipFlop(t *testing.T) {
 	ff.QBar.WireUp(chQBar)
 	ff.Q.WireUp(chQ)
 
-	if gotQ.Load().(bool) != false {
-		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
+	if gotQ.Load().(bool) {
+		t.Error("Wanted no power at Q, but got power")
 	}
 
-	if gotQBar.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at QBar, but got %t.", true, gotQBar.Load().(bool))
+	if !gotQBar.Load().(bool) {
+		t.Errorf("Wanted power at QBar, but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -2219,11 +2219,11 @@ func TestRSFlipFlop(t *testing.T) {
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -2304,12 +2304,12 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	if gotQ.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
+	if !gotQ.Load().(bool) {
+		t.Error("Wanted power at Q, but got none")
 	}
 
-	if gotQBar.Load().(bool) != false {
-		t.Errorf("Wanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
+	if gotQBar.Load().(bool) {
+		t.Error("Wanted no power at QBar, but got some")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -2333,11 +2333,11 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -2625,7 +2625,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 	// starting with selecting A, get A's state
 
 	for i := 0; i < 3; i++ {
-		if gots[i].Load().(bool) == true {
+		if gots[i].Load().(bool) {
 			t.Error("Expecting false on all Outs of selector but got a true")
 		}
 	}
@@ -2634,7 +2634,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 
 	// selecting B, get B's state
 	for i := 0; i < 3; i++ {
-		if gots[i].Load().(bool) == false {
+		if !gots[i].Load().(bool) {
 			t.Error("Expecting true on all Outs of selector but got a false")
 		}
 	}
@@ -2643,7 +2643,7 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 
 	// still selecting B, get B's state, regardless of A's state changing
 	for i := 0; i < 3; i++ {
-		if gots[i].Load().(bool) == false {
+		if !gots[i].Load().(bool) {
 			t.Error("Expecting true on all Outs of selector but got a false")
 		}
 	}
@@ -2663,7 +2663,7 @@ func TestThreeNumberAdder_MismatchInputs(t *testing.T) {
 
 	if addr != nil {
 		addr.Shutdown()
-		t.Error("Did not expect an adder back but got one.")
+		t.Error("Did not expect an adder back but got one")
 	}
 
 	if err != nil && err.Error() != wantError {
@@ -2949,12 +2949,12 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	if gotQ.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at Q, but got %t.", true, gotQ.Load().(bool))
+	if !gotQ.Load().(bool) {
+		t.Error("Wanted power at Q, but got none")
 	}
 
-	if gotQBar.Load().(bool) != false {
-		t.Errorf("Wanted power of %t at QBar, but got %t.", false, gotQBar.Load().(bool))
+	if gotQBar.Load().(bool) {
+		t.Error("Wanted no power at QBar, but got power")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -2981,11 +2981,11 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -3300,12 +3300,12 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	if gotQ.Load().(bool) != false {
-		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
+	if gotQ.Load().(bool) {
+		t.Error("Wanted no power at Q, but got power")
 	}
 
-	if gotQBar.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at QBar, but got %t.", true, gotQBar.Load().(bool))
+	if !gotQBar.Load().(bool) {
+		t.Error("Wanted power at QBar, but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -3329,11 +3329,11 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -3401,12 +3401,12 @@ func TestFrequencyDivider(t *testing.T) {
 
 	wantOsc := "0"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+		t.Errorf("Wanted oscillator results %s but got %s", wantOsc, gotOscResults.Load().(string))
 	}
 
 	wantDiv := "0"
 	if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
-		t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
+		t.Errorf("Wanted divider results %s but got %s", wantDiv, gotDivResults.Load().(string))
 	}
 
 	Debug(testName(t, ""), "Start Test Case")
@@ -3419,12 +3419,12 @@ func TestFrequencyDivider(t *testing.T) {
 
 	wantOsc = "01010101"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-		t.Errorf("Wanted oscillator results of at least %s but got %s.", wantOsc, gotOscResults.Load().(string))
+		t.Errorf("Wanted oscillator results of at least %s but got %s", wantOsc, gotOscResults.Load().(string))
 	}
 
 	wantDiv = "0101"
 	if !strings.HasPrefix(gotDivResults.Load().(string), wantDiv) {
-		t.Errorf("Wanted divider results %s but got %s.", wantDiv, gotDivResults.Load().(string))
+		t.Errorf("Wanted divider results %s but got %s", wantDiv, gotDivResults.Load().(string))
 	}
 
 	Debug(testName(t, ""), "End Test Case")
@@ -3512,12 +3512,12 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	wantOsc := "0"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-		t.Errorf("Wanted oscillator results %s but got %s.", wantOsc, gotOscResults.Load().(string))
+		t.Errorf("Wanted oscillator results %s but got %s", wantOsc, gotOscResults.Load().(string))
 	}
 
 	wantCounterAnswer := "10101010"
 	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
-		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
+		t.Errorf("Wanted counter results %s but got %s", wantCounterAnswer, gotAnswer)
 	}
 
 	Debug(testName(t, ""), "Start Test Case")
@@ -3530,12 +3530,12 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	wantOsc = "01010101"
 	if !strings.HasPrefix(gotOscResults.Load().(string), wantOsc) {
-		t.Errorf("Wanted oscillator results of at least %s but got %s.", wantOsc, gotOscResults.Load().(string))
+		t.Errorf("Wanted oscillator results of at least %s but got %s", wantOsc, gotOscResults.Load().(string))
 	}
 
 	wantCounterAnswer = "10101110"
 	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
-		t.Errorf("Wanted counter results %s but got %s.", wantCounterAnswer, gotAnswer)
+		t.Errorf("Wanted counter results %s but got %s", wantCounterAnswer, gotAnswer)
 	}
 
 	for i := 0; i < len(gotDivResults); i++ {
@@ -3624,12 +3624,12 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	if gotQ.Load().(bool) != false {
-		t.Errorf("Wanted power of %t at Q, but got %t.", false, gotQ.Load().(bool))
+	if gotQ.Load().(bool) {
+		t.Error("Wanted no power at Q, but got power")
 	}
 
-	if gotQBar.Load().(bool) != true {
-		t.Errorf("Wanted power of %t at QBar, but got %t.", true, gotQBar.Load().(bool))
+	if !gotQBar.Load().(bool) {
+		t.Error("Wanted power at QBar, but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -3663,11 +3663,11 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t.", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t.", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
