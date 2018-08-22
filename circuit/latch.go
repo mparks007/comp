@@ -314,7 +314,8 @@ func (c *NBitRippleCounter) Shutdown() {
 //  0   1  X  X    0  1   clear makes data and clock not matter, forces QBar
 //  0   0  0  ^    0  1	  should take the data value since clock was raised (transitioned to 1)
 //  0   0  1  ^    1  0   should take the data value since clock was raised (transitioned to 1)
-//  0   0  X  0    q  !q  data doesn't matter, no clock raise (to 1) transition to trigger a store-it action
+//  0   0  X  0    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
+//  0   0  X  1    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
 type EdgeTriggeredDTypeLatchWithPresetAndClear struct {
 	wireluQOut    *Wire
 	wireluQBarOut *Wire

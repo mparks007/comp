@@ -3624,6 +3624,10 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
+	// by default, if all inputs are zero, ensure circuit has settled on "Cleared" state
+	//clearBattery.Charge()
+	//clearBattery.Discharge()
+
 	if gotQ.Load().(bool) {
 		t.Error("Wanted no power at Q, but got power")
 	}

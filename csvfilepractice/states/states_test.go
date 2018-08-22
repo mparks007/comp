@@ -121,19 +121,17 @@ func MultiReadTotalSuccess() func() (record []string, err error) {
 	return func() (record []string, err error) {
 		switch callCount {
 		case 1:
-			callCount++
-			return []string{"id", "name", "abbreviation", "country", "type", "status", "occupied", "census_region_name"}, nil
+			record, err = []string{"id", "name", "abbreviation", "country", "type", "status", "occupied", "census_region_name"}, nil
 		case 2:
-			callCount++
-			return []string{"1", "Alabama", "AL", "USA", "state", "current", "occupied", "South"}, nil
+			record, err = []string{"1", "Alabama", "AL", "USA", "state", "current", "occupied", "South"}, nil
 		case 3:
-			callCount++
-			return []string{"50","Wyoming","WY","USA","state","current","occupied","West"}, nil
+			record, err = []string{"50", "Wyoming", "WY", "USA", "state", "current", "occupied", "West"}, nil
 		case 4:
-			callCount++
-			return nil, io.EOF
+			record, err = nil, io.EOF
 		}
-		return nil, nil
+		callCount++
+
+		return
 	}
 }
 
@@ -188,19 +186,17 @@ func MultiReadPartialSuccess() func() (record []string, err error) {
 	return func() (record []string, err error) {
 		switch callCount {
 		case 1:
-			callCount++
-			return []string{"id", "name", "abbreviation", "country", "type", "status", "occupied", "census_region_name"}, nil
+			record, err = []string{"id", "name", "abbreviation", "country", "type", "status", "occupied", "census_region_name"}, nil
 		case 2:
-			callCount++
-			return []string{"1", "Alabama", "AL", "USA", "state", "current", "occupied", "South"}, nil
+			record, err = []string{"1", "Alabama", "AL", "USA", "state", "current", "occupied", "South"}, nil
 		case 3:
-			callCount++
-			return []string{"XX","Wyoming","WY","USA","state","current","occupied","West"}, nil
+			record, err = []string{"XX", "Wyoming", "WY", "USA", "state", "current", "occupied", "West"}, nil
 		case 4:
-			callCount++
-			return nil, io.EOF
+			record, err = nil, io.EOF
 		}
-		return nil, nil
+		callCount++
+
+		return
 	}
 }
 
