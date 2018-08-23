@@ -1,2 +1,2 @@
-echo "In startup.sh"
+echo In startup.sh
 
