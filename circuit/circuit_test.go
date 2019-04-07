@@ -336,14 +336,14 @@ func TestRibbonCable(t *testing.T) {
 	want = false
 
 	if got1.Load().(bool) != want {
-		t.Errorf("Left Switch off, wanted the wire to see power as %t but got %t", want, got1.Load().(bool))
+		t.Errorf("Left Battery off, wanted the wire to see power as %t but got %t", want, got1.Load().(bool))
 	}
 
 	// the first wire in the ribbon cable had a live battery
 	want = true
 
 	if got2.Load().(bool) != want {
-		t.Errorf("Right Switch on, wanted the wire to see power as %t but got %t", want, got2.Load().(bool))
+		t.Errorf("Right Battery on, wanted the wire to see power as %t but got %t", want, got2.Load().(bool))
 	}
 }
 
@@ -710,6 +710,8 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 			randomInput := make([]byte, len(tc.input))
 			for i := range randomInput {
 				randomInput[i] = "000000111111"[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(12)]
+				time.Sleep(time.Millisecond * 10)
+
 			}
 
 			sb, err := NewNSwitchBank(testName(t, "NSwitchBank"), string(randomInput))
@@ -3623,10 +3625,6 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
-
-	// by default, if all inputs are zero, ensure circuit has settled on "Cleared" state
-	//clearBattery.Charge()
-	//clearBattery.Discharge()
 
 	if gotQ.Load().(bool) {
 		t.Error("Wanted no power at Q, but got power")
