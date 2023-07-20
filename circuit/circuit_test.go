@@ -40,27 +40,27 @@ func getAnswerString(gots []atomic.Value) string {
 	}
 	return answer
 }
-func TestPwrsource(t *testing.T) {
-	pwr := &pwrSource{}
-	pwr.Init()
-	pwr.Name = testName(t, "pwrSource")
+func TestChargeSource(t *testing.T) {
+	cs := &chargeSource{}
+	cs.Init()
+	cs.Name = testName(t, "chargeSource")
 
 	var want bool
 	var got1, got2 atomic.Value
-	ch1 := make(chan Electron, 1)
-	ch2 := make(chan Electron, 1)
+	ch1 := make(chan Charge, 1)
+	ch2 := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron {%s}", ch1, e1.String()))
-				got1.Store(e1.powerState)
-				e1.Done()
-			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron {%s}", ch2, e2.String()))
-				got2.Store(e2.powerState)
-				e2.Done()
+			case c1 := <-ch1:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Charge {%s}", ch1, c1.String()))
+				got1.Store(c1.state)
+				c1.Done()
+			case c2 := <-ch2:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Charge {%s}", ch2, c2.String()))
+				got2.Store(c2.state)
+				c2.Done()
 			case <-chStop:
 				return
 			}
@@ -69,8 +69,8 @@ func TestPwrsource(t *testing.T) {
 	defer func() { chStop <- true }()
 
 	// two wire ups to prove both will get called
-	pwr.WireUp(ch1)
-	pwr.WireUp(ch2)
+	cs.WireUp(ch1)
+	cs.WireUp(ch2)
 
 	// test default state (unpowered)
 	want = false
@@ -84,7 +84,7 @@ func TestPwrsource(t *testing.T) {
 
 	// test power transmit
 	want = true
-	pwr.Transmit(Electron{powerState: want})
+	cs.Transmit(Charge{state: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -95,7 +95,7 @@ func TestPwrsource(t *testing.T) {
 
 	// test transmit loss of power
 	want = false
-	pwr.Transmit(Electron{powerState: want})
+	cs.Transmit(Charge{state: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -105,7 +105,7 @@ func TestPwrsource(t *testing.T) {
 	}
 
 	// test transmitting same state as last time (should skip it)
-	pwr.Transmit(Electron{powerState: want})
+	cs.Transmit(Charge{state: want})
 
 	select {
 	case <-ch1:
@@ -120,26 +120,26 @@ func TestPwrsource(t *testing.T) {
 	}
 }
 
-func TestWire_NoDelay(t *testing.T) {
-	wire := NewWire(testName(t, "Wire"), 0)
+func TestWire(t *testing.T) {
+	wire := NewWire(testName(t, "Wire"))
 	defer wire.Shutdown()
 
 	var want bool
 	var got1, got2 atomic.Value
-	ch1 := make(chan Electron, 1)
-	ch2 := make(chan Electron, 1)
+	ch1 := make(chan Charge, 1)
+	ch2 := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron {%s}", ch1, e1.String()))
-				got1.Store(e1.powerState)
-				e1.Done()
-			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron {%s}", ch2, e2.String()))
-				got2.Store(e2.powerState)
-				e2.Done()
+			case c1 := <-ch1:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Charge {%s}", ch1, c1.String()))
+				got1.Store(c1.state)
+				c1.Done()
+			case c2 := <-ch2:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Charge {%s}", ch2, c2.String()))
+				got2.Store(c2.state)
+				c2.Done()
 			case <-chStop:
 				return
 			}
@@ -163,7 +163,7 @@ func TestWire_NoDelay(t *testing.T) {
 
 	// test power transmit
 	want = true
-	wire.Transmit(Electron{powerState: want})
+	wire.Transmit(Charge{state: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -174,7 +174,7 @@ func TestWire_NoDelay(t *testing.T) {
 
 	// test transmit loss of power
 	want = false
-	wire.Transmit(Electron{powerState: want})
+	wire.Transmit(Charge{state: want})
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
@@ -184,7 +184,7 @@ func TestWire_NoDelay(t *testing.T) {
 	}
 
 	// test transmitting same state as last time (should skip it)
-	wire.Transmit(Electron{powerState: want})
+	wire.Transmit(Charge{state: want})
 
 	select {
 	case <-ch1:
@@ -199,129 +199,129 @@ func TestWire_NoDelay(t *testing.T) {
 	}
 }
 
-func TestWire_WithDelay(t *testing.T) {
-	var wireLen uint = 10
+// func TestWire_WithDelay(t *testing.T) {
+// 	var wireLen uint = 10
 
-	wire := NewWire(testName(t, "Wire"), wireLen)
-	defer wire.Shutdown()
+// 	wire := NewWire(testName(t, "Wire"), wireLen)
+// 	defer wire.Shutdown()
 
-	var want bool
-	var got1, got2 atomic.Value
-	ch1 := make(chan Electron, 1)
-	ch2 := make(chan Electron, 1)
-	chStop := make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron {%s}", ch1, e1.String()))
-				got1.Store(e1.powerState)
-				e1.Done()
-			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron {%s}", ch2, e2.String()))
-				got2.Store(e2.powerState)
-				e2.Done()
-			case <-chStop:
-				return
-			}
-		}
-	}()
-	defer func() { chStop <- true }()
+// 	var want bool
+// 	var got1, got2 atomic.Value
+// 	ch1 := make(chan Charge, 1)
+// 	ch2 := make(chan Charge, 1)
+// 	chStop := make(chan bool, 1)
+// 	go func() {
+// 		for {
+// 			select {
+// 			case e1 := <-ch1:
+// 				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron {%s}", ch1, e1.String()))
+// 				got1.Store(e1.state)
+// 				e1.Done()
+// 			case e2 := <-ch2:
+// 				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron {%s}", ch2, e2.String()))
+// 				got2.Store(e2.state)
+// 				e2.Done()
+// 			case <-chStop:
+// 				return
+// 			}
+// 		}
+// 	}()
+// 	defer func() { chStop <- true }()
 
-	// two wire ups to prove both will get called
-	wire.WireUp(ch1)
-	wire.WireUp(ch2)
+// 	// two wire ups to prove both will get called
+// 	wire.WireUp(ch1)
+// 	wire.WireUp(ch2)
 
-	// test default state (unpowered)
-	want = false
+// 	// test default state (unpowered)
+// 	want = false
 
-	if got1.Load().(bool) != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
-	}
-	if got2.Load().(bool) != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
-	}
+// 	if got1.Load().(bool) != want {
+// 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
+// 	}
+// 	if got2.Load().(bool) != want {
+// 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
+// 	}
 
-	// test power transmit
-	want = true
+// 	// test power transmit
+// 	want = true
 
-	start := time.Now()
-	wire.Transmit(Electron{powerState: want})
-	end := time.Now()
+// 	start := time.Now()
+// 	wire.Transmit(Charge{state: want})
+// 	end := time.Now()
 
-	if got1.Load().(bool) != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
-	}
-	if got2.Load().(bool) != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
-	}
+// 	if got1.Load().(bool) != want {
+// 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
+// 	}
+// 	if got2.Load().(bool) != want {
+// 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
+// 	}
 
-	// validate wire delay
-	gotDuration := end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
-	wantDuration := time.Millisecond * time.Duration(wireLen)
-	if gotDuration < wantDuration {
-		t.Errorf("Wire power on transmit time should have been %v but was %v", wantDuration, gotDuration)
-	}
+// 	// validate wire delay
+// 	gotDuration := end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
+// 	wantDuration := time.Millisecond * time.Duration(wireLen)
+// 	if gotDuration < wantDuration {
+// 		t.Errorf("Wire power on transmit time should have been %v but was %v", wantDuration, gotDuration)
+// 	}
 
-	// test loss of power transmit
-	want = false
+// 	// test loss of power transmit
+// 	want = false
 
-	start = time.Now()
-	wire.Transmit(Electron{powerState: want})
-	end = time.Now()
+// 	start = time.Now()
+// 	wire.Transmit(Charge{state: want})
+// 	end = time.Now()
 
-	if got1.Load().(bool) != want {
-		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
-	}
-	if got2.Load().(bool) != want {
-		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
-	}
+// 	if got1.Load().(bool) != want {
+// 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
+// 	}
+// 	if got2.Load().(bool) != want {
+// 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
+// 	}
 
-	// validate wire delay
-	gotDuration = end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
-	wantDuration = time.Millisecond * time.Duration(wireLen)
-	if gotDuration < wantDuration {
-		t.Errorf("Wire power off transmit time should have been %v but was %v", wantDuration, gotDuration)
-	}
+// 	// validate wire delay
+// 	gotDuration = end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
+// 	wantDuration = time.Millisecond * time.Duration(wireLen)
+// 	if gotDuration < wantDuration {
+// 		t.Errorf("Wire power off transmit time should have been %v but was %v", wantDuration, gotDuration)
+// 	}
 
-	// test transmitting same state as last time (should skip it)
-	wire.Transmit(Electron{powerState: want})
+// 	// test transmitting same state as last time (should skip it)
+// 	wire.Transmit(Charge{state: want})
 
-	select {
-	case <-ch1:
-		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
-	default:
-	}
+// 	select {
+// 	case <-ch1:
+// 		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
+// 	default:
+// 	}
 
-	select {
-	case <-ch2:
-		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
-	default:
-	}
-}
+// 	select {
+// 	case <-ch2:
+// 		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
+// 	default:
+// 	}
+// }
 
 func TestRibbonCable(t *testing.T) {
-	rib := NewRibbonCable(testName(t, "RibbonCable"), 2, 0)
+	rib := NewRibbonCable(testName(t, "RibbonCable"), 2)
 	defer rib.Shutdown()
 
-	rib.SetInputs(NewBattery(testName(t, "Battery1"), false), NewBattery(testName(t, "Battery2"), true))
+	rib.SetInputs(NewChargeProvider(testName(t, "ChargeProvider1"), false), NewChargeProvider(testName(t, "ChargeProvider2"), true))
 
 	var want bool
 	var got1, got2 atomic.Value
-	ch1 := make(chan Electron, 1)
-	ch2 := make(chan Electron, 1)
+	ch1 := make(chan Charge, 1)
+	ch2 := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case e1 := <-ch1:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron {%s}", ch1, e1.String()))
-				got1.Store(e1.powerState)
-				e1.Done()
-			case e2 := <-ch2:
-				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron {%s}", ch2, e2.String()))
-				got2.Store(e2.powerState)
-				e2.Done()
+			case c1 := <-ch1:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Charge {%s}", ch1, c1.String()))
+				got1.Store(c1.state)
+				c1.Done()
+			case c2 := <-ch2:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Charge {%s}", ch2, c2.String()))
+				got2.Store(c2.state)
+				c2.Done()
 			case <-chStop:
 				return
 			}
@@ -336,31 +336,31 @@ func TestRibbonCable(t *testing.T) {
 	want = false
 
 	if got1.Load().(bool) != want {
-		t.Errorf("Left Battery off, wanted the wire to see power as %t but got %t", want, got1.Load().(bool))
+		t.Errorf("Left ChargeProvider off, wanted the wire to see charge as %t but got %t", want, got1.Load().(bool))
 	}
 
 	// the first wire in the ribbon cable had a live battery
 	want = true
 
 	if got2.Load().(bool) != want {
-		t.Errorf("Right Battery on, wanted the wire to see power as %t but got %t", want, got2.Load().(bool))
+		t.Errorf("Right ChargeProvider on, wanted the wire to see charge as %t but got %t", want, got2.Load().(bool))
 	}
 }
 
-func TestBattery(t *testing.T) {
-	bat := NewBattery(testName(t, "Battery"), true)
+func TestChargeProvider(t *testing.T) {
+	cp := NewChargeProvider(testName(t, "ChargeProvider"), true)
 
 	var want bool
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -368,33 +368,33 @@ func TestBattery(t *testing.T) {
 	}()
 	defer func() { chStop <- true }()
 
-	bat.WireUp(ch)
+	cp.WireUp(ch)
 
-	// test default battery state (powered)
+	// test default ChargeProvider state (powered)
 	want = true
 
 	if got.Load().(bool) != want {
-		t.Errorf("With a new battery, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
+		t.Errorf("With a new ChargeProvider, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
 	}
 
 	// test loss of power
-	bat.Discharge()
+	cp.Discharge()
 	want = false
 
 	if got.Load().(bool) != want {
-		t.Errorf("With a discharged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got.Load().(bool))
+		t.Errorf("With a discharged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
 	}
 
 	// test re-added power
-	bat.Charge()
+	cp.Charge()
 	want = true
 
 	if got.Load().(bool) != want {
-		t.Errorf("With a charged battery, wanted the subscriber's IsPowered to be %t but got %t", want, got.Load().(bool))
+		t.Errorf("With a charged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
 	}
 
 	// test charging again (should skip it)
-	bat.Charge()
+	cp.Charge()
 
 	select {
 	case <-ch:
@@ -403,10 +403,10 @@ func TestBattery(t *testing.T) {
 	}
 }
 
-func TestRelay_WithBatteries(t *testing.T) {
+func TestRelay_WithChargeProviders(t *testing.T) {
 	testCases := []struct {
-		aInPowered   bool
-		bInPowered   bool
+		aInHasCharge bool
+		bInHasCharge bool
 		wantAtOpen   bool
 		wantAtClosed bool
 	}{
@@ -422,28 +422,28 @@ func TestRelay_WithBatteries(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var pin1Battery, pin2Battery *Battery
-	pin1Battery = NewBattery(testName(t, "Battery1"), true)
-	pin2Battery = NewBattery(testName(t, "Battery2"), true)
+	var pin1ChargeProvider, pin2ChargeProvider *ChargeProvider
+	pin1ChargeProvider = NewChargeProvider(testName(t, "ChargeProvider1"), true)
+	pin2ChargeProvider = NewChargeProvider(testName(t, "ChargeProvider2"), true)
 
-	rel := NewRelay(testName(t, "Relay"), pin1Battery, pin2Battery)
+	rel := NewRelay(testName(t, "Relay"), pin1ChargeProvider, pin2ChargeProvider)
 	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
-	chOpen := make(chan Electron, 1)
-	chClosed := make(chan Electron, 1)
+	chOpen := make(chan Charge, 1)
+	chClosed := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
-			case eOpen := <-chOpen:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Electron {%s}", chOpen, eOpen.String()))
-				gotOpenOut.Store(eOpen.powerState)
-				eOpen.Done()
-			case eClosed := <-chClosed:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Electron {%s}", chClosed, eClosed.String()))
-				gotClosedOut.Store(eClosed.powerState)
-				eClosed.Done()
+			case cOpen := <-chOpen:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Charge {%s}", chOpen, cOpen.String()))
+				gotOpenOut.Store(cOpen.state)
+				cOpen.Done()
+			case cClosed := <-chClosed:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Charge {%s}", chClosed, cClosed.String()))
+				gotClosedOut.Store(cClosed.state)
+				cClosed.Done()
 			case <-chStop:
 				return
 			}
@@ -455,37 +455,37 @@ func TestRelay_WithBatteries(t *testing.T) {
 	rel.ClosedOut.WireUp(chClosed)
 
 	if gotOpenOut.Load().(bool) {
-		t.Error("Wanted no power at the open position but got some")
+		t.Error("Wanted no charge at the open position but got some")
 	}
 	if !gotClosedOut.Load().(bool) {
-		t.Error("Wanted power at the closed position but got none")
+		t.Error("Wanted charge at the closed position but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting input A to (%t) and B to (%t)", i, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting input A to (%t) and B to (%t)", i, tc.aInHasCharge, tc.bInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting input A to (%t) and B to (%t)", i, tc.aInPowered, tc.bInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting input A to (%t) and B to (%t)", i, tc.aInHasCharge, tc.bInHasCharge))
 
-			if tc.aInPowered {
-				pin1Battery.Charge()
+			if tc.aInHasCharge {
+				pin1ChargeProvider.Charge()
 			} else {
-				pin1Battery.Discharge()
+				pin1ChargeProvider.Discharge()
 			}
 
-			if tc.bInPowered {
-				pin2Battery.Charge()
+			if tc.bInHasCharge {
+				pin2ChargeProvider.Charge()
 			} else {
-				pin2Battery.Discharge()
+				pin2ChargeProvider.Discharge()
 			}
 
 			if gotOpenOut.Load().(bool) != tc.wantAtOpen {
-				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut.Load().(bool))
+				t.Errorf("Wanted charge at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut.Load().(bool))
 			}
 
 			if gotClosedOut.Load().(bool) != tc.wantAtClosed {
-				t.Errorf("Wanted power at the closed position to be %t, but got %t", tc.wantAtClosed, gotClosedOut.Load().(bool))
+				t.Errorf("Wanted charge at the closed position to be %t, but got %t", tc.wantAtClosed, gotClosedOut.Load().(bool))
 			}
 		})
 	}
@@ -501,14 +501,14 @@ func TestSwitch(t *testing.T) {
 
 	var want bool
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -613,14 +613,14 @@ func TestNSwitchBank_GoodInputs(t *testing.T) {
 	}
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -683,14 +683,14 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 	}
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -771,19 +771,19 @@ func TestRelay_WithSwitches(t *testing.T) {
 	defer rel.Shutdown()
 
 	var gotOpenOut, gotClosedOut atomic.Value
-	chOpen := make(chan Electron, 1)
-	chClosed := make(chan Electron, 1)
+	chOpen := make(chan Charge, 1)
+	chClosed := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case eOpen := <-chOpen:
 				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Electron {%s}", chOpen, eOpen.String()))
-				gotOpenOut.Store(eOpen.powerState)
+				gotOpenOut.Store(eOpen.state)
 				eOpen.Done()
 			case eClosed := <-chClosed:
 				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Electron {%s}", chClosed, eClosed.String()))
-				gotClosedOut.Store(eClosed.powerState)
+				gotClosedOut.Store(eClosed.state)
 				eClosed.Done()
 			case <-chStop:
 				return
@@ -858,14 +858,14 @@ func TestANDGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -933,14 +933,14 @@ func TestORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -1008,14 +1008,14 @@ func TestNANDGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -1083,14 +1083,14 @@ func TestNORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -1150,14 +1150,14 @@ func TestXORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -1203,19 +1203,19 @@ func TestInverter(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	pin1Battery := NewBattery(testName(t, "Battery"), true)
+	pin1Battery := NewChargeProvider(testName(t, "Battery"), true)
 	inv := NewInverter(testName(t, "Inverter"), pin1Battery)
 	defer inv.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -1272,14 +1272,14 @@ func TestXNORGate(t *testing.T) {
 	defer gate.Shutdown()
 
 	var got atomic.Value
-	ch := make(chan Electron, 1)
+	ch := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-ch:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.powerState)
+				got.Store(e.state)
 				e.Done()
 			case <-chStop:
 				return
@@ -1340,19 +1340,19 @@ func TestHalfAdder(t *testing.T) {
 	defer half.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
-	chSum := make(chan Electron, 1)
-	chCarry := make(chan Electron, 1)
+	chSum := make(chan Charge, 1)
+	chCarry := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case eSum := <-chSum:
 				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Electron {%s}", chSum, eSum.String()))
-				gotSum.Store(eSum.powerState)
+				gotSum.Store(eSum.state)
 				eSum.Done()
 			case eCarry := <-chCarry:
 				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Electron {%s}", chCarry, eCarry.String()))
-				gotCarry.Store(eCarry.powerState)
+				gotCarry.Store(eCarry.state)
 				eCarry.Done()
 			case <-chStop:
 				return
@@ -1398,17 +1398,17 @@ func TestLoopedORGate(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 	name := testName(t, "Test")
 
-	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
+	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name))
 	defer wireQOut.Shutdown()
-	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name), 0)
+	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name))
 	defer wireQBarOut.Shutdown()
 
-	sPinBattery := NewBattery("sPinBattery", false)
+	sPinBattery := NewChargeProvider("sPinBattery", false)
 	QBar := NewORGate(fmt.Sprintf("%s-QBarORGate", name), sPinBattery, wireQOut)
 	defer QBar.Shutdown()
 	QBar.WireUp(wireQBarOut.Input)
 
-	rPinBattery := NewBattery("rPinBattery", false)
+	rPinBattery := NewChargeProvider("rPinBattery", false)
 	Q := NewORGate(fmt.Sprintf("%s-QORGate", name), rPinBattery, wireQBarOut)
 	defer Q.Shutdown()
 	Q.WireUp(wireQOut.Input)
@@ -1438,17 +1438,17 @@ func TestLoopedANDGate(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 	name := testName(t, "Test")
 
-	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
+	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name))
 	defer wireQOut.Shutdown()
-	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name), 0)
+	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name))
 	defer wireQBarOut.Shutdown()
 
-	sPinBattery := NewBattery("sPinBattery", false)
+	sPinBattery := NewChargeProvider("sPinBattery", false)
 	QBar := NewANDGate(fmt.Sprintf("%s-QBarANDGate", name), sPinBattery, wireQOut)
 	defer QBar.Shutdown()
 	QBar.WireUp(wireQBarOut.Input)
 
-	rPinBattery := NewBattery("rPinBattery", false)
+	rPinBattery := NewChargeProvider("rPinBattery", false)
 	Q := NewANDGate(fmt.Sprintf("%s-QANDGate", name), rPinBattery, wireQBarOut)
 	defer Q.Shutdown()
 	Q.WireUp(wireQOut.Input)
@@ -1510,19 +1510,19 @@ func TestFullAdder(t *testing.T) {
 	defer full.Shutdown()
 
 	var gotSum, gotCarry atomic.Value
-	chSum := make(chan Electron, 1)
-	chCarry := make(chan Electron, 1)
+	chSum := make(chan Charge, 1)
+	chCarry := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case eSum := <-chSum:
 				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Electron {%s}", chSum, eSum.String()))
-				gotSum.Store(eSum.powerState)
+				gotSum.Store(eSum.state)
 				eSum.Done()
 			case eCarry := <-chCarry:
 				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Electron {%s}", chCarry, eCarry.String()))
-				gotCarry.Store(eCarry.powerState)
+				gotCarry.Store(eCarry.state)
 				eCarry.Done()
 			case <-chStop:
 				return
@@ -1659,18 +1659,18 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	}
 
 	var gots [9]atomic.Value // 0-7 for sums, 8 for carryout
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i := 0; i < 9; i++ {
 		gots[i].Store(false)
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, i int) {
+		go func(chState chan Charge, chStop chan bool, i int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-					gots[i].Store(e.powerState)
+					gots[i].Store(e.state)
 					e.Done()
 				case <-chStop:
 					return
@@ -1764,18 +1764,18 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	}
 
 	var gots [17]atomic.Value // 0-15 for sums, 16 for carryout
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i := 0; i < 17; i++ {
 		gots[i].Store(false)
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, i int) {
+		go func(chState chan Charge, chStop chan bool, i int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-					gots[i].Store(e.powerState)
+					gots[i].Store(e.state)
 					e.Done()
 				case <-chStop:
 					return
@@ -1860,18 +1860,18 @@ func TestOnesCompliment(t *testing.T) {
 			}
 
 			gotCompliments := make([]atomic.Value, len(tc.bits))
-			var chStates []chan Electron
+			var chStates []chan Charge
 			var chStops []chan bool
 			for i := 0; i < len(tc.bits); i++ {
 				gotCompliments[i].Store(false)
-				chStates = append(chStates, make(chan Electron, 1))
+				chStates = append(chStates, make(chan Charge, 1))
 				chStops = append(chStops, make(chan bool, 1))
-				go func(chState chan Electron, chStop chan bool, index int) {
+				go func(chState chan Charge, chStop chan bool, index int) {
 					for {
 						select {
 						case e := <-chState:
 							Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-							gotCompliments[index].Store(e.powerState)
+							gotCompliments[index].Store(e.state)
 							e.Done()
 						case <-chStop:
 							return
@@ -1995,18 +1995,18 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 	}
 
 	var gots [9]atomic.Value // 0-7 for diffs, 8 for carryout
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i := 0; i < 9; i++ {
 		gots[i].Store(false)
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-					gots[index].Store(e.powerState)
+					gots[index].Store(e.state)
 					e.Done()
 				case <-chStop:
 					return
@@ -2071,7 +2071,7 @@ func TestOscillator(t *testing.T) {
 			defer osc.Stop()
 
 			var gotResults atomic.Value
-			ch := make(chan Electron, 1)
+			ch := make(chan Charge, 1)
 
 			gotResults.Store("")
 			chStop := make(chan bool, 1)
@@ -2081,7 +2081,7 @@ func TestOscillator(t *testing.T) {
 					select {
 					case e := <-ch:
 						Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-						if e.powerState {
+						if e.state {
 							result += "1"
 						} else {
 							result += "0"
@@ -2148,17 +2148,17 @@ func TestRSFlipFlop(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var rPinBattery, sPinBattery *Battery
-	rPinBattery = NewBattery(testName(t, "rBattery"), false)
-	sPinBattery = NewBattery(testName(t, "sBattery"), false)
+	var rPinBattery, sPinBattery *ChargeProvider
+	rPinBattery = NewChargeProvider(testName(t, "rBattery"), false)
+	sPinBattery = NewChargeProvider(testName(t, "sBattery"), false)
 
 	// starting with no input signals (R and S are off)
 	ff := NewRSFlipFlop(testName(t, "RSFlipFlop"), rPinBattery, sPinBattery)
 	defer ff.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
-	chQ := make(chan Electron, 1)
-	chQBar := make(chan Electron, 1)
+	chQ := make(chan Charge, 1)
+	chQBar := make(chan Charge, 1)
 	chStopQ := make(chan bool, 1)
 	chStopQBar := make(chan bool, 1)
 	go func() {
@@ -2166,7 +2166,7 @@ func TestRSFlipFlop(t *testing.T) {
 			select {
 			case eQBar := <-chQBar:
 				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.powerState)
+				gotQBar.Store(eQBar.state)
 				eQBar.Done()
 			case <-chStopQBar:
 				return
@@ -2179,7 +2179,7 @@ func TestRSFlipFlop(t *testing.T) {
 			select {
 			case eQ := <-chQ:
 				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.powerState)
+				gotQ.Store(eQ.state)
 				eQ.Done()
 			case <-chStopQ:
 				return
@@ -2272,16 +2272,16 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var clkBattery, dataBattery *Battery
-	clkBattery = NewBattery(testName(t, "clkBattery"), true)
-	dataBattery = NewBattery(testName(t, "dataBattery"), true)
+	var clkBattery, dataBattery *ChargeProvider
+	clkBattery = NewChargeProvider(testName(t, "clkBattery"), true)
+	dataBattery = NewChargeProvider(testName(t, "dataBattery"), true)
 
 	// starting with true input signals (Clk and Data are on)
 	latch := NewLevelTriggeredDTypeLatch(testName(t, "LevelTriggeredDTypeLatch"), clkBattery, dataBattery)
 	defer latch.Shutdown()
 
-	chQ := make(chan Electron, 1)
-	chQBar := make(chan Electron, 1)
+	chQ := make(chan Charge, 1)
+	chQBar := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 
 	var gotQ, gotQBar atomic.Value
@@ -2290,11 +2290,11 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			select {
 			case eQBar := <-chQBar:
 				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.powerState)
+				gotQBar.Store(eQBar.state)
 				eQBar.Done()
 			case eQ := <-chQ:
 				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.powerState)
+				gotQ.Store(eQ.state)
 				eQ.Done()
 			case <-chStop:
 				return
@@ -2370,19 +2370,19 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each latch's Q
 	gots := make([]atomic.Value, len(latch.Qs))
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i, q := range latch.Qs {
 
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
 
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.powerState)
+					gots[index].Store(e.state)
 					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Stopped", index))
@@ -2518,19 +2518,19 @@ func TestTwoToOneSelector(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each of the selector's outputs
 	gots := make([]atomic.Value, len(sel.Outs))
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i, o := range sel.Outs {
 
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
 
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.powerState)
+					gots[index].Store(e.state)
 					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
@@ -2593,19 +2593,19 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each of the selector's outputs
 	gots := make([]atomic.Value, len(sel.Outs))
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i, o := range sel.Outs {
 
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
 
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.powerState)
+					gots[index].Store(e.state)
 					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
@@ -2699,20 +2699,20 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each of the adder's sum outputs
 	var gotSums [8]atomic.Value
-	var chSumStates []chan Electron
+	var chSumStates []chan Charge
 	var chSumStops []chan bool
 	for i, s := range addr.Sums {
 
-		chSumStates = append(chSumStates, make(chan Electron, 1))
+		chSumStates = append(chSumStates, make(chan Charge, 1))
 		chSumStops = append(chSumStops, make(chan bool, 1))
 		gotSums[i].Store(false)
 
-		go func(chSumState chan Electron, chSumStop chan bool, index int) {
+		go func(chSumState chan Charge, chSumStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chSumState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
-					gotSums[index].Store(e.powerState)
+					gotSums[index].Store(e.state)
 					e.Done()
 				case <-chSumStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
@@ -2731,14 +2731,14 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 
 	// build listen/transmit func to deal with the adder's carryout
 	var gotCarryOut atomic.Value
-	chCarryOutState := make(chan Electron, 1)
+	chCarryOutState := make(chan Charge, 1)
 	chCarryOutStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-chCarryOutState:
 				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Electron {%s}", chCarryOutState, e.String()))
-				gotCarryOut.Store(e.powerState)
+				gotCarryOut.Store(e.state)
 				e.Done()
 			case <-chCarryOutStop:
 				Debug(testName(t, "Select"), "(CarryOut) Stopped")
@@ -2785,20 +2785,20 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each of the adder's sum outputs
 	var gotSums [8]atomic.Value
-	var chSumStates []chan Electron
+	var chSumStates []chan Charge
 	var chSumStops []chan bool
 	for i, s := range addr.Sums {
 
-		chSumStates = append(chSumStates, make(chan Electron, 1))
+		chSumStates = append(chSumStates, make(chan Charge, 1))
 		chSumStops = append(chSumStops, make(chan bool, 1))
 		gotSums[i].Store(false)
 
-		go func(chSumState chan Electron, chSumStop chan bool, index int) {
+		go func(chSumState chan Charge, chSumStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chSumState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
-					gotSums[index].Store(e.powerState)
+					gotSums[index].Store(e.state)
 					e.Done()
 				case <-chSumStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
@@ -2817,14 +2817,14 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 
 	// build listen/transmit func to deal with the adder's carryout
 	var gotCarryOut atomic.Value
-	chCarryOutState := make(chan Electron, 1)
+	chCarryOutState := make(chan Charge, 1)
 	chCarryOutStop := make(chan bool, 1)
 	go func() {
 		for {
 			select {
 			case e := <-chCarryOutState:
 				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Electron {%s}", chCarryOutState, e.String()))
-				gotCarryOut.Store(e.powerState)
+				gotCarryOut.Store(e.state)
 				e.Done()
 			case <-chCarryOutStop:
 				Debug(testName(t, "Select"), "(CarryOut) Stopped")
@@ -2917,16 +2917,16 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		return fmt.Sprintf("testCases[%d]: Switching from [clrIn (%t), clkIn (%t), dataIn (%t)] to [clrIn (%t), clkIn (%t), dataIn (%t)]", i, priorClrIn, priorClkIn, priorDataIn, testCases[i].clrIn, testCases[i].clkIn, testCases[i].dataIn)
 	}
 
-	var clrBattery, clkBattery, dataBattery *Battery
-	clrBattery = NewBattery(testName(t, "clrBattery"), false)
-	clkBattery = NewBattery(testName(t, "clkBattery"), true)
-	dataBattery = NewBattery(testName(t, "dataBattery"), true)
+	var clrBattery, clkBattery, dataBattery *ChargeProvider
+	clrBattery = NewChargeProvider(testName(t, "clrBattery"), false)
+	clkBattery = NewChargeProvider(testName(t, "clkBattery"), true)
+	dataBattery = NewChargeProvider(testName(t, "dataBattery"), true)
 
 	latch := NewLevelTriggeredDTypeLatchWithClear(testName(t, "LevelTriggeredDTypeLatchWithClear"), clrBattery, clkBattery, dataBattery)
 	defer latch.Shutdown()
 
-	chQ := make(chan Electron, 1)
-	chQBar := make(chan Electron, 1)
+	chQ := make(chan Charge, 1)
+	chQBar := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 
 	var gotQ, gotQBar atomic.Value
@@ -2935,11 +2935,11 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			select {
 			case eQBar := <-chQBar:
 				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.powerState)
+				gotQBar.Store(eQBar.state)
 				eQBar.Done()
 			case eQ := <-chQ:
 				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.powerState)
+				gotQ.Store(eQ.state)
 				eQ.Done()
 			case <-chStop:
 				return
@@ -3021,19 +3021,19 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each latch's Q
 	gots := make([]atomic.Value, len(latch.Qs))
-	var chStates []chan Electron
+	var chStates []chan Charge
 	var chStops []chan bool
 	for i, q := range latch.Qs {
 
-		chStates = append(chStates, make(chan Electron, 1))
+		chStates = append(chStates, make(chan Charge, 1))
 		chStops = append(chStops, make(chan bool, 1))
 
-		go func(chState chan Electron, chStop chan bool, index int) {
+		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
 				case e := <-chState:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.powerState)
+					gots[index].Store(e.state)
 					e.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Stopped", index))
@@ -3269,15 +3269,15 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var clkBattery, dataBattery *Battery
-	clkBattery = NewBattery(testName(t, "clkBattery"), false)
-	dataBattery = NewBattery(testName(t, "dataBattery"), false)
+	var clkBattery, dataBattery *ChargeProvider
+	clkBattery = NewChargeProvider(testName(t, "clkBattery"), false)
+	dataBattery = NewChargeProvider(testName(t, "dataBattery"), false)
 
 	latch := NewEdgeTriggeredDTypeLatch(testName(t, "EdgeTriggeredDTypeLatch"), clkBattery, dataBattery)
 	defer latch.Shutdown()
 
-	chQ := make(chan Electron, 1)
-	chQBar := make(chan Electron, 1)
+	chQ := make(chan Charge, 1)
+	chQBar := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 
 	var gotQ, gotQBar atomic.Value
@@ -3286,11 +3286,11 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 			select {
 			case eQBar := <-chQBar:
 				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.powerState)
+				gotQBar.Store(eQBar.state)
 				eQBar.Done()
 			case eQ := <-chQ:
 				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.powerState)
+				gotQ.Store(eQ.state)
 				eQ.Done()
 			case <-chStop:
 				return
@@ -3350,7 +3350,7 @@ func TestFrequencyDivider(t *testing.T) {
 	defer freqDiv.Shutdown()
 
 	var gotOscResults atomic.Value
-	chOsc := make(chan Electron, 1)
+	chOsc := make(chan Charge, 1)
 	gotOscResults.Store("")
 	chStopOsc := make(chan bool, 1)
 	go func() {
@@ -3359,7 +3359,7 @@ func TestFrequencyDivider(t *testing.T) {
 			case e := <-chOsc:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, e.String()))
 				result := gotOscResults.Load().(string)
-				if e.powerState {
+				if e.state {
 					result += "1"
 				} else {
 					result += "0"
@@ -3376,7 +3376,7 @@ func TestFrequencyDivider(t *testing.T) {
 	osc.WireUp(chOsc)
 
 	var gotDivResults atomic.Value
-	chDiv := make(chan Electron, 1)
+	chDiv := make(chan Charge, 1)
 	gotDivResults.Store("")
 	chStopDiv := make(chan bool, 1)
 	go func() {
@@ -3385,7 +3385,7 @@ func TestFrequencyDivider(t *testing.T) {
 			case e := <-chDiv:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chDiv, e.String()))
 				result := gotDivResults.Load().(string)
-				if e.powerState {
+				if e.state {
 					result += "1"
 				} else {
 					result += "0"
@@ -3591,17 +3591,17 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var presetBattery, clearBattery, clkBattery, dataBattery *Battery
-	presetBattery = NewBattery(testName(t, "presetBattery"), false)
-	clearBattery = NewBattery(testName(t, "clearBattery"), false)
-	clkBattery = NewBattery(testName(t, "clkBattery"), false)
-	dataBattery = NewBattery(testName(t, "dataBattery"), false)
+	var presetBattery, clearBattery, clkBattery, dataBattery *ChargeProvider
+	presetBattery = NewChargeProvider(testName(t, "presetBattery"), false)
+	clearBattery = NewChargeProvider(testName(t, "clearBattery"), false)
+	clkBattery = NewChargeProvider(testName(t, "clkBattery"), false)
+	dataBattery = NewChargeProvider(testName(t, "dataBattery"), false)
 
 	latch := NewEdgeTriggeredDTypeLatchWithPresetAndClear(testName(t, "EdgeTriggeredDTypeLatchWithPresetAndClear"), presetBattery, clearBattery, clkBattery, dataBattery)
 	defer latch.Shutdown()
 
-	chQ := make(chan Electron, 1)
-	chQBar := make(chan Electron, 1)
+	chQ := make(chan Charge, 1)
+	chQBar := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 
 	var gotQ, gotQBar atomic.Value
@@ -3610,11 +3610,11 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 			select {
 			case eQBar := <-chQBar:
 				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.powerState)
+				gotQBar.Store(eQBar.state)
 				eQBar.Done()
 			case eQ := <-chQ:
 				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.powerState)
+				gotQ.Store(eQ.state)
 				eQ.Done()
 			case <-chStop:
 				return

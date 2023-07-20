@@ -9,20 +9,20 @@ import "fmt"
 // 0   1
 // 1   0
 type Inverter struct {
-	relay     *Relay // internal relay wired up in a way it reverses the power state sent to the inverter component
-	pwrSource        // inverter gains all that is pwrSource too
+	relay        *Relay // internal relay wired up in a way it reverses the power state sent to the inverter component
+	chargeSource        // inverter gains all that is pwrSource too
 }
 
 // NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's power state
-func NewInverter(name string, pin pwrEmitter) *Inverter {
+func NewInverter(name string, pin chargeEmitter) *Inverter {
 	inv := &Inverter{}
 	inv.Init()
 	inv.Name = name
 
-	bat := NewBattery(fmt.Sprintf("%s-Relay-pin1Battery", name), true)
+	bat := NewChargeProvider(fmt.Sprintf("%s-Relay-pin1Battery", name), true)
 	inv.relay = NewRelay(fmt.Sprintf("%s-Relay", name), bat, pin)
 
-	chState := make(chan Electron, 1)
+	chState := make(chan Charge, 1)
 	go func() {
 		for {
 			select {

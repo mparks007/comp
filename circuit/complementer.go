@@ -4,11 +4,11 @@ import "fmt"
 
 // OnesComplementer is a circuit which will invert the power of all input pins when given a signal
 type OnesComplementer struct {
-	Complements []pwrEmitter
+	Complements []chargeEmitter
 }
 
 // NewOnesComplementer will return a OnesComplementer component which will convert the power state of every input IF the signal pin is given power
-func NewOnesComplementer(name string, pins []pwrEmitter, signal pwrEmitter) *OnesComplementer {
+func NewOnesComplementer(name string, pins []chargeEmitter, signal chargeEmitter) *OnesComplementer {
 
 	comp := &OnesComplementer{}
 

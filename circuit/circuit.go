@@ -13,16 +13,16 @@ var Debugging = false
 
 // wireUpper allows a circuit component to wire up to a transmitter component in order to be told of the transmitter's power state
 type wireUpper interface {
-	WireUp(ch chan Electron)
+	WireUp(ch chan Charge)
 }
 
 // transmitter allows a circuit component to transmit it's power state to a wired up listener component
 type transmitter interface {
-	Transmit(e Electron)
+	Transmit(e Charge)
 }
 
-// pwrEmitter allows a circuit component to take part in the power subscription/transmission process (what is a better name for this??)
-type pwrEmitter interface {
+// chargeEmitter allows a circuit component to take part in the power subscription/transmission process (what is a better name for this??)
+type chargeEmitter interface {
 	wireUpper
 	transmitter
 }

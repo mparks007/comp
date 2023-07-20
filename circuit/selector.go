@@ -14,12 +14,12 @@ type TwoToOneSelector struct {
 	aANDs     []*ANDGate
 	bANDs     []*ANDGate
 	inverters []*Inverter
-	Outs      []pwrEmitter
+	Outs      []chargeEmitter
 }
 
 // NewTwoToOneSelector will return an 2-to-1 Selector component whose output will depend on the state of the selector signal input pin
 //	With selector off, the first set of pins will be the output.  If on, the second set is the output.
-func NewTwoToOneSelector(name string, signal pwrEmitter, aPins, bPins []pwrEmitter) (*TwoToOneSelector, error) {
+func NewTwoToOneSelector(name string, signal chargeEmitter, aPins, bPins []chargeEmitter) (*TwoToOneSelector, error) {
 
 	if len(aPins) != len(bPins) {
 		return nil, fmt.Errorf("Mismatched input lengths. aPins len: %d, bPins len: %d", len(aPins), len(bPins))

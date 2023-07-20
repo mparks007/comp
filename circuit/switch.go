@@ -7,9 +7,9 @@ import (
 
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
-	relay       *Relay   // innards of the switch are using a relay to control on/off
-	pin2Battery *Battery // switch on/off is controlled by charging/discharging this battery (which controls how the inner relay outputs)
-	pwrSource            // switch gains all that is pwrSource too
+	relay        *Relay          // innards of the switch are using a relay to control on/off
+	pin2Battery  *ChargeProvider // switch on/off is controlled by charging/discharging this battery (which controls how the inner relay outputs)
+	chargeSource                 // switch gains all that is pwrSource too
 }
 
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value
@@ -19,10 +19,10 @@ func NewSwitch(name string, startState bool) *Switch {
 	sw.Name = name
 
 	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.pin2Battery = NewBattery(fmt.Sprintf("%s-Relay-pin2Battery", name), startState)
-	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewBattery(fmt.Sprintf("%s-Relay-pin1Battery", name), true), sw.pin2Battery)
+	sw.pin2Battery = NewChargeProvider(fmt.Sprintf("%s-Relay-pin2Battery", name), startState)
+	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewChargeProvider(fmt.Sprintf("%s-Relay-pin1Battery", name), true), sw.pin2Battery)
 
-	chState := make(chan Electron, 1)
+	chState := make(chan Charge, 1)
 	go func() {
 		for {
 			select {
@@ -60,7 +60,7 @@ func (s *Switch) Set(newState bool) {
 
 // NSwitchBank is a convenient way to get any number of power emitters from a string of 0/1s
 type NSwitchBank struct {
-	switches []pwrEmitter
+	switches []chargeEmitter
 }
 
 // NewNSwitchBank takes a string of 0/1s and creates a slice of Switch objects, where each one is independently initialized based on "0" or "1" in the string
@@ -85,7 +85,7 @@ func NewNSwitchBank(name string, bits string) (*NSwitchBank, error) {
 }
 
 // Switches returns the internal switch slice for the switch bank (still allows external altering of the inner variable?  fix if so...)
-func (sb *NSwitchBank) Switches() []pwrEmitter {
+func (sb *NSwitchBank) Switches() []chargeEmitter {
 	return sb.switches
 }
 

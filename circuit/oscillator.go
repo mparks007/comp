@@ -7,8 +7,8 @@ import (
 
 // Oscillator is a circuit which attempts to simulate a crystal-driven frequency oscillation signal (not very exact unfortunately)
 type Oscillator struct {
-	active    atomic.Value // to track whether the oscillator is oscillating to avoid setting the stop channel if not needed
-	pwrSource              // Oscillator gains all that is pwrSource too
+	active       atomic.Value // to track whether the oscillator is oscillating to avoid setting the stop channel if not needed
+	chargeSource              // Oscillator gains all that is pwrSource too
 }
 
 // NewOscillator will return a disabled oscillator, whose initial power state, once started, will be based on the passed in init value
@@ -17,7 +17,7 @@ func NewOscillator(name string, initState bool) *Oscillator {
 	osc.Init()
 	osc.Name = name
 
-	osc.isPowered.Store(initState)
+	osc.hasCharge.Store(initState)
 	osc.active.Store(false)
 
 	return osc
@@ -33,7 +33,7 @@ func (o *Oscillator) Oscillate(hertz int) {
 			select {
 			case <-tick.C:
 				Debug(o.Name, "Tick")
-				o.Transmit(Electron{powerState: !o.isPowered.Load().(bool)})
+				o.Transmit(Charge{state: !o.hasCharge.Load().(bool)})
 			case <-o.chStop:
 				Debug(o.Name, "Stopped")
 				tick.Stop()

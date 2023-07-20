@@ -20,11 +20,11 @@ type RSFlipFlop struct {
 }
 
 // NewRSFlipFlop returns an RSFlipFlop circuit which will be controlled by the passed in Reset/Set pins, resulting in varying states of its two outputs, Q and QBar
-func NewRSFlipFlop(name string, rPin, sPin pwrEmitter) *RSFlipFlop {
+func NewRSFlipFlop(name string, rPin, sPin chargeEmitter) *RSFlipFlop {
 	ff := &RSFlipFlop{}
 
-	ff.wireQOut = NewWire(fmt.Sprintf("%s-QOutWire", name), 0)
-	ff.wireQBarOut = NewWire(fmt.Sprintf("%s-QBarOutWire", name), 0)
+	ff.wireQOut = NewWire(fmt.Sprintf("%s-QOutWire", name))
+	ff.wireQBarOut = NewWire(fmt.Sprintf("%s-QBarOutWire", name))
 
 	ff.QBar = NewNORGate(fmt.Sprintf("%s-QBarNORGate", name), sPin, ff.wireQOut)
 	ff.QBar.WireUp(ff.wireQBarOut.Input)
@@ -60,7 +60,7 @@ type LevelTriggeredDTypeLatch struct {
 }
 
 // NewLevelTriggeredDTypeLatch returns a LevelTriggeredDTypeLatch circuit which will be controlled by the passed in Clock and Data pins, resulting in varying states of its two outputs, Q and QBar
-func NewLevelTriggeredDTypeLatch(name string, clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatch {
+func NewLevelTriggeredDTypeLatch(name string, clkInPin, dataInPin chargeEmitter) *LevelTriggeredDTypeLatch {
 	latch := &LevelTriggeredDTypeLatch{}
 
 	latch.inverter = NewInverter(fmt.Sprintf("%s-Inverter", name), dataInPin)
@@ -88,11 +88,11 @@ func (l *LevelTriggeredDTypeLatch) Shutdown() {
 // NBitLevelTriggeredDTypeLatch is a component made up of a slice of LevelTriggeredDTypeLatch components
 type NBitLevelTriggeredDTypeLatch struct {
 	latches []*LevelTriggeredDTypeLatch
-	Qs      []pwrEmitter
+	Qs      []chargeEmitter
 }
 
 // NewNBitLevelTriggeredDTypeLatch returns an NBitLevelTriggeredDTypeLatch whose storing of the data pin value of EVERY internal latch will occur when the clock pin is on
-func NewNBitLevelTriggeredDTypeLatch(name string, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLevelTriggeredDTypeLatch {
+func NewNBitLevelTriggeredDTypeLatch(name string, clkInPin chargeEmitter, dataInPins []chargeEmitter) *NBitLevelTriggeredDTypeLatch {
 	latch := &NBitLevelTriggeredDTypeLatch{}
 
 	for i, dataInPin := range dataInPins {
@@ -133,7 +133,7 @@ type LevelTriggeredDTypeLatchWithClear struct {
 }
 
 // NewLevelTriggeredDTypeLatchWithClear returns a LevelTriggeredDTypeLatchWithClear component controlled by a Clear, a Clock, both of which will control how the Data pin is handled
-func NewLevelTriggeredDTypeLatchWithClear(name string, clrPin, clkInPin, dataInPin pwrEmitter) *LevelTriggeredDTypeLatchWithClear {
+func NewLevelTriggeredDTypeLatchWithClear(name string, clrPin, clkInPin, dataInPin chargeEmitter) *LevelTriggeredDTypeLatchWithClear {
 	latch := &LevelTriggeredDTypeLatchWithClear{}
 
 	latch.inverter = NewInverter(fmt.Sprintf("%s-Inverter", name), dataInPin)
@@ -164,12 +164,12 @@ func (l *LevelTriggeredDTypeLatchWithClear) Shutdown() {
 // NBitLevelTriggeredDTypeLatchWithClear is a component made up of a slice of LevelTriggeredDTypeLatchWithClear components
 type NBitLevelTriggeredDTypeLatchWithClear struct {
 	latches []*LevelTriggeredDTypeLatchWithClear
-	Qs      []pwrEmitter
+	Qs      []chargeEmitter
 }
 
 // NewNBitLevelTriggeredDTypeLatchWithClear returns an NBitLevelTriggeredDTypeLatchWithClear whose storing of the data pin value of EVERY internal latch will occur when the clock pin is on BUT the clear is off
 //  If Clear is on, Q is forced off regardless of any other circuit power
-func NewNBitLevelTriggeredDTypeLatchWithClear(name string, clrPin, clkInPin pwrEmitter, dataInPins []pwrEmitter) *NBitLevelTriggeredDTypeLatchWithClear {
+func NewNBitLevelTriggeredDTypeLatchWithClear(name string, clrPin, clkInPin chargeEmitter, dataInPins []chargeEmitter) *NBitLevelTriggeredDTypeLatchWithClear {
 	latch := &NBitLevelTriggeredDTypeLatchWithClear{}
 
 	for i, dataInPin := range dataInPins {
@@ -209,7 +209,7 @@ type EdgeTriggeredDTypeLatch struct {
 
 // NewEdgeTriggeredDTypeLatch returns an EdgeTriggeredDTypeLatch component controlled by a Clock pin, which will control how the Data pin is handled
 //   (where Data will only get transferred to the output when the Clock transitions from 0 to 1)
-func NewEdgeTriggeredDTypeLatch(name string, clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatch {
+func NewEdgeTriggeredDTypeLatch(name string, clkInPin, dataInPin chargeEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
 	// setup the left-side flipflop aspects
@@ -250,10 +250,10 @@ type FrequencyDivider struct {
 }
 
 // NewFrequencyDivider returns a FrequencyDivider controlled by the passed in Oscillator
-func NewFrequencyDivider(name string, oscillator pwrEmitter) *FrequencyDivider {
+func NewFrequencyDivider(name string, oscillator chargeEmitter) *FrequencyDivider {
 	freqDiv := &FrequencyDivider{}
 
-	freqDiv.wireLoopBack = NewWire(fmt.Sprintf("%s-wireQBarLoopBack", name), 0)
+	freqDiv.wireLoopBack = NewWire(fmt.Sprintf("%s-wireQBarLoopBack", name))
 	freqDiv.latch = NewEdgeTriggeredDTypeLatch(fmt.Sprintf("%s-Latch", name), oscillator, freqDiv.wireLoopBack)
 	freqDiv.latch.QBar.WireUp(freqDiv.wireLoopBack.Input)
 
@@ -278,7 +278,7 @@ type NBitRippleCounter struct {
 }
 
 // NewNBitRippleCounter returns an NBitRippleCounter which will user the oscillator pin as the driving counter rate to control a string of chained frequency dividers (the width of the size input)
-func NewNBitRippleCounter(name string, oscillator pwrEmitter, size int) *NBitRippleCounter {
+func NewNBitRippleCounter(name string, oscillator chargeEmitter, size int) *NBitRippleCounter {
 	counter := &NBitRippleCounter{}
 
 	for i := size - 1; i >= 0; i-- {
@@ -332,15 +332,15 @@ type EdgeTriggeredDTypeLatchWithPresetAndClear struct {
 }
 
 // NewEdgeTriggeredDTypeLatchWithPresetAndClear returns an EdgeTriggeredDTypeLatch component with an added Preset and Clear input
-func NewEdgeTriggeredDTypeLatchWithPresetAndClear(name string, presetPin, clrPin, clkInPin, dataInPin pwrEmitter) *EdgeTriggeredDTypeLatchWithPresetAndClear {
+func NewEdgeTriggeredDTypeLatchWithPresetAndClear(name string, presetPin, clrPin, clkInPin, dataInPin chargeEmitter) *EdgeTriggeredDTypeLatchWithPresetAndClear {
 	latch := &EdgeTriggeredDTypeLatchWithPresetAndClear{}
 
-	latch.wireluQOut = NewWire(fmt.Sprintf("%s-LeftUpperQOutWire", name), 0)
-	latch.wireluQBarOut = NewWire(fmt.Sprintf("%s-LeftUpperQBarOutWire", name), 0)
-	latch.wirellQOut = NewWire(fmt.Sprintf("%s-LeftLowerQOutWire", name), 0)
-	latch.wirellQBarOut = NewWire(fmt.Sprintf("%s-LeftLowerQBarOutWire", name), 0)
-	latch.wireQOut = NewWire(fmt.Sprintf("%s-RightQOutWire", name), 0)
-	latch.wireQBarOut = NewWire(fmt.Sprintf("%s-RightQBarOutWire", name), 0)
+	latch.wireluQOut = NewWire(fmt.Sprintf("%s-LeftUpperQOutWire", name))
+	latch.wireluQBarOut = NewWire(fmt.Sprintf("%s-LeftUpperQBarOutWire", name))
+	latch.wirellQOut = NewWire(fmt.Sprintf("%s-LeftLowerQOutWire", name))
+	latch.wirellQBarOut = NewWire(fmt.Sprintf("%s-LeftLowerQBarOutWire", name))
+	latch.wireQOut = NewWire(fmt.Sprintf("%s-RightQOutWire", name))
+	latch.wireQBarOut = NewWire(fmt.Sprintf("%s-RightQBarOutWire", name))
 
 	// setup the left-side upper flipflop aspects
 	latch.luQ = NewNORGate(fmt.Sprintf("%s-LeftUpperQNORGate", name), clrPin, latch.wirellQBarOut, latch.wireluQBarOut)
@@ -368,16 +368,16 @@ func NewEdgeTriggeredDTypeLatchWithPresetAndClear(name string, presetPin, clrPin
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
 func (l *EdgeTriggeredDTypeLatchWithPresetAndClear) Shutdown() {
-		l.QBar.Shutdown()
-		l.Q.Shutdown()
-		l.llQBar.Shutdown()
-		l.llQ.Shutdown()
-		l.luQBar.Shutdown()
-		l.luQ.Shutdown()
-		l.wireQBarOut.Shutdown()
-		l.wireQOut.Shutdown()
-		l.wirellQBarOut.Shutdown()
-		l.wirellQOut.Shutdown()
-		l.wireluQBarOut.Shutdown()
-		l.wireluQOut.Shutdown()
+	l.QBar.Shutdown()
+	l.Q.Shutdown()
+	l.llQBar.Shutdown()
+	l.llQ.Shutdown()
+	l.luQBar.Shutdown()
+	l.luQ.Shutdown()
+	l.wireQBarOut.Shutdown()
+	l.wireQOut.Shutdown()
+	l.wirellQBarOut.Shutdown()
+	l.wirellQOut.Shutdown()
+	l.wireluQBarOut.Shutdown()
+	l.wireluQOut.Shutdown()
 }

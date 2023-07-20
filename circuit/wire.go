@@ -4,46 +4,37 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
-// IF I END UP NOT NEEDING A PAUSE CONCEPT, MAYBE MAKE WIRE EMBED PWRSOURCE AND LOSE THE DUPLICATION
-
-// Wire is a component connector, which will transmit between source and listeners (with an optional pause to simulate wire length)
+// Wire is a component connector, which will transmit between source and listeners
 //	Most loop-back based compoound components will use a wire for the looping aspect.
 type Wire struct {
-	length      uint            // will pause for this many milliseconds to simulate resistance of wire due to length
-	Input       chan Electron   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
-	outChannels []chan Electron // hold list of other components that are wired up to this one to recieve power state changes
-	isPowered   atomic.Value    // core state flag to know of the components current state (allows avoiding having to constantly push the power states around)
-	chStop      chan bool       // listen/transmit loop shutdown channel
-	name        string          // name of component for debug purposes
+	Input       chan Charge   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
+	outChannels []chan Charge // hold list of other components that are wired up to this one to recieve charge state changes
+	hasCharge   atomic.Value  // core state flag to know of the component's charge state (allows avoiding having to constantly push the power states around)
+	chStop      chan bool     // listen/transmit loop shutdown channel
+	name        string        // name of component for debug purposes
 }
 
-// NewWire creates a wire of a specified length (delay)
-func NewWire(name string, length uint) *Wire {
+// NewWire creates a wire
+func NewWire(name string) *Wire {
 	w := &Wire{}
 
 	w.name = name
-	w.length = length
-	w.Input = make(chan Electron, 1)
-	w.isPowered.Store(false)
+	w.Input = make(chan Charge, 1)
+	w.hasCharge.Store(false)
 	w.chStop = make(chan bool, 1)
 
 	// spin up the func that will allow the wire's input to be sent as output
 	go func() {
 		for {
 			select {
-			case e := <-w.Input:
-				Debug(w.name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", w.Input, e.String()))
-				go func(e Electron) {
-					w.Transmit(e)
-					e.Done()
-				}(e)
+			case c := <-w.Input:
+				Debug(w.name, fmt.Sprintf("Received on Channel (%v), Charge {%s}", w.Input, c.String()))
+				go func(c Charge) {
+					w.Transmit(c)
+					c.Done()
+				}(c)
 			case <-w.chStop:
 				Debug(w.name, "Stopped")
 				return
@@ -59,73 +50,69 @@ func (w *Wire) Shutdown() {
 	w.chStop <- true
 }
 
-// WireUp allows another component to subscribe to the wire (via the passed in channel) in order to be told of power state changes
-func (w *Wire) WireUp(ch chan Electron) {
+// WireUp allows another component to subscribe to the wire (via the passed in channel) in order to be told of charge state changes
+func (w *Wire) WireUp(ch chan Charge) {
 	w.outChannels = append(w.outChannels, ch)
 
 	// go ahead and transmit to the new subscriber immediately as if something just connected to the wire's potentially hot current
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	Debug(w.name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", w.isPowered.Load().(bool), ch))
-	ch <- Electron{sender: w.name, powerState: w.isPowered.Load().(bool), wg: wg, mu: &sync.RWMutex{}}
+	Debug(w.name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", w.hasCharge.Load().(bool), ch))
+	ch <- Charge{sender: w.name, state: w.hasCharge.Load().(bool), wg: wg, mu: &sync.RWMutex{}}
 	wg.Wait()
 }
 
-// Transmit will push out the wire's new power state (IF state changed) to each wired up component
-func (w *Wire) Transmit(e Electron) {
+// Transmit will push out the wire's new charge state (IF state changed) to each wired up component
+func (w *Wire) Transmit(c Charge) {
 
-	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", e.powerState))
+	Debug(w.name, fmt.Sprintf("Transmit (%t)...maybe", c.state))
 
-	if w.isPowered.Load().(bool) == e.powerState {
+	if w.hasCharge.Load().(bool) == c.state {
 		Debug(w.name, "Skipping Transmit (no state change)")
 		return
 	}
 
-	Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", e.powerState))
+	Debug(w.name, fmt.Sprintf("Transmit (%t)...better chance since state did change", c.state))
 
-	w.isPowered.Store(e.powerState)
+	w.hasCharge.Store(c.state)
 
 	if len(w.outChannels) == 0 {
 		Debug(w.name, "Skipping Transmit (nothing wired up)")
 		return
 	}
 
-	// if someone passed in a fresh Electron, must init the mutex that protects lockContexts
-	if e.mu == nil {
-		e.mu = &sync.RWMutex{}
+	// if someone passed in a fresh Charge, must init the mutex that protects lockContexts
+	if c.mu == nil {
+		c.mu = &sync.RWMutex{}
 	}
-	
-	// take over the passed in Electron to use as a fresh waitgroup for transmitting to listeners (but keeping the lockContexts list intact)
-	e.wg = &sync.WaitGroup{}
-	e.sender = w.name
+
+	// take over the passed in Charge to use as a fresh waitgroup for transmitting to listeners (the passed in 'c' was only needed for setting hasCharge just above)
+	c.wg = &sync.WaitGroup{}
+	c.sender = w.name
 
 	for i, ch := range w.outChannels {
-		if w.length > 0 {
-			time.Sleep(time.Millisecond * time.Duration(w.length)) // simulate resistance due to "length" of wire
-		}
-
-		e.wg.Add(1)
-		go func(i int, ch chan Electron) {
-			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", e.powerState, i, ch))
-			ch <- e
+		c.wg.Add(1)
+		go func(i int, ch chan Charge) {
+			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", c.state, i, ch))
+			ch <- c
 		}(i, ch)
 	}
 
-	e.wg.Wait() // all immediate listeners must finish their OWN transmits before returning from this one
+	c.wg.Wait() // all immediate listeners must finish their OWN transmits before returning from this one
 }
 
-// RibbonCable is a convenient way to allow multiple wires to drop in as slice of pwrEmitters (for receiving/transmitting power)
+// RibbonCable is a convenient way to allow multiple wires to drop in as slice of chargeEmitters (for receiving/transmitting a charge)
 type RibbonCable struct {
-	Wires []pwrEmitter
+	Wires []chargeEmitter
 }
 
-// NewRibbonCable creates a slice of wires of the designated width (number of wires) and length (delay applied to each wire)
-func NewRibbonCable(name string, width, len uint) *RibbonCable {
+// NewRibbonCable creates a slice of wires of the designated width (number of wires)
+func NewRibbonCable(name string, width uint) *RibbonCable {
 
 	rib := &RibbonCable{}
 
 	for i := 0; uint(i) < width; i++ {
-		rib.Wires = append(rib.Wires, NewWire(fmt.Sprintf("%s-Wires[%d]", name, i), len))
+		rib.Wires = append(rib.Wires, NewWire(fmt.Sprintf("%s-Wires[%d]", name, i)))
 	}
 
 	return rib
@@ -138,8 +125,8 @@ func (r *RibbonCable) Shutdown() {
 	}
 }
 
-// SetInputs allows each wire to listen to an independent component that can transmit power
-func (r *RibbonCable) SetInputs(pwrInputs ...pwrEmitter) {
+// SetInputs allows each wire to listen to an independent component that can transmit a charge
+func (r *RibbonCable) SetInputs(pwrInputs ...chargeEmitter) {
 	for i, pwr := range pwrInputs {
 		pwr.WireUp((r.Wires[i]).(*Wire).Input)
 	}

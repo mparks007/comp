@@ -17,7 +17,7 @@ type HalfAdder struct {
 }
 
 // NewHalfAdder returns a HalfAdder which can add up the values of the two input pins
-func NewHalfAdder(name string, pin1, pin2 pwrEmitter) *HalfAdder {
+func NewHalfAdder(name string, pin1, pin2 chargeEmitter) *HalfAdder {
 	h := &HalfAdder{}
 
 	h.Sum = NewXORGate(fmt.Sprintf("%s-SumXORGate", name), pin1, pin2)
@@ -53,7 +53,7 @@ type FullAdder struct {
 }
 
 // NewFullAdder returns a FullAdder which can add up the values of the two input pins, but also accepts a carry-in pin to include in the addition
-func NewFullAdder(name string, pin1, pin2, carryInPin pwrEmitter) *FullAdder {
+func NewFullAdder(name string, pin1, pin2, carryInPin chargeEmitter) *FullAdder {
 	f := &FullAdder{}
 
 	f.halfAdder1 = NewHalfAdder(fmt.Sprintf("%s-LeftHalfAdder", name), pin1, pin2)
@@ -79,12 +79,12 @@ func (f *FullAdder) Shutdown() {
 // = 101110011
 type NBitAdder struct {
 	fullAdders []*FullAdder
-	Sums       []pwrEmitter
+	Sums       []chargeEmitter
 	CarryOut   *ORGate
 }
 
 // NewNBitAdder returns a NBitAdder which will add up the values of the two sets of input pins, but also accepts a carry-in pin to include in the addition
-func NewNBitAdder(name string, addend1Pins, addend2Pins []pwrEmitter, carryInPin pwrEmitter) (*NBitAdder, error) {
+func NewNBitAdder(name string, addend1Pins, addend2Pins []chargeEmitter, carryInPin chargeEmitter) (*NBitAdder, error) {
 
 	if len(addend1Pins) != len(addend2Pins) {
 		return nil, fmt.Errorf("Mismatched addend lengths.  Addend1 len: %d, Addend2 len: %d", len(addend1Pins), len(addend2Pins))
@@ -108,7 +108,7 @@ func NewNBitAdder(name string, addend1Pins, addend2Pins []pwrEmitter, carryInPin
 		addr.fullAdders = append([]*FullAdder{full}, addr.fullAdders...)
 
 		// us external Sums field for easier external access (pre-pending here too)
-		addr.Sums = append([]pwrEmitter{full.Sum}, addr.Sums...)
+		addr.Sums = append([]chargeEmitter{full.Sum}, addr.Sums...)
 	}
 
 	// make external CarryOut field refer to the appropriate (most significant) adder for easier external access
@@ -133,7 +133,7 @@ type ThreeNumberAdder struct {
 	loopRibbon    *RibbonCable
 	SaveToLatch   *Switch
 	ReadFromLatch *Switch
-	Sums          []pwrEmitter
+	Sums          []chargeEmitter
 	CarryOut      *ORGate
 }
 
@@ -145,7 +145,7 @@ type ThreeNumberAdder struct {
 //		3. Set SaveToLatch back to false to prevent a chance for adding in a fourth number (which ThreeNumberAdder is not designed to do)
 //		4. Update the first parameter inputs to be the third number to add in
 //		5. Set ReadFromLatch to true to allow the saved original sum to be added to the new number entered in step 4
-func NewThreeNumberAdder(name string, aInputs, bInputs []pwrEmitter) (*ThreeNumberAdder, error) {
+func NewThreeNumberAdder(name string, aInputs, bInputs []chargeEmitter) (*ThreeNumberAdder, error) {
 
 	if len(aInputs) != len(bInputs) {
 		return nil, fmt.Errorf("Mismatched input lengths. Addend1 len: %d, Addend2 len: %d", len(aInputs), len(bInputs))
@@ -154,7 +154,7 @@ func NewThreeNumberAdder(name string, aInputs, bInputs []pwrEmitter) (*ThreeNumb
 	addr := &ThreeNumberAdder{}
 
 	// set of wires that will lead from the adder outputs back up to the latch inputs
-	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(aInputs)), 10)
+	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(aInputs)))
 
 	// build the latch, handing it the wires from the adder output
 	addr.SaveToLatch = NewSwitch(fmt.Sprintf("%s-SaveToLatchSwitch", name), false)
@@ -196,7 +196,7 @@ type NNumberAdder struct {
 	loopRibbon *RibbonCable
 	Clear      *Switch
 	Add        *Switch
-	Sums       []pwrEmitter
+	Sums       []chargeEmitter
 }
 
 // NewNNumberAdder returns an NNumberAdder which will allow the addition of any number of binary numbers
@@ -208,16 +208,16 @@ type NNumberAdder struct {
 //		2. TODO: finish the steps once I have the TestNewNNumberAdder unit test working
 //		3. TODO:
 //		4. TODO: ...
-func NewNNumberAdder(name string, inputs []pwrEmitter) (*NNumberAdder, error) {
+func NewNNumberAdder(name string, inputs []chargeEmitter) (*NNumberAdder, error) {
 
 	addr := &NNumberAdder{}
 
 	addr.Clear = NewSwitch(fmt.Sprintf("%s-ClearSwitch", name), false)
 	addr.Add = NewSwitch(fmt.Sprintf("%s-AddSwitch", name), false)
 
-	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(inputs)), 5)
+	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(inputs)))
 
-	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewBattery(fmt.Sprintf("%s-carryInBattery", name), false))
+	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewChargeProvider(fmt.Sprintf("%s-carryInBattery", name), false))
 
 	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(fmt.Sprintf("%s-NBitLevelTriggeredDTypeLatchWithClear", name), addr.Clear, addr.Add, addr.adder.Sums)
 
