@@ -2,15 +2,15 @@ package circuit
 
 import "fmt"
 
-// Inverter is a standard circuit that inverts the power state of the input
+// Inverter is a standard circuit that inverts the charge state of the input as its output
 //
 // Truth Table
 // in out
 // 0   1
 // 1   0
 type Inverter struct {
-	relay        *Relay // internal relay wired up in a way it reverses the power state sent to the inverter component
-	chargeSource        // inverter gains all that is pwrSource too
+	relay *Relay // internal relay wired up in a way it reverses the charge state sent to the inverter component
+	chargeSource
 }
 
 // NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's power state
@@ -19,17 +19,17 @@ func NewInverter(name string, pin chargeEmitter) *Inverter {
 	inv.Init()
 	inv.Name = name
 
-	bat := NewChargeProvider(fmt.Sprintf("%s-Relay-pin1Battery", name), true)
+	bat := NewChargeProvider(fmt.Sprintf("%s-Relay-pin1ChargeProvider", name), true)
 	inv.relay = NewRelay(fmt.Sprintf("%s-Relay", name), bat, pin)
 
 	chState := make(chan Charge, 1)
 	go func() {
 		for {
 			select {
-			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-				inv.Transmit(e)
-				e.Done()
+			case c := <-chState:
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Charge {%s}", chState, c.String()))
+				inv.Transmit(c)
+				c.Done()
 			case <-inv.chStop:
 				Debug(name, "Stopped")
 				return
@@ -37,7 +37,7 @@ func NewInverter(name string, pin chargeEmitter) *Inverter {
 		}
 	}()
 
-	// in an Inverter, the Open Out is what gets the flipped state (the "answer")
+	// in an Inverter, the Open Out is what gets the flipped charge state as the output
 	inv.relay.OpenOut.WireUp(chState)
 
 	return inv

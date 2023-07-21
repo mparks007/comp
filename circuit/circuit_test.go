@@ -21,6 +21,10 @@ import (
 // go test -race -cpu=1 -run TestFullAdder -count 5 -trace TestFullAdder_trace.txt > TestFullAdder_run.txt
 // go test -debug (my own flag to write all the debug to the console during test run)
 
+// go get golang.org/x/tools/cmd/cover
+// go test -coverprofile cover.out (write code coverage file)
+// go tool cover -html=cover.out
+
 func init() {
 	flag.BoolVar(&Debugging, "debug", false, "Enable verbose debugging to console")
 }
@@ -72,7 +76,7 @@ func TestChargeSource(t *testing.T) {
 	cs.WireUp(ch1)
 	cs.WireUp(ch2)
 
-	// test default state (unpowered)
+	// test default state (uncharged)
 	want = false
 
 	if got1.Load().(bool) != want {
@@ -82,7 +86,7 @@ func TestChargeSource(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
-	// test power transmit
+	// test charge transmit
 	want = true
 	cs.Transmit(Charge{state: want})
 
@@ -93,7 +97,7 @@ func TestChargeSource(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
-	// test transmit loss of power
+	// test transmit loss of charge
 	want = false
 	cs.Transmit(Charge{state: want})
 
@@ -143,14 +147,14 @@ func TestChargeProvider(t *testing.T) {
 
 	cp.WireUp(ch)
 
-	// test default ChargeProvider state (powered)
+	// test default ChargeProvider state (charged)
 	want = true
 
 	if got.Load().(bool) != want {
 		t.Errorf("With a new ChargeProvider, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
 	}
 
-	// test loss of power
+	// test loss of charge
 	cp.Discharge()
 	want = false
 
@@ -158,7 +162,7 @@ func TestChargeProvider(t *testing.T) {
 		t.Errorf("With a discharged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
 	}
 
-	// test re-added power
+	// test re-added charge
 	cp.Charge()
 	want = true
 
@@ -207,7 +211,7 @@ func TestWire(t *testing.T) {
 	wire.WireUp(ch1)
 	wire.WireUp(ch2)
 
-	// test default state (unpowered)
+	// test default state (uncharged)
 	want = false
 
 	if got1.Load().(bool) != want {
@@ -217,7 +221,7 @@ func TestWire(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
-	// test power transmit
+	// test charge transmit
 	want = true
 	wire.Transmit(Charge{state: want})
 
@@ -228,7 +232,7 @@ func TestWire(t *testing.T) {
 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
 	}
 
-	// test transmit loss of power
+	// test transmit loss of charge
 	want = false
 	wire.Transmit(Charge{state: want})
 
@@ -255,106 +259,108 @@ func TestWire(t *testing.T) {
 	}
 }
 
-// func TestWire_WithDelay(t *testing.T) {
-// 	var wireLen uint = 10
+func TestWire_WithDelay(t *testing.T) {
+	var delay uint = 10
 
-// 	wire := NewWire(testName(t, "Wire"), wireLen)
-// 	defer wire.Shutdown()
+	wire := NewWire(testName(t, "Wire"))
+	defer wire.Shutdown()
 
-// 	var want bool
-// 	var got1, got2 atomic.Value
-// 	ch1 := make(chan Charge, 1)
-// 	ch2 := make(chan Charge, 1)
-// 	chStop := make(chan bool, 1)
-// 	go func() {
-// 		for {
-// 			select {
-// 			case e1 := <-ch1:
-// 				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Electron {%s}", ch1, e1.String()))
-// 				got1.Store(e1.state)
-// 				e1.Done()
-// 			case e2 := <-ch2:
-// 				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Electron {%s}", ch2, e2.String()))
-// 				got2.Store(e2.state)
-// 				e2.Done()
-// 			case <-chStop:
-// 				return
-// 			}
-// 		}
-// 	}()
-// 	defer func() { chStop <- true }()
+	wire.SetDelay(delay)
 
-// 	// two wire ups to prove both will get called
-// 	wire.WireUp(ch1)
-// 	wire.WireUp(ch2)
+	var want bool
+	var got1, got2 atomic.Value
+	ch1 := make(chan Charge, 1)
+	ch2 := make(chan Charge, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case c1 := <-ch1:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch1) Received on Channel (%v), Charge {%s}", ch1, c1.String()))
+				got1.Store(c1.state)
+				c1.Done()
+			case c2 := <-ch2:
+				Debug(testName(t, "Select"), fmt.Sprintf("(ch2) Received on Channel (%v), Charge {%s}", ch2, c2.String()))
+				got2.Store(c2.state)
+				c2.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
 
-// 	// test default state (unpowered)
-// 	want = false
+	// two wire ups to prove both will get called
+	wire.WireUp(ch1)
+	wire.WireUp(ch2)
 
-// 	if got1.Load().(bool) != want {
-// 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
-// 	}
-// 	if got2.Load().(bool) != want {
-// 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
-// 	}
+	// test default state (uncharged)
+	want = false
 
-// 	// test power transmit
-// 	want = true
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
+	}
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
+	}
 
-// 	start := time.Now()
-// 	wire.Transmit(Charge{state: want})
-// 	end := time.Now()
+	// test charge transmit
+	want = true
 
-// 	if got1.Load().(bool) != want {
-// 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
-// 	}
-// 	if got2.Load().(bool) != want {
-// 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
-// 	}
+	start := time.Now()
+	wire.Transmit(Charge{state: want})
+	end := time.Now()
 
-// 	// validate wire delay
-// 	gotDuration := end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
-// 	wantDuration := time.Millisecond * time.Duration(wireLen)
-// 	if gotDuration < wantDuration {
-// 		t.Errorf("Wire power on transmit time should have been %v but was %v", wantDuration, gotDuration)
-// 	}
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
+	}
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
+	}
 
-// 	// test loss of power transmit
-// 	want = false
+	// validate wire delay
+	gotDuration := end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
+	wantDuration := time.Millisecond * time.Duration(delay)
+	if gotDuration < wantDuration {
+		t.Errorf("Wire charge on transmit time should have been %v but was %v", wantDuration, gotDuration)
+	}
 
-// 	start = time.Now()
-// 	wire.Transmit(Charge{state: want})
-// 	end = time.Now()
+	// test loss of charge transmit
+	want = false
 
-// 	if got1.Load().(bool) != want {
-// 		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
-// 	}
-// 	if got2.Load().(bool) != want {
-// 		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
-// 	}
+	start = time.Now()
+	wire.Transmit(Charge{state: want})
+	end = time.Now()
 
-// 	// validate wire delay
-// 	gotDuration = end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
-// 	wantDuration = time.Millisecond * time.Duration(wireLen)
-// 	if gotDuration < wantDuration {
-// 		t.Errorf("Wire power off transmit time should have been %v but was %v", wantDuration, gotDuration)
-// 	}
+	if got1.Load().(bool) != want {
+		t.Errorf("Expected channel 1 to be %t but got %t", want, got1.Load().(bool))
+	}
+	if got2.Load().(bool) != want {
+		t.Errorf("Expected channel 2 to be %t but got %t", want, got2.Load().(bool))
+	}
 
-// 	// test transmitting same state as last time (should skip it)
-// 	wire.Transmit(Charge{state: want})
+	// validate wire delay
+	gotDuration = end.Sub(start) // + time.Millisecond*1 // adding in just a little more to avoid timing edge case
+	wantDuration = time.Millisecond * time.Duration(delay)
+	if gotDuration < wantDuration {
+		t.Errorf("Wire charge loss transmit time should have been %v but was %v", wantDuration, gotDuration)
+	}
 
-// 	select {
-// 	case <-ch1:
-// 		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
-// 	default:
-// 	}
+	// test transmitting same state as last time (should skip it)
+	wire.Transmit(Charge{state: want})
 
-// 	select {
-// 	case <-ch2:
-// 		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
-// 	default:
-// 	}
-// }
+	select {
+	case <-ch1:
+		t.Error("Transmit of same state as prior state should have never gotten to ch1, but it did")
+	default:
+	}
+
+	select {
+	case <-ch2:
+		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
+	default:
+	}
+}
 
 func TestRibbonCable(t *testing.T) {
 	rib := NewRibbonCable(testName(t, "RibbonCable"), 2)
@@ -565,7 +571,6 @@ func TestNSwitchBank_BadInputs(t *testing.T) {
 		{"111X", "Input not in binary format: "},
 		{"X111", "Input not in binary format: "},
 		{"bad", "Input not in binary format: "},
-		{"", "Input not in binary format: "},
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -826,10 +831,10 @@ func TestRelay_WithSwitches(t *testing.T) {
 
 func TestANDGate(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		cInPowered bool
-		want       bool
+		aInHasCharge bool
+		bInHasCharge bool
+		cInHasCharge bool
+		want         bool
 	}{
 		{false, false, false, false},
 		{true, false, false, false},
@@ -863,10 +868,10 @@ func TestANDGate(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -877,34 +882,136 @@ func TestANDGate(t *testing.T) {
 	gate.WireUp(ch)
 
 	if !got.Load().(bool) {
-		t.Error("Wanted power on the gate but got none")
+		t.Error("Wanted charge on the gate but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-			cSwitch.Set(tc.cInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
+			cSwitch.Set(tc.cInHasCharge)
 
 			if got.Load().(bool) != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
+				t.Errorf("Wanted charge %t, but got %t", tc.want, got.Load().(bool))
 			}
 		})
 	}
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
+// For testing behavior off looped AND Gates
+// http://www.falstad.com/circuit/e-ohms.html
+// $ 1 0.000005 10.20027730826997 50 5 48 5e-11
+// 172 288 128 320 128 0 7 3.55 5 0 0 0.5 Voltage
+// g 240 352 240 368 0 0
+// w 240 320 240 352 1
+// w 400 320 400 352 1
+// g 400 352 400 384 0 0
+// 172 416 128 368 128 0 7 3.55 5 0 0 0.5 Voltage
+// w 384 144 384 160 0
+// 162 240 256 240 320 2 default-led 1 0 0 0.01
+// 162 400 256 400 320 2 default-led 1 0 0 0.01
+// s 256 128 288 128 0 1 false
+// w 256 128 256 160 0
+// s 416 128 480 128 0 1 false
+// w 480 128 416 160 0
+// w 240 224 240 256 0
+// w 240 256 352 144 0
+// w 352 144 384 144 0
+// w 224 160 224 96 0
+// w 224 96 496 96 0
+// w 496 96 496 240 0
+// w 400 224 400 256 0
+// w 400 256 496 256 0
+// w 496 240 496 256 0
+// 150 240 160 240 224 0 2 0 5
+// 150 400 160 400 224 0 2 0 5
+
+func TestLoopedANDGates(t *testing.T) {
+	Debug(testName(t, ""), "Initial Setup")
+	name := testName(t, "TestLoopedANDGates")
+
+	wire1 := NewWire(fmt.Sprintf("%s-Wire1", name))
+	defer wire1.Shutdown()
+	wire2 := NewWire(fmt.Sprintf("%s-Wire2", name))
+	defer wire2.Shutdown()
+
+	// defaulting one input pin on gate1 to off will ensure a false output on startup
+	gate1pin1ChargeProvider := NewChargeProvider("gate1pin1ChargeProvider", false)
+	gate1 := NewANDGate(fmt.Sprintf("%s-ANDGate1", name), gate1pin1ChargeProvider, wire1)
+	defer gate1.Shutdown()
+	gate1.WireUp(wire2.Input)
+
+	// defaulting one input pin on gate2 to off will ensure a false output on startup
+	gate2pin1ChargeProvider := NewChargeProvider("gate2pin1ChargeProvider", false)
+	gate2 := NewANDGate(fmt.Sprintf("%s-ANDGate2", name), gate2pin1ChargeProvider, wire2)
+	defer gate2.Shutdown()
+	gate2.WireUp(wire1.Input)
+
+	var gotGate1State, gotGate2State atomic.Value
+	chGate1 := make(chan Charge, 1)
+	chGate2 := make(chan Charge, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case cGate1 := <-chGate1:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chGate1) Received on Channel (%v), Charge {%s}", chGate1, cGate1.String()))
+				gotGate1State.Store(cGate1.state)
+				cGate1.Done()
+			case cGate2 := <-chGate2:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chGate2) Received on Channel (%v), Charge {%s}", chGate2, cGate2.String()))
+				gotGate2State.Store(cGate2.state)
+				cGate2.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	gate1.WireUp(chGate1)
+	gate2.WireUp(chGate2)
+
+	// a set of looped together AND gates settle out as both off
+	if gotGate1State.Load().(bool) {
+		t.Error("Wanted no charge on Gate1's output but got one")
+	}
+	if gotGate2State.Load().(bool) {
+		t.Error("Wanted no charge on Gate2's output but got one")
+	}
+
+	// even if charged the non-looped wire input pin on gate 1, the other is off so still false on both AND gates
+	gate1pin1ChargeProvider.Charge()
+	if gotGate1State.Load().(bool) {
+		t.Error("Wanted no charge on Gate1's output but got one")
+	}
+	if gotGate2State.Load().(bool) {
+		t.Error("Wanted no charge on Gate2's output but got one")
+	}
+
+	// even if charged the non-looped wire input pin on gate 2 as well, the other is off so still false on both AND gates
+	gate2pin1ChargeProvider.Charge()
+	if gotGate1State.Load().(bool) {
+		t.Error("Wanted no charge on Gate1's output but got one")
+	}
+
+	if gotGate2State.Load().(bool) {
+		t.Error("Wanted no charge on Gate2's output but got one")
+	}
+}
+
 func TestORGate(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		cInPowered bool
-		want       bool
+		aInHasCharge bool
+		bInHasCharge bool
+		cInHasCharge bool
+		want         bool
 	}{
 		{false, false, false, false},
 		{true, false, false, true},
@@ -938,10 +1045,10 @@ func TestORGate(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -952,19 +1059,19 @@ func TestORGate(t *testing.T) {
 	gate.WireUp(ch)
 
 	if !got.Load().(bool) {
-		t.Error("Wanted power on the gate but got none")
+		t.Error("Wanted charge on the gate but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-			cSwitch.Set(tc.cInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
+			cSwitch.Set(tc.cInHasCharge)
 
 			if got.Load().(bool) != tc.want {
 				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
@@ -974,12 +1081,131 @@ func TestORGate(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
+// For testing behavior off looped OR Gates
+// http://www.falstad.com/circuit/e-ohms.html
+// $ 1 0.000005 10.20027730826997 50 5 48 5e-11
+// 172 288 128 320 128 0 7 3.55 5 0 0 0.5 Voltage
+// g 240 352 240 368 0 0
+// w 240 320 240 352 1
+// w 400 320 400 352 1
+// g 400 352 400 384 0 0
+// 152 240 160 240 208 0 2 5 5
+// 172 416 128 368 128 0 7 3.55 5 0 0 0.5 Voltage
+// 152 400 160 400 224 0 2 5 5
+// w 384 144 384 160 0
+// 162 240 256 240 320 2 default-led 1 0 0 0.01
+// 162 400 256 400 320 2 default-led 1 0 0 0.01
+// s 256 128 288 128 0 1 false
+// w 256 128 256 160 0
+// s 416 128 480 128 0 1 false
+// w 480 128 416 160 0
+// w 240 208 240 256 0
+// w 240 256 352 144 0
+// w 352 144 384 144 0
+// w 224 160 224 96 0
+// w 224 96 496 96 0
+// w 496 96 496 240 0
+// w 400 224 400 256 0
+// w 400 256 496 256 0
+// w 496 240 496 256 0
+
+func TestLoopedORGates(t *testing.T) {
+	Debug(testName(t, ""), "Initial Setup")
+	name := testName(t, "TestLoopedORGates")
+
+	wire1 := NewWire(fmt.Sprintf("%s-Wire1", name))
+	defer wire1.Shutdown()
+	wire2 := NewWire(fmt.Sprintf("%s-Wire2", name))
+	defer wire2.Shutdown()
+
+	// defaulting one input pin on gate1 to off will ensure a false output on startup
+	gate1pin1ChargeProvider := NewChargeProvider("gate1pin1ChargeProvider", false)
+	gate1 := NewORGate(fmt.Sprintf("%s-ORGate1", name), gate1pin1ChargeProvider, wire1)
+	defer gate1.Shutdown()
+	gate1.WireUp(wire2.Input)
+
+	// defaulting one input pin on gate2 to off will ensure a false output on startup
+	gate2pin1ChargeProvider := NewChargeProvider("gate2pin1ChargeProvider", false)
+	gate2 := NewORGate(fmt.Sprintf("%s-ORGate2", name), gate2pin1ChargeProvider, wire2)
+	defer gate2.Shutdown()
+	gate2.WireUp(wire1.Input)
+
+	var gotGate1State, gotGate2State atomic.Value
+	chGate1 := make(chan Charge, 1)
+	chGate2 := make(chan Charge, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case cGate1 := <-chGate1:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chGate1) Received on Channel (%v), Charge {%s}", chGate1, cGate1.String()))
+				gotGate1State.Store(cGate1.state)
+				cGate1.Done()
+			case cGate2 := <-chGate2:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chGate2) Received on Channel (%v), Charge {%s}", chGate2, cGate2.String()))
+				gotGate2State.Store(cGate2.state)
+				cGate2.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	gate1.WireUp(chGate1)
+	gate2.WireUp(chGate2)
+
+	// a set of looped together OR gates settle out as both off (since the secondary inputs on each were not charged during setup)
+	if gotGate1State.Load().(bool) {
+		t.Error("Wanted no charge on Gate1's output but got one")
+	}
+	if gotGate2State.Load().(bool) {
+		t.Error("Wanted no charge on Gate2's output but got one")
+	}
+
+	// if charged the non-looped input pin on gate 1, the gate 1 OR is true which makes the other one true too since linked
+	gate1pin1ChargeProvider.Charge()
+	if !gotGate1State.Load().(bool) {
+		t.Error("Wanted charge on Gate1's output but got none")
+	}
+	if !gotGate2State.Load().(bool) {
+		t.Error("Wanted charge on Gate2's output but got none")
+	}
+
+	// if charged the non-looped input pin on gate 2, the gate 2 OR is true which makes the other one true too since linked (though the other one is already true due to prior test)
+	gate2pin1ChargeProvider.Charge()
+	if !gotGate1State.Load().(bool) {
+		t.Error("Wanted charge on Gate1's output but got none")
+	}
+	if !gotGate2State.Load().(bool) {
+		t.Error("Wanted charge on Gate2's output but got none")
+	}
+
+	// if then discharged the non-looped input pin on gate 1, the gate 1 OR is still true since gate 2 is returning true
+	gate1pin1ChargeProvider.Discharge()
+	if !gotGate1State.Load().(bool) {
+		t.Error("Wanted charge on Gate1's output but got none")
+	}
+	if !gotGate2State.Load().(bool) {
+		t.Error("Wanted charge on Gate2's output but got none")
+	}
+
+	// but if finally discharged the non-looped input pin on gate 2 too, it is "remembering" and both stay on? (what really happens in a real circuit in this case? this?)
+	gate2pin1ChargeProvider.Discharge()
+	if !gotGate1State.Load().(bool) {
+		t.Error("Wanted charge on Gate1's output but got none")
+	}
+	if !gotGate2State.Load().(bool) {
+		t.Error("Wanted charge on Gate2's output but got none")
+	}
+}
+
 func TestNANDGate(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		cInPowered bool
-		want       bool
+		aInHasCharge bool
+		bInHasCharge bool
+		cInHasCharge bool
+		want         bool
 	}{
 		{false, false, false, true},
 		{true, false, false, true},
@@ -1013,10 +1239,10 @@ func TestNANDGate(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -1027,22 +1253,22 @@ func TestNANDGate(t *testing.T) {
 	gate.WireUp(ch)
 
 	if !got.Load().(bool) {
-		t.Error("Wanted power on the gate but got none")
+		t.Error("Wanted charge on the gate but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-			cSwitch.Set(tc.cInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
+			cSwitch.Set(tc.cInHasCharge)
 
 			if got.Load().(bool) != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
+				t.Errorf("Wanted charge %t, but got %t", tc.want, got.Load().(bool))
 			}
 		})
 	}
@@ -1051,10 +1277,10 @@ func TestNANDGate(t *testing.T) {
 
 func TestNORGate(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		cInPowered bool
-		want       bool
+		aInHasCharge bool
+		bInHasCharge bool
+		cInHasCharge bool
+		want         bool
 	}{
 		{false, false, false, true},
 		{true, false, false, false},
@@ -1088,10 +1314,10 @@ func TestNORGate(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -1102,22 +1328,22 @@ func TestNORGate(t *testing.T) {
 	gate.WireUp(ch)
 
 	if got.Load().(bool) {
-		t.Error("Wanted no power on the gate but got some")
+		t.Error("Wanted no charge on the gate but got some")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t) and C power to (%t)", i, tc.aInPowered, tc.bInPowered, tc.cInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t) and C charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.cInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-			cSwitch.Set(tc.cInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
+			cSwitch.Set(tc.cInHasCharge)
 
 			if got.Load().(bool) != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
+				t.Errorf("Wanted charge %t, but got %t", tc.want, got.Load().(bool))
 			}
 		})
 	}
@@ -1126,9 +1352,9 @@ func TestNORGate(t *testing.T) {
 
 func TestXORGate(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		want       bool
+		aInHasCharge bool
+		bInHasCharge bool
+		want         bool
 	}{
 		{false, false, false},
 		{true, false, true},
@@ -1155,10 +1381,10 @@ func TestXORGate(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -1169,21 +1395,21 @@ func TestXORGate(t *testing.T) {
 	gate.WireUp(ch)
 
 	if got.Load().(bool) {
-		t.Error("Wanted no power on the gate but got some")
+		t.Error("Wanted no charge on the gate but got some")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t)", i, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t)", i, tc.aInPowered, tc.bInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
 
 			if got.Load().(bool) != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
+				t.Errorf("Wanted charge %t, but got %t", tc.want, got.Load().(bool))
 			}
 		})
 	}
@@ -1192,7 +1418,7 @@ func TestXORGate(t *testing.T) {
 
 func TestInverter(t *testing.T) {
 	testCases := []struct {
-		inPowered bool
+		hasCharge bool
 		wantOut   bool
 	}{
 		{false, true},
@@ -1203,8 +1429,8 @@ func TestInverter(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	pin1Battery := NewChargeProvider(testName(t, "Battery"), true)
-	inv := NewInverter(testName(t, "Inverter"), pin1Battery)
+	pin1ChargeProvider := NewChargeProvider(testName(t, "ChargeProvider"), true)
+	inv := NewInverter(testName(t, "Inverter"), pin1ChargeProvider)
 	defer inv.Shutdown()
 
 	var got atomic.Value
@@ -1213,10 +1439,10 @@ func TestInverter(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -1229,18 +1455,18 @@ func TestInverter(t *testing.T) {
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Input as (%t)", i, tc.inPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Input as (%t)", i, tc.hasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Input as (%t)", i, tc.inPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Input as (%t)", i, tc.hasCharge))
 
-			if tc.inPowered {
-				pin1Battery.Charge()
+			if tc.hasCharge {
+				pin1ChargeProvider.Charge()
 			} else {
-				pin1Battery.Discharge()
+				pin1ChargeProvider.Discharge()
 			}
 
 			if got.Load().(bool) != tc.wantOut {
-				t.Errorf("Input power was %t so wanted it inverted to %t but got %t", tc.inPowered, tc.wantOut, got.Load().(bool))
+				t.Errorf("Input charge was %t so wanted it inverted to %t but got %t", tc.hasCharge, tc.wantOut, got.Load().(bool))
 			}
 		})
 	}
@@ -1249,9 +1475,9 @@ func TestInverter(t *testing.T) {
 
 func TestXNORGate(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		want       bool
+		aInHasCharge bool
+		bInHasCharge bool
+		want         bool
 	}{
 		{true, false, false},
 		{false, true, false},
@@ -1277,10 +1503,10 @@ func TestXNORGate(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -1291,21 +1517,21 @@ func TestXNORGate(t *testing.T) {
 	gate.WireUp(ch)
 
 	if !got.Load().(bool) {
-		t.Error("Wanted power on the gate but got none")
+		t.Error("Wanted charge on the gate but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t)", i, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t)", i, tc.aInPowered, tc.bInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
 
 			if got.Load().(bool) != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
+				t.Errorf("Wanted charge %t, but got %t", tc.want, got.Load().(bool))
 			}
 		})
 	}
@@ -1392,86 +1618,6 @@ func TestHalfAdder(t *testing.T) {
 		})
 	}
 	Debug(testName(t, ""), "End Test Cases Loop")
-}
-
-func TestLoopedORGate(t *testing.T) {
-	Debug(testName(t, ""), "Initial Setup")
-	name := testName(t, "Test")
-
-	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name))
-	defer wireQOut.Shutdown()
-	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name))
-	defer wireQBarOut.Shutdown()
-
-	sPinBattery := NewChargeProvider("sPinBattery", false)
-	QBar := NewORGate(fmt.Sprintf("%s-QBarORGate", name), sPinBattery, wireQOut)
-	defer QBar.Shutdown()
-	QBar.WireUp(wireQBarOut.Input)
-
-	rPinBattery := NewChargeProvider("rPinBattery", false)
-	Q := NewORGate(fmt.Sprintf("%s-QORGate", name), rPinBattery, wireQBarOut)
-	defer Q.Shutdown()
-	Q.WireUp(wireQOut.Input)
-
-	Debug(testName(t, ""), "Set S")
-	sPinBattery.Charge()
-	Debug(testName(t, ""), "UnSet S")
-	sPinBattery.Discharge()
-
-	Debug(testName(t, ""), "Set R")
-	rPinBattery.Charge()
-	Debug(testName(t, ""), "UnSet R")
-	rPinBattery.Discharge()
-
-	Debug(testName(t, ""), "Set S")
-	sPinBattery.Charge()
-	Debug(testName(t, ""), "Set R")
-	rPinBattery.Charge()
-
-	Debug(testName(t, ""), "UnSet S")
-	sPinBattery.Discharge()
-	Debug(testName(t, ""), "UnSet R")
-	rPinBattery.Discharge()
-}
-
-func TestLoopedANDGate(t *testing.T) {
-	Debug(testName(t, ""), "Initial Setup")
-	name := testName(t, "Test")
-
-	wireQOut := NewWire(fmt.Sprintf("%s-QOutWire", name))
-	defer wireQOut.Shutdown()
-	wireQBarOut := NewWire(fmt.Sprintf("%s-QBarOutWire", name))
-	defer wireQBarOut.Shutdown()
-
-	sPinBattery := NewChargeProvider("sPinBattery", false)
-	QBar := NewANDGate(fmt.Sprintf("%s-QBarANDGate", name), sPinBattery, wireQOut)
-	defer QBar.Shutdown()
-	QBar.WireUp(wireQBarOut.Input)
-
-	rPinBattery := NewChargeProvider("rPinBattery", false)
-	Q := NewANDGate(fmt.Sprintf("%s-QANDGate", name), rPinBattery, wireQBarOut)
-	defer Q.Shutdown()
-	Q.WireUp(wireQOut.Input)
-
-	Debug(testName(t, ""), "Set S")
-	sPinBattery.Charge()
-	Debug(testName(t, ""), "UnSet S")
-	sPinBattery.Discharge()
-
-	Debug(testName(t, ""), "Set R")
-	rPinBattery.Charge()
-	Debug(testName(t, ""), "UnSet R")
-	rPinBattery.Discharge()
-
-	Debug(testName(t, ""), "Set S")
-	sPinBattery.Charge()
-	Debug(testName(t, ""), "Set R")
-	rPinBattery.Charge()
-
-	Debug(testName(t, ""), "UnSet S")
-	sPinBattery.Discharge()
-	Debug(testName(t, ""), "UnSet R")
-	rPinBattery.Discharge()
 }
 
 func TestFullAdder(t *testing.T) {

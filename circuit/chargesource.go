@@ -7,7 +7,7 @@ import (
 )
 
 // chargeSource is the core of non-wire components which can store their own state and transmit that state to other components that have been wired up to them
-//	Most components embed chargeSource
+//	Most components embed chargeSource (nothing besides unit tests actually would make (New) one of these)
 type chargeSource struct {
 	outChannels []chan Charge // hold list of other component's input channels that are wired up to this one to recieve charge state changes
 	hasCharge   atomic.Value  // core state flag to know the component (which has embeded this object) charge state (allows avoiding having to constantly push the charge states around)

@@ -10,8 +10,8 @@ type Relay struct {
 	aInHasCharge atomic.Value // core state flag to track the 'relay arm path' input's charge state
 	bInHasCharge atomic.Value // core state flag to track the 'electromagnet path' input's charge state
 
-	OpenOut   chargeSource // external access point to an inactive/disengaged relay
-	ClosedOut chargeSource // external access point to an active/engaged relay
+	OpenOut   chargeSource // external access point of an inactive/disengaged relay
+	ClosedOut chargeSource // external access point of an active/engaged relay
 
 	aInCh   chan Charge // channel to track the relay arm path input
 	bInCh   chan Charge // channel to track the electromagnet path inpupt
@@ -40,6 +40,7 @@ func NewRelay(name string, pin1, pin2 chargeEmitter) *Relay {
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
 	transmit := func(c Charge) {
+		// using variables to avoid having the private field charge values change inbetween the Open and Closed transmits just below
 		aInHasCharge := rel.aInHasCharge.Load().(bool)
 		bInHasCharge := rel.bInHasCharge.Load().(bool)
 

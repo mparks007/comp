@@ -1,8 +1,8 @@
 package circuit
 
-// ChargeProvider is a low-tech charge giver to simply store/transmit charge state of on or off
+// ChargeProvider is a low-tech charge giver to simply control/store/transmit charge state of on or off
 type ChargeProvider struct {
-	chargeSource // simply a super lightweight type of charge source
+	chargeSource
 }
 
 // NewChargeProvider will return a generic charge provider whose initial state is based on the passed in initialization value

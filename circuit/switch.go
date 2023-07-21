@@ -9,7 +9,7 @@ import (
 type Switch struct {
 	relay              *Relay          // innards of the switch are using a relay to control on/off
 	pin2ChargeProvider *ChargeProvider // switch on/off is controlled by charging/discharging this ChargeProvider (which controls how the inner relay outputs)
-	chargeSource                       // add in chargeSource aspects
+	chargeSource                       
 }
 
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value

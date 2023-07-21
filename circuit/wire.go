@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // Wire is a component connector, which will transmit between source and listeners
 //	Most loop-back based compoound components will use a wire for the looping aspect.
 type Wire struct {
+	delay       uint          // will pause for this many milliseconds to allow the more complex setups to slow down for debugging (or initial setup charge settling?)
 	Input       chan Charge   // will be used to allow the wire to WireUp to an outside component, and therefore await power states from it to transmit to whatever is wired up to the wire
 	outChannels []chan Charge // hold list of other components that are wired up to this one to recieve charge state changes
 	hasCharge   atomic.Value  // core state flag to know of the component's charge state (allows avoiding having to constantly push the power states around)
@@ -21,6 +23,7 @@ func NewWire(name string) *Wire {
 	w := &Wire{}
 
 	w.name = name
+	w.delay = 0
 	w.Input = make(chan Charge, 1)
 	w.hasCharge.Store(false)
 	w.chStop = make(chan bool, 1)
@@ -50,12 +53,28 @@ func (w *Wire) Shutdown() {
 	w.chStop <- true
 }
 
+// SetDelay allows the setting of the wire transmit delay between the time the wire is told it has a charge change and when it will propagate that to any subscribers
+func (w *Wire) SetDelay(newDelay uint) {
+	w.delay = newDelay
+}
+
+// doDelay will pause in milliseconds (if setup with a nonzero delay)
+func (w *Wire) doDelay() {
+	if w.delay > 0 {
+		Debug(w.name, fmt.Sprintf("Delaying (%d) milliseconds", w.delay))
+		time.Sleep(time.Millisecond * time.Duration(w.delay))
+	}
+}
+
 // WireUp allows another component to subscribe to the wire (via the passed in channel) in order to be told of charge state changes
 func (w *Wire) WireUp(ch chan Charge) {
 	w.outChannels = append(w.outChannels, ch)
 
 	// go ahead and transmit to the new subscriber immediately as if something just connected to the wire's potentially hot current
 	wg := &sync.WaitGroup{}
+
+	w.doDelay()
+
 	wg.Add(1)
 	Debug(w.name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", w.hasCharge.Load().(bool), ch))
 	ch <- Charge{sender: w.name, state: w.hasCharge.Load().(bool), wg: wg, mu: &sync.RWMutex{}}
@@ -91,6 +110,8 @@ func (w *Wire) Transmit(c Charge) {
 	c.sender = w.name
 
 	for i, ch := range w.outChannels {
+		w.doDelay()
+
 		c.wg.Add(1)
 		go func(i int, ch chan Charge) {
 			Debug(w.name, fmt.Sprintf("Transmitting (%t) to outChannels[%d]: (%v)", c.state, i, ch))
@@ -126,8 +147,8 @@ func (r *RibbonCable) Shutdown() {
 }
 
 // SetInputs allows each wire to listen to an independent component that can transmit a charge
-func (r *RibbonCable) SetInputs(pwrInputs ...chargeEmitter) {
-	for i, pwr := range pwrInputs {
-		pwr.WireUp((r.Wires[i]).(*Wire).Input)
+func (r *RibbonCable) SetInputs(inputs ...chargeEmitter) {
+	for i, input := range inputs {
+		input.WireUp((r.Wires[i]).(*Wire).Input)
 	}
 }
