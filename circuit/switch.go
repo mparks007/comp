@@ -7,9 +7,9 @@ import (
 
 // Switch is a basic On/Off component typically used to be the initial input into circuits
 type Switch struct {
-	relay        *Relay          // innards of the switch are using a relay to control on/off
-	pin2Battery  *ChargeProvider // switch on/off is controlled by charging/discharging this battery (which controls how the inner relay outputs)
-	chargeSource                 // switch gains all that is pwrSource too
+	relay              *Relay          // innards of the switch are using a relay to control on/off
+	pin2ChargeProvider *ChargeProvider // switch on/off is controlled by charging/discharging this ChargeProvider (which controls how the inner relay outputs)
+	chargeSource                       // add in chargeSource aspects
 }
 
 // NewSwitch returns a new switch whose initial state is based on the passed in initialization value
@@ -18,18 +18,18 @@ func NewSwitch(name string, startState bool) *Switch {
 	sw.Init()
 	sw.Name = name
 
-	// setup the battery-based relay pins, where pin2's battery will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.pin2Battery = NewChargeProvider(fmt.Sprintf("%s-Relay-pin2Battery", name), startState)
-	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewChargeProvider(fmt.Sprintf("%s-Relay-pin1Battery", name), true), sw.pin2Battery)
+	// setup the ChargeProvider-based relay pins, where pin2's ChargeProvider will be used to toggle on/off of the switch (see Set(bool) method)
+	sw.pin2ChargeProvider = NewChargeProvider(fmt.Sprintf("%s-Relay-pin2ChargeProvider", name), startState)
+	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewChargeProvider(fmt.Sprintf("%s-Relay-pin1ChargeProvider", name), true), sw.pin2ChargeProvider)
 
 	chState := make(chan Charge, 1)
 	go func() {
 		for {
 			select {
-			case e := <-chState:
-				Debug(name, fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-				sw.Transmit(e)
-				e.Done()
+			case c := <-chState:
+				Debug(name, fmt.Sprintf("Received on Channel (%v), Charge {%s}", chState, c.String()))
+				sw.Transmit(c)
+				c.Done()
 			case <-sw.chStop:
 				Debug(name, "Stopped")
 				return
@@ -37,28 +37,28 @@ func NewSwitch(name string, startState bool) *Switch {
 		}
 	}()
 
-	// a switch acts like a relay, where Closed Out on the relay is the switch's power "answer"
+	// a switch acts like a relay, where Closed Out on the relay is the switch's charge "answer"
 	sw.relay.ClosedOut.WireUp(chState)
 
 	return sw
 }
 
 // Shutdown will allow the go func, which is handling listen/transmit, to exit, and propogates the Shuthdown action to the internal relay
-func (s *Switch) Shutdown() {
-	s.relay.Shutdown()
-	s.chStop <- true
+func (sw *Switch) Shutdown() {
+	sw.relay.Shutdown()
+	sw.chStop <- true
 }
 
-// Set will toggle the power state of the underlying battery to activate/deactivate the internal relay, and therefore the switch's output power state
-func (s *Switch) Set(newState bool) {
+// Set will toggle the charge state of the underlying ChargeProvider to activate/deactivate the internal relay, and therefore the switch's output charge state
+func (sw *Switch) Set(newState bool) {
 	if newState {
-		s.pin2Battery.Charge()
+		sw.pin2ChargeProvider.Charge()
 	} else {
-		s.pin2Battery.Discharge()
+		sw.pin2ChargeProvider.Discharge()
 	}
 }
 
-// NSwitchBank is a convenient way to get any number of power emitters from a string of 0/1s
+// NSwitchBank is a convenient way to get any number of charge emitters from a string of 0/1s
 type NSwitchBank struct {
 	switches []chargeEmitter
 }
@@ -77,6 +77,7 @@ func NewNSwitchBank(name string, bits string) (*NSwitchBank, error) {
 
 	sb := &NSwitchBank{}
 
+	// build out the switch slices for each bit sent in
 	for i, bit := range bits {
 		sb.switches = append(sb.switches, NewSwitch(fmt.Sprintf("%s-Switches[%d]", name, i), bit == '1'))
 	}

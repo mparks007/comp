@@ -5,10 +5,10 @@ import (
 	"sync/atomic"
 )
 
-// Relay is the core circuit used to contruct logic gates
+// Relay is the core circuit used to contruct (non transistor based) logic gates
 type Relay struct {
-	aInIsPowered atomic.Value // core state flag to track the 'relay arm path' input's current state
-	bInIsPowered atomic.Value // core state flag to track the 'electromagnet path' input's current state
+	aInHasCharge atomic.Value // core state flag to track the 'relay arm path' input's charge state
+	bInHasCharge atomic.Value // core state flag to track the 'electromagnet path' input's charge state
 
 	OpenOut   chargeSource // external access point to an inactive/disengaged relay
 	ClosedOut chargeSource // external access point to an active/engaged relay
@@ -19,7 +19,7 @@ type Relay struct {
 	chBStop chan bool   // shutdown channel for listening loop
 }
 
-// NewRelay will return a relay, which will be controlled by power state changes of the passed in set of pins
+// NewRelay will return a relay, which will be controlled by charge state changes of the passed in set of pins
 func NewRelay(name string, pin1, pin2 chargeEmitter) *Relay {
 	rel := &Relay{}
 
@@ -29,36 +29,36 @@ func NewRelay(name string, pin1, pin2 chargeEmitter) *Relay {
 	rel.chBStop = make(chan bool, 1)
 
 	// default to false (as a boolean defaults)
-	rel.aInIsPowered.Store(false)
-	rel.bInIsPowered.Store(false)
+	rel.aInHasCharge.Store(false)
+	rel.bInHasCharge.Store(false)
 
-	// Init these pwrSource types (need to ensure isPowered is defaulting to false)
+	// Init these chargeSoures to ensure hasCharge is defaulting to false
 	rel.OpenOut.Init()
 	rel.ClosedOut.Init()
 
 	rel.OpenOut.Name = fmt.Sprintf("%s-OpenOut", name)
 	rel.ClosedOut.Name = fmt.Sprintf("%s-ClosedOut", name)
 
-	transmit := func(e Charge) {
-		aInIsPowered := rel.aInIsPowered.Load().(bool)
-		bInIsPowered := rel.bInIsPowered.Load().(bool)
+	transmit := func(c Charge) {
+		aInHasCharge := rel.aInHasCharge.Load().(bool)
+		bInHasCharge := rel.bInHasCharge.Load().(bool)
 
-		e.state = aInIsPowered && !bInIsPowered
-		rel.OpenOut.Transmit(e)
+		c.state = aInHasCharge && !bInHasCharge
+		rel.OpenOut.Transmit(c)
 
-		e.state = aInIsPowered && bInIsPowered
-		rel.ClosedOut.Transmit(e)
+		c.state = aInHasCharge && bInHasCharge
+		rel.ClosedOut.Transmit(c)
 	}
 
 	// must do separate go funcs since loopback-based circuits may send aIns processing back around to the relay and we don't want to lock out the bIn case (and vice versa)
 	go func() {
 		for {
 			select {
-			case e := <-rel.aInCh:
-				Debug(name, fmt.Sprintf("(aIn) Received on Channel (%v), Electron {%s}", rel.aInCh, e.String()))
-				rel.aInIsPowered.Store(e.state)
-				transmit(e)
-				e.Done()
+			case c := <-rel.aInCh:
+				Debug(name, fmt.Sprintf("(aIn) Received on Channel (%v), Charge {%s}", rel.aInCh, c.String()))
+				rel.aInHasCharge.Store(c.state)
+				transmit(c)
+				c.Done()
 			case <-rel.chAStop:
 				Debug(name, "Stopped")
 				return
@@ -68,11 +68,11 @@ func NewRelay(name string, pin1, pin2 chargeEmitter) *Relay {
 	go func() {
 		for {
 			select {
-			case e := <-rel.bInCh:
-				Debug(name, fmt.Sprintf("(bIn) Received on Channel (%v), Electron {%s}", rel.bInCh, e.String()))
-				rel.bInIsPowered.Store(e.state)
-				transmit(e)
-				e.Done()
+			case c := <-rel.bInCh:
+				Debug(name, fmt.Sprintf("(bIn) Received on Channel (%v), Charge {%s}", rel.bInCh, c.String()))
+				rel.bInHasCharge.Store(c.state)
+				transmit(c)
+				c.Done()
 			case <-rel.chBStop:
 				Debug(name, "Stopped")
 				return

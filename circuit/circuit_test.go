@@ -17,7 +17,7 @@ import (
 // go test -v
 // go test -run TestOscillator (specific test)
 // go test -run TestOscillator -count 100 -v (multi options)
-// go test -run TestRelay_WithBatteries -count 50 -trace out2.txt (go tool trace out2.txt)
+// go test -run TestRelay_WithChargeProviders -count 50 -trace out2.txt (go tool trace out2.txt)
 // go test -race -cpu=1 -run TestFullAdder -count 5 -trace TestFullAdder_trace.txt > TestFullAdder_run.txt
 // go test -debug (my own flag to write all the debug to the console during test run)
 
@@ -116,6 +116,62 @@ func TestChargeSource(t *testing.T) {
 	select {
 	case <-ch2:
 		t.Error("Transmit of same state as prior state should have never gotten to ch2, but it did")
+	default:
+	}
+}
+
+func TestChargeProvider(t *testing.T) {
+	cp := NewChargeProvider(testName(t, "ChargeProvider"), true)
+
+	var want bool
+	var got atomic.Value
+	ch := make(chan Charge, 1)
+	chStop := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
+			case <-chStop:
+				return
+			}
+		}
+	}()
+	defer func() { chStop <- true }()
+
+	cp.WireUp(ch)
+
+	// test default ChargeProvider state (powered)
+	want = true
+
+	if got.Load().(bool) != want {
+		t.Errorf("With a new ChargeProvider, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
+	}
+
+	// test loss of power
+	cp.Discharge()
+	want = false
+
+	if got.Load().(bool) != want {
+		t.Errorf("With a discharged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
+	}
+
+	// test re-added power
+	cp.Charge()
+	want = true
+
+	if got.Load().(bool) != want {
+		t.Errorf("With a charged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
+	}
+
+	// test charging again (should skip it)
+	cp.Charge()
+
+	select {
+	case <-ch:
+		t.Error("Transmit of same state as prior state should have never gotten to ch, but it did")
 	default:
 	}
 }
@@ -332,74 +388,18 @@ func TestRibbonCable(t *testing.T) {
 	rib.Wires[0].(*Wire).WireUp(ch1)
 	rib.Wires[1].(*Wire).WireUp(ch2)
 
-	// the first wire in the ribbon cable had a dead battery
+	// the first wire in the ribbon cable had a dead ChargeProvider
 	want = false
 
 	if got1.Load().(bool) != want {
 		t.Errorf("Left ChargeProvider off, wanted the wire to see charge as %t but got %t", want, got1.Load().(bool))
 	}
 
-	// the first wire in the ribbon cable had a live battery
+	// the first wire in the ribbon cable had a live ChargeProvider
 	want = true
 
 	if got2.Load().(bool) != want {
 		t.Errorf("Right ChargeProvider on, wanted the wire to see charge as %t but got %t", want, got2.Load().(bool))
-	}
-}
-
-func TestChargeProvider(t *testing.T) {
-	cp := NewChargeProvider(testName(t, "ChargeProvider"), true)
-
-	var want bool
-	var got atomic.Value
-	ch := make(chan Charge, 1)
-	chStop := make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case c := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
-				got.Store(c.state)
-				c.Done()
-			case <-chStop:
-				return
-			}
-		}
-	}()
-	defer func() { chStop <- true }()
-
-	cp.WireUp(ch)
-
-	// test default ChargeProvider state (powered)
-	want = true
-
-	if got.Load().(bool) != want {
-		t.Errorf("With a new ChargeProvider, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
-	}
-
-	// test loss of power
-	cp.Discharge()
-	want = false
-
-	if got.Load().(bool) != want {
-		t.Errorf("With a discharged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
-	}
-
-	// test re-added power
-	cp.Charge()
-	want = true
-
-	if got.Load().(bool) != want {
-		t.Errorf("With a charged ChargeProvider, wanted the subscriber's charge to be %t but got %t", want, got.Load().(bool))
-	}
-
-	// test charging again (should skip it)
-	cp.Charge()
-
-	select {
-	case <-ch:
-		t.Error("Transmit of same state as prior state should have never gotten to ch, but it did")
-	default:
 	}
 }
 
@@ -506,10 +506,10 @@ func TestSwitch(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -523,7 +523,7 @@ func TestSwitch(t *testing.T) {
 	want = false
 
 	if got.Load().(bool) != want {
-		t.Errorf("With an off switch, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
+		t.Errorf("With an off switch, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
 	}
 
 	Debug(testName(t, ""), "Start Test Cases")
@@ -533,7 +533,7 @@ func TestSwitch(t *testing.T) {
 	sw.Set(want)
 
 	if got.Load().(bool) != want {
-		t.Errorf("With an off switch turned on, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
+		t.Errorf("With an off switch turned on, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
 	}
 
 	// turn on again, though already on ('want' is already true from prior Set)
@@ -548,7 +548,7 @@ func TestSwitch(t *testing.T) {
 	sw.Set(want)
 
 	if got.Load().(bool) != want {
-		t.Errorf("With an on switch turned off, wanted the subscriber to see power as %t but got %t", want, got.Load().(bool))
+		t.Errorf("With an on switch turned off, wanted the subscriber to see charge as %t but got %t", want, got.Load().(bool))
 	}
 
 	Debug(testName(t, ""), "End Test Cases")
@@ -584,7 +584,7 @@ func TestNSwitchBank_BadInputs(t *testing.T) {
 
 			tc.wantError += "\"" + tc.input + "\""
 
-			if err == nil || (err != nil && err.Error() != tc.wantError) {
+			if err != nil && err.Error() != tc.wantError {
 				t.Errorf("Wanted error \"%s\" but got \"%v\"", tc.wantError, err.Error())
 			}
 		})
@@ -618,10 +618,10 @@ func TestNSwitchBank_GoodInputs(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -646,9 +646,9 @@ func TestNSwitchBank_GoodInputs(t *testing.T) {
 			Debug(testName(t, ""), "Start Test Cases WireUp Per Switch")
 
 			// will just check one switch at a time vs. trying to get some full answer in one go from the bank
-			for i, pwr := range sb.Switches() {
+			for i, sw := range sb.Switches() {
 
-				pwr.(*Switch).WireUp(ch)
+				sw.(*Switch).WireUp(ch)
 
 				want := tc.want[i]
 
@@ -688,10 +688,10 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-ch:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-				got.Store(e.state)
-				e.Done()
+			case c := <-ch:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+				got.Store(c.state)
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -725,9 +725,9 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 			Debug(testName(t, ""), "Start Test Cases WireUp Per Switch")
 
 			// will just check one switch at a time vs. trying to get some full answer in one go from the bank
-			for i, pwr := range sb.Switches() {
+			for i, sw := range sb.Switches() {
 
-				pwr.(*Switch).WireUp(ch)
+				sw.(*Switch).WireUp(ch)
 
 				want := tc.want[i]
 
@@ -744,8 +744,8 @@ func TestNSwitchBank_GoodInputs_SetSwitches(t *testing.T) {
 
 func TestRelay_WithSwitches(t *testing.T) {
 	testCases := []struct {
-		aInPowered   bool
-		bInPowered   bool
+		aInHasCharge bool
+		bInHasCharge bool
 		wantAtOpen   bool
 		wantAtClosed bool
 	}{
@@ -777,14 +777,14 @@ func TestRelay_WithSwitches(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eOpen := <-chOpen:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Electron {%s}", chOpen, eOpen.String()))
-				gotOpenOut.Store(eOpen.state)
-				eOpen.Done()
-			case eClosed := <-chClosed:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Electron {%s}", chClosed, eClosed.String()))
-				gotClosedOut.Store(eClosed.state)
-				eClosed.Done()
+			case cOpen := <-chOpen:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chOpen) Received on Channel (%v), Charge {%s}", chOpen, cOpen.String()))
+				gotOpenOut.Store(cOpen.state)
+				cOpen.Done()
+			case cClosed := <-chClosed:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chClosed) Received on Channel (%v), Charge {%s}", chClosed, cClosed.String()))
+				gotClosedOut.Store(cClosed.state)
+				cClosed.Done()
 			case <-chStop:
 				return
 			}
@@ -796,28 +796,28 @@ func TestRelay_WithSwitches(t *testing.T) {
 	rel.ClosedOut.WireUp(chClosed)
 
 	if gotOpenOut.Load().(bool) {
-		t.Error("Wanted no power at the open position but got some")
+		t.Error("Wanted no charge at the open position but got some")
 	}
 	if !gotClosedOut.Load().(bool) {
-		t.Error("Wanted power at the closed position but got none")
+		t.Error("Wanted charge at the closed position but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t)", i, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A power to (%t) and B power to (%t)", i, tc.aInPowered, tc.bInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting A charge to (%t) and B charge to (%t)", i, tc.aInHasCharge, tc.bInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
 
 			if gotOpenOut.Load().(bool) != tc.wantAtOpen {
-				t.Errorf("Wanted power at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut.Load().(bool))
+				t.Errorf("Wanted charge at the open position to be %t, but got %t", tc.wantAtOpen, gotOpenOut.Load().(bool))
 			}
 
 			if gotClosedOut.Load().(bool) != tc.wantAtClosed {
-				t.Errorf("Wanted power at the closed position to be %t, but got %t", tc.wantAtClosed, gotClosedOut.Load().(bool))
+				t.Errorf("Wanted charge at the closed position to be %t, but got %t", tc.wantAtClosed, gotClosedOut.Load().(bool))
 			}
 		})
 	}
