@@ -200,7 +200,7 @@ type NNumberAdder struct {
 }
 
 // NewNNumberAdder returns an NNumberAdder which will allow the addition of any number of binary numbers
-//	However, due to the answer latch being level-triggered and not edge-triggered, once active, it will kick off an infinite loop of addition.
+//	However, due to the answer latch being level-triggered and not edge-triggered, once active, it will kick off an infinite loop of addition in my code.
 //	This component is just a proof of concept on how to add multiple numbers without needing an internal 2-to-1 Selector
 //
 //	Steps:
@@ -217,7 +217,7 @@ func NewNNumberAdder(name string, inputs []chargeEmitter) (*NNumberAdder, error)
 
 	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(inputs)))
 
-	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewChargeProvider(fmt.Sprintf("%s-carryInBattery", name), false))
+	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewChargeProvider(fmt.Sprintf("%s-carryInChargeProvider", name), false))
 
 	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(fmt.Sprintf("%s-NBitLevelTriggeredDTypeLatchWithClear", name), addr.Clear, addr.Add, addr.adder.Sums)
 

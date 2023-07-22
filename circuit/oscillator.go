@@ -8,7 +8,7 @@ import (
 // Oscillator is a circuit which attempts to simulate a crystal-driven frequency oscillation signal (not very exact unfortunately)
 type Oscillator struct {
 	active       atomic.Value // to track whether the oscillator is oscillating to avoid setting the stop channel if not needed
-	chargeSource              // Oscillator gains all that is pwrSource too
+	chargeSource              
 }
 
 // NewOscillator will return a disabled oscillator, whose initial power state, once started, will be based on the passed in init value

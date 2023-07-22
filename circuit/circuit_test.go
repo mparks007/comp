@@ -1540,10 +1540,10 @@ func TestXNORGate(t *testing.T) {
 
 func TestHalfAdder(t *testing.T) {
 	testCases := []struct {
-		aInPowered bool
-		bInPowered bool
-		wantSum    bool
-		wantCarry  bool
+		aInHasCharge bool
+		bInHasCharge bool
+		wantSum      bool
+		wantCarry    bool
 	}{
 
 		{false, false, false, false},
@@ -1572,14 +1572,14 @@ func TestHalfAdder(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eSum := <-chSum:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Electron {%s}", chSum, eSum.String()))
-				gotSum.Store(eSum.state)
-				eSum.Done()
-			case eCarry := <-chCarry:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Electron {%s}", chCarry, eCarry.String()))
-				gotCarry.Store(eCarry.state)
-				eCarry.Done()
+			case cSum := <-chSum:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Charge {%s}", chSum, cSum.String()))
+				gotSum.Store(cSum.state)
+				cSum.Done()
+			case cCarry := <-chCarry:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Charge {%s}", chCarry, cCarry.String()))
+				gotCarry.Store(cCarry.state)
+				cCarry.Done()
 			case <-chStop:
 				return
 			}
@@ -1601,12 +1601,12 @@ func TestHalfAdder(t *testing.T) {
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t)", i, tc.aInPowered, tc.bInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t)", i, tc.aInHasCharge, tc.bInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t)", i, tc.aInPowered, tc.bInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t)", i, tc.aInHasCharge, tc.bInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
 
 			if gotSum.Load().(bool) != tc.wantSum {
 				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
@@ -1622,11 +1622,11 @@ func TestHalfAdder(t *testing.T) {
 
 func TestFullAdder(t *testing.T) {
 	testCases := []struct {
-		aInPowered     bool
-		bInPowered     bool
-		carryInPowered bool
-		wantSum        bool
-		wantCarry      bool
+		aInHasCharge     bool
+		bInHasCharge     bool
+		carryInHasCharge bool
+		wantSum          bool
+		wantCarry        bool
 	}{
 		{false, false, false, false, false},
 		{true, false, false, true, false},
@@ -1662,14 +1662,14 @@ func TestFullAdder(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eSum := <-chSum:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Electron {%s}", chSum, eSum.String()))
-				gotSum.Store(eSum.state)
-				eSum.Done()
-			case eCarry := <-chCarry:
-				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Electron {%s}", chCarry, eCarry.String()))
-				gotCarry.Store(eCarry.state)
-				eCarry.Done()
+			case cSum := <-chSum:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chSum) Received on Channel (%v), Charge {%s}", chSum, cSum.String()))
+				gotSum.Store(cSum.state)
+				cSum.Done()
+			case cCarry := <-chCarry:
+				Debug(testName(t, "Select"), fmt.Sprintf("(chCarry) Received on Channel (%v), Charge {%s}", chCarry, cCarry.String()))
+				gotCarry.Store(cCarry.state)
+				cCarry.Done()
 			case <-chStop:
 				return
 			}
@@ -1691,13 +1691,13 @@ func TestFullAdder(t *testing.T) {
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t) with carry in of (%t)", i, tc.aInPowered, tc.bInPowered, tc.carryInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t) with carry in of (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.carryInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t) with carry in of (%t)", i, tc.aInPowered, tc.bInPowered, tc.carryInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Setting input source A to (%t) and source B to (%t) with carry in of (%t)", i, tc.aInHasCharge, tc.bInHasCharge, tc.carryInHasCharge))
 
-			aSwitch.Set(tc.aInPowered)
-			bSwitch.Set(tc.bInPowered)
-			cSwitch.Set(tc.carryInPowered)
+			aSwitch.Set(tc.aInHasCharge)
+			bSwitch.Set(tc.bInHasCharge)
+			cSwitch.Set(tc.carryInHasCharge)
 
 			if gotSum.Load().(bool) != tc.wantSum {
 				t.Errorf("Wanted sum %t, but got %t", tc.wantSum, gotSum.Load().(bool))
@@ -1757,11 +1757,11 @@ func TestNBitAdder_BadInputLengths(t *testing.T) {
 
 func TestNBitAdder_EightBit(t *testing.T) {
 	testCases := []struct {
-		byte1          string
-		byte2          string
-		carryInPowered bool
-		wantAnswer     string
-		wantCarryOut   bool
+		byte1            string
+		byte2            string
+		carryInHasCharge bool
+		wantAnswer       string
+		wantCarryOut     bool
 	}{
 		{"00000000", "00000000", false, "00000000", false},
 		{"00000001", "00000000", false, "00000001", false},
@@ -1814,10 +1814,10 @@ func TestNBitAdder_EightBit(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, i int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-					gots[i].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chState, c.String()))
+					gots[i].Store(c.state)
+					c.Done()
 				case <-chStop:
 					return
 				}
@@ -1839,13 +1839,13 @@ func TestNBitAdder_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.byte1, tc.byte2, tc.carryInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.byte1, tc.byte2, tc.carryInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.byte1, tc.byte2, tc.carryInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.byte1, tc.byte2, tc.carryInHasCharge))
 
 			addend1Switches.SetSwitches(tc.byte1)
 			addend2Switches.SetSwitches(tc.byte2)
-			carryInSwitch.Set(tc.carryInPowered)
+			carryInSwitch.Set(tc.carryInHasCharge)
 
 			if gotAnswer := getAnswerString(gots[:8]); gotAnswer != tc.wantAnswer {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, gotAnswer)
@@ -1861,11 +1861,11 @@ func TestNBitAdder_EightBit(t *testing.T) {
 
 func TestNBitAdder_SixteenBit(t *testing.T) {
 	testCases := []struct {
-		bytes1         string
-		bytes2         string
-		carryInPowered bool
-		wantAnswer     string
-		wantCarryOut   bool
+		bytes1           string
+		bytes2           string
+		carryInHasCharge bool
+		wantAnswer       string
+		wantCarryOut     bool
 	}{
 		{"0000000000000000", "0000000000000000", false, "0000000000000000", false},
 		{"0000000000000001", "0000000000000000", false, "0000000000000001", false},
@@ -1919,10 +1919,10 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, i int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-					gots[i].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chState, c.String()))
+					gots[i].Store(c.state)
+					c.Done()
 				case <-chStop:
 					return
 				}
@@ -1944,13 +1944,13 @@ func TestNBitAdder_SixteenBit(t *testing.T) {
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.bytes1, tc.bytes2, tc.carryInPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.bytes1, tc.bytes2, tc.carryInHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.bytes1, tc.bytes2, tc.carryInPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Adding (%s) to (%s) with carry in of (%t)", i, tc.bytes1, tc.bytes2, tc.carryInHasCharge))
 
 			addend1Switches.SetSwitches(tc.bytes1)
 			addend2Switches.SetSwitches(tc.bytes2)
-			carryInSwitch.Set(tc.carryInPowered)
+			carryInSwitch.Set(tc.carryInHasCharge)
 
 			if gotAnswer := getAnswerString(gots[:16]); gotAnswer != tc.wantAnswer {
 				t.Errorf("Wanted answer %s, but got %s", tc.wantAnswer, gotAnswer)
@@ -1968,7 +1968,7 @@ func TestOnesCompliment(t *testing.T) {
 
 	testCases := []struct {
 		bits            string
-		signalIsPowered bool
+		signalHasCharge bool
 		wantCompliment  string
 	}{
 		{"0", false, "0"},
@@ -1987,14 +1987,14 @@ func TestOnesCompliment(t *testing.T) {
 	Debug(testName(t, ""), "Start Test Cases Loop")
 
 	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("testCases[%d]: Executing complementer against (%s) with compliment signal of (%t)", i, tc.bits, tc.signalIsPowered), func(t *testing.T) {
+		t.Run(fmt.Sprintf("testCases[%d]: Executing complementer against (%s) with compliment signal of (%t)", i, tc.bits, tc.signalHasCharge), func(t *testing.T) {
 
-			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Executing complementer against (%s) with compliment signal of (%t)", i, tc.bits, tc.signalIsPowered))
+			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Executing complementer against (%s) with compliment signal of (%t)", i, tc.bits, tc.signalHasCharge))
 
 			bitSwitches, _ := NewNSwitchBank(testName(t, "bitSwitches"), tc.bits)
 			defer bitSwitches.Shutdown()
 
-			signalSwitch := NewSwitch(testName(t, "signalSwitch"), tc.signalIsPowered)
+			signalSwitch := NewSwitch(testName(t, "signalSwitch"), tc.signalHasCharge)
 			defer signalSwitch.Shutdown()
 
 			comp := NewOnesComplementer(testName(t, "OnesComplementer"), bitSwitches.Switches(), signalSwitch)
@@ -2015,10 +2015,10 @@ func TestOnesCompliment(t *testing.T) {
 				go func(chState chan Charge, chStop chan bool, index int) {
 					for {
 						select {
-						case e := <-chState:
-							Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-							gotCompliments[index].Store(e.state)
-							e.Done()
+						case c := <-chState:
+							Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chState, c.String()))
+							gotCompliments[index].Store(c.state)
+							c.Done()
 						case <-chStop:
 							return
 						}
@@ -2150,10 +2150,10 @@ func TestNBitSubtractor_EightBit(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chState, e.String()))
-					gots[index].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chState, c.String()))
+					gots[index].Store(c.state)
+					c.Done()
 				case <-chStop:
 					return
 				}
@@ -2225,15 +2225,15 @@ func TestOscillator(t *testing.T) {
 				for {
 					result := gotResults.Load().(string)
 					select {
-					case e := <-ch:
-						Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", ch, e.String()))
-						if e.state {
+					case c := <-ch:
+						Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+						if c.state {
 							result += "1"
 						} else {
 							result += "0"
 						}
 						gotResults.Store(result)
-						e.Done()
+						c.Done()
 					case <-chStop:
 						return
 					}
@@ -2298,7 +2298,7 @@ func TestRSFlipFlop(t *testing.T) {
 	rPinBattery = NewChargeProvider(testName(t, "rBattery"), false)
 	sPinBattery = NewChargeProvider(testName(t, "sBattery"), false)
 
-	// starting with no input signals (R and S are off)
+	// starting with no input signals (S and R are off)
 	ff := NewRSFlipFlop(testName(t, "RSFlipFlop"), rPinBattery, sPinBattery)
 	defer ff.Shutdown()
 
@@ -3561,7 +3561,7 @@ func TestFrequencyDivider(t *testing.T) {
 
 	osc.Oscillate(2) // 2 times a second
 
-	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and 4 divider pulses
+	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and 4 divider  (though a tad nondeterministic and could fail)
 
 	osc.Stop()
 

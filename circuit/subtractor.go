@@ -18,8 +18,8 @@ func NewNBitSubtractor(name string, minuendPins, subtrahendPins []chargeEmitter)
 	}
 
 	sub := &NBitSubtractor{}
-	sub.comp = NewOnesComplementer(fmt.Sprintf("%s-OnesComplementer", name), subtrahendPins, NewChargeProvider(fmt.Sprintf("%s-signalBattery", name), true))           // the Battery ensures the complimenter is "On"
-	sub.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), minuendPins, sub.comp.Complements, NewChargeProvider(fmt.Sprintf("%s-carryInBattery", name), true)) // the added Battery is the "+1" to make the "twos compliment"
+	sub.comp = NewOnesComplementer(fmt.Sprintf("%s-OnesComplementer", name), subtrahendPins, NewChargeProvider(fmt.Sprintf("%s-signalChargeProvider", name), true))           // the ChargeProvider ensures the complimenter is "On"
+	sub.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), minuendPins, sub.comp.Complements, NewChargeProvider(fmt.Sprintf("%s-carryInChargeProvider", name), true)) // the added ChargeProvider is the "+1" to make the "twos compliment"
 
 	// use some better field names for easier external access
 	sub.Differences = sub.adder.Sums

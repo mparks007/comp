@@ -279,7 +279,7 @@ type NBitRippleCounter struct {
 	Qs       []*NORGate
 }
 
-// NewNBitRippleCounter returns an NBitRippleCounter which will user the oscillator pin as the driving counter rate to control a string of chained frequency dividers (the width of the size input)
+// NewNBitRippleCounter returns an NBitRippleCounter which will use the oscillator pin as the driving counter rate to control a string of chained frequency dividers (the width of the size input)
 func NewNBitRippleCounter(name string, oscillator chargeEmitter, size int) *NBitRippleCounter {
 	counter := &NBitRippleCounter{}
 

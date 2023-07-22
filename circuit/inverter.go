@@ -13,7 +13,7 @@ type Inverter struct {
 	chargeSource
 }
 
-// NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's power state
+// NewInverter will return an Inverter component whose output will be the opposite of the passed in pin's charge state
 func NewInverter(name string, pin chargeEmitter) *Inverter {
 	inv := &Inverter{}
 	inv.Init()
