@@ -3156,7 +3156,7 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	dataSwitches, _ := NewNSwitchBank(testName(t, "dataSwitches"), "00000000")
 	defer dataSwitches.Shutdown()
 
-	clrSwitch := NewSwitch(testName(t, "clrBattery"), false)
+	clrSwitch := NewSwitch(testName(t, "clrSwitch"), false)
 	defer clrSwitch.Shutdown()
 
 	clkSwitch := NewSwitch(testName(t, "clkSwitch"), false)
@@ -3252,7 +3252,6 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
-/*
 // TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
 //     runtime: goroutine stack exceeds 1000000000-byte limit
 //     fatal error: stack overflow
@@ -3268,21 +3267,21 @@ func TestNNumberAdder(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each of the NNumberAdder's Q outputs (the latest inner-adder's Sum sent through)
 	var gotSums [1]atomic.Value
-	var chSumStates []chan Electron
+	var chSumStates []chan Charge
 	var chSumStops []chan bool
 	for i, s := range addr.Sums {
 
-		chSumStates = append(chSumStates, make(chan Electron, 1))
+		chSumStates = append(chSumStates, make(chan Charge, 1))
 		chSumStops = append(chSumStops, make(chan bool, 1))
 		gotSums[i].Store(false)
 
-		go func(chSumState chan Electron, chSumStop chan bool, index int) {
+		go func(chSumState chan Charge, chSumStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chSumState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
-					gotSums[index].Store(e.powerState)
-					e.Done()
+				case c := <-chSumState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chSumState, c.String()))
+					gotSums[index].Store(c.state)
+					c.Done()
 				case <-chSumStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
 					return
@@ -3300,21 +3299,21 @@ func TestNNumberAdder(t *testing.T) {
 
 	// build listen/transmit funcs to deal with each of the adder's INTERNAL adder's sum outputs
 	var gotInnerSums [1]atomic.Value
-	var chInnerSumStates []chan Electron
+	var chInnerSumStates []chan Charge
 	var chInnerSumStops []chan bool
 	for i, s := range addr.adder.Sums {
 
-		chInnerSumStates = append(chInnerSumStates, make(chan Electron, 1))
+		chInnerSumStates = append(chInnerSumStates, make(chan Charge, 1))
 		chInnerSumStops = append(chInnerSumStops, make(chan bool, 1))
 		gotInnerSums[i].Store(false)
 
-		go func(chInnerSumState chan Electron, chInnerSumStop chan bool, index int) {
+		go func(chInnerSumState chan Charge, chInnerSumStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chInnerSumState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chInnerSumState, e.String()))
-					gotInnerSums[index].Store(e.powerState)
-					e.Done()
+				case c := <-chInnerSumState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chInnerSumState, c.String()))
+					gotInnerSums[index].Store(c.state)
+					c.Done()
 				case <-chInnerSumStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
 					return
@@ -3378,7 +3377,7 @@ func TestNNumberAdder(t *testing.T) {
 
 	Debug(testName(t, ""), "End Test Cases")
 }
-*/
+
 func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
 		clkIn    bool
@@ -3578,20 +3577,19 @@ func TestFrequencyDivider(t *testing.T) {
 	Debug(testName(t, ""), "End Test Case")
 }
 
-/*
-// This won't work until I can get all the bits in the counter to initialize to 0, then see how it works or not
+// Troubles with this beast
 func TestNBitRippleCounter_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	osc := NewOscillator(testName(t, "Oscillator"), false)
-	counter := NewNBitRippleCounter(testName(t, "NBitRippleCounter"), osc, 8)
-	defer counter.Shutdown()
+	ripple := NewNBitRippleCounter(testName(t, "NBitRippleCounter"), osc, 8)
+	defer ripple.Shutdown()
 
 	var gotOscResults atomic.Value
 	gotOscResults.Store("")
 
 	// build listen/transmit func to deal with the oscillator
-	chOsc := make(chan Electron, 1)
+	chOsc := make(chan Charge, 1)
 	chStop := make(chan bool, 1)
 	go func() {
 		for {
@@ -3599,7 +3597,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 			case e := <-chOsc:
 				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, e.String()))
 				result := gotOscResults.Load().(string)
-				if e.powerState {
+				if e.state {
 					result += "1"
 				} else {
 					result += "0"
@@ -3615,46 +3613,46 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 
 	osc.WireUp(chOsc)
 
-	// build listen/transmit funcs to deal with each of the Counter's Q outputs
-	var gotCounterQs [8]atomic.Value
+	// build listen/transmit funcs to deal with each of the RippleCounter's Q outputs
+	var gotRippleQs [8]atomic.Value
 	var gotDivResults [8]atomic.Value
-	var chCounterStates []chan Electron
-	var chCounterStops []chan bool
+	var chRippleStates []chan Charge
+	var chRippleStops []chan bool
 
-	for i, q := range counter.Qs {
+	for i, q := range ripple.Qs {
 
-		chCounterStates = append(chCounterStates, make(chan Electron, 1))
-		chCounterStops = append(chCounterStops, make(chan bool, 1))
-		gotCounterQs[i].Store(false)
+		chRippleStates = append(chRippleStates, make(chan Charge, 1))
+		chRippleStops = append(chRippleStops, make(chan bool, 1))
+		gotRippleQs[i].Store(false)
 		gotDivResults[i].Store("")
 
-		go func(chCounterState chan Electron, chCounterStop chan bool, index int) {
+		go func(chRippleState chan Charge, chRippleStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chCounterState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Received on Channel (%v), Electron {%s}", index, chCounterState, e.String()))
+				case e := <-chRippleState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Received on Channel (%v), Electron {%s}", index, chRippleState, e.String()))
 					result := gotDivResults[index].Load().(string)
-					if e.powerState {
+					if e.state {
 						result += "1"
 					} else {
 						result += "0"
 					}
 					gotDivResults[index].Store(result)
-					gotCounterQs[i].Store(e.powerState)
-					Debug(testName(t, "Latest Answer"), fmt.Sprintf("(Qs[%d]) Caused {%s}", index, getAnswerString(gotCounterQs[:])))
+					gotRippleQs[i].Store(e.state)
+					Debug(testName(t, "Latest Answer"), fmt.Sprintf("(Qs[%d]) Caused {%s}", index, getAnswerString(gotRippleQs[:])))
 					e.Done()
-				case <-chCounterStop:
+				case <-chRippleStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Stopped", index))
 					return
 				}
 			}
-		}(chCounterStates[i], chCounterStops[i], i)
+		}(chRippleStates[i], chRippleStops[i], i)
 
-		q.WireUp(chCounterStates[i])
+		q.WireUp(chRippleStates[i])
 	}
 	defer func() {
-		for i := 0; i < len(counter.Qs); i++ {
-			chCounterStops[i] <- true
+		for i := 0; i < len(ripple.Qs); i++ {
+			chRippleStops[i] <- true
 		}
 	}()
 
@@ -3664,7 +3662,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	}
 
 	wantCounterAnswer := "10101010"
-	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
+	if gotAnswer := getAnswerString(gotRippleQs[:]); gotAnswer != wantCounterAnswer {
 		t.Errorf("Wanted counter results %s but got %s", wantCounterAnswer, gotAnswer)
 	}
 
@@ -3682,7 +3680,7 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	}
 
 	wantCounterAnswer = "10101110"
-	if gotAnswer := getAnswerString(gotCounterQs[:]); gotAnswer != wantCounterAnswer {
+	if gotAnswer := getAnswerString(gotRippleQs[:]); gotAnswer != wantCounterAnswer {
 		t.Errorf("Wanted counter results %s but got %s", wantCounterAnswer, gotAnswer)
 	}
 
@@ -3692,7 +3690,8 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	}
 	Debug(testName(t, ""), "End Test Case")
 }
-*/
+
+// Not sure why the initial state upon creation is not settling as expected.  Need to solve before even trying the test cases array.
 func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	testCases := []struct {
 		presetIn bool

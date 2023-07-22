@@ -243,7 +243,7 @@ func (l *EdgeTriggeredDTypeLatch) Shutdown() {
 
 // FrequencyDivider is a special type of EdgeTriggeredDTypeLatch whose Clock pin is controlled by an Oscillator and whose Data pin is fed from its own QBar output
 //    Every time the clock oscillates to 1, the Q/QBar outputs will output their state change, where Q is the FrequencyDivider's output and QBar feeds back to flip the value of Q for the next clock oscillation
-//    On its own (though fragile), it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter)
+//    On its own (though fragile), it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter...right???)
 type FrequencyDivider struct {
 	wireLoopBack *Wire
 	latch        *EdgeTriggeredDTypeLatch
@@ -279,9 +279,9 @@ type NBitRippleCounter struct {
 	Qs       []*NORGate
 }
 
-// NewNBitRippleCounter returns an NBitRippleCounter which will use the oscillator pin as the driving counter rate to control a string of chained frequency dividers (the width of the size input)
+// NewNBitRippleCounter returns an NBitRippleCounter which will use the oscillator pin as the driving counter rate to control a string of chained frequency dividers
 func NewNBitRippleCounter(name string, oscillator chargeEmitter, size int) *NBitRippleCounter {
-	counter := &NBitRippleCounter{}
+	ripple := &NBitRippleCounter{}
 
 	for i := size - 1; i >= 0; i-- {
 		var freqDiv *FrequencyDivider
@@ -289,17 +289,17 @@ func NewNBitRippleCounter(name string, oscillator chargeEmitter, size int) *NBit
 		if i == size-1 {
 			freqDiv = NewFrequencyDivider(fmt.Sprintf("%s-Dividers[%d]", name, i), oscillator) // setup the outer oscillation aspect
 		} else {
-			freqDiv = NewFrequencyDivider(fmt.Sprintf("%s-Dividers[%d]", name, i), counter.freqDivs[0].QBar) // the rest chain together
+			freqDiv = NewFrequencyDivider(fmt.Sprintf("%s-Dividers[%d]", name, i), ripple.freqDivs[0].QBar) // the rest chain together
 		}
 
 		// prepend since going in reverse order
-		counter.freqDivs = append([]*FrequencyDivider{freqDiv}, counter.freqDivs...)
+		ripple.freqDivs = append([]*FrequencyDivider{freqDiv}, ripple.freqDivs...)
 
 		// make Qs refer to each for easier external access (pre-pending here too)
-		counter.Qs = append([]*NORGate{freqDiv.Q}, counter.Qs...)
+		ripple.Qs = append([]*NORGate{freqDiv.Q}, ripple.Qs...)
 	}
 
-	return counter
+	return ripple
 }
 
 // Shutdown will allow the go funcs, which are handling listen/transmit on each sub-component, to exit
