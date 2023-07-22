@@ -8,6 +8,7 @@ import (
 )
 
 // Wire is a component connector, which will transmit between source and listeners
+//
 //	Most loop-back based compoound components will use a wire for the looping aspect.
 type Wire struct {
 	delay       uint          // will pause for this many milliseconds to allow the more complex setups to slow down for debugging (or initial setup charge settling?)

@@ -1074,7 +1074,7 @@ func TestORGate(t *testing.T) {
 			cSwitch.Set(tc.cInHasCharge)
 
 			if got.Load().(bool) != tc.want {
-				t.Errorf("Wanted power %t, but got %t", tc.want, got.Load().(bool))
+				t.Errorf("Wanted charge %t, but got %t", tc.want, got.Load().(bool))
 			}
 		})
 	}
@@ -3253,8 +3253,9 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 }
 
 // TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
-//     runtime: goroutine stack exceeds 1000000000-byte limit
-//     fatal error: stack overflow
+//
+//	runtime: goroutine stack exceeds 1000000000-byte limit
+//	fatal error: stack overflow
 func TestNNumberAdder(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")

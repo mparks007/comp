@@ -5,8 +5,9 @@ import (
 )
 
 // RSFlipFlop (Reset-Set) Flip-Flop is a standard flipflop circuit controlled by Set and Reset to output power at Q or "QBar" (QBar being opposite of Q)
-// 	...or is this an SR (Set-Reset) Flip-Flop, or is this just an RS Latch?  SR Latch?  No matter for my purposes thus far...
-//  This circuit is core to more complicated FlipFops/Latches to make even further complicated components (memory, counters, more?)
+//
+//		...or is this an SR (Set-Reset) Flip-Flop, or is this just an RS Latch?  SR Latch?  No matter for my purposes thus far...
+//	 This circuit is core to more complicated FlipFops/Latches to make even further complicated components (memory, counters, more?)
 //
 // Truth Table
 // r s   q  !q
@@ -49,9 +50,10 @@ func (f *RSFlipFlop) Shutdown() {
 //
 // Truth Table
 // clk d   q  !q
-//  1  0   0  1
-//  1  1   1  0
-//  0  X   q  !q  (data doesn't matter, no clock high to trigger a store-it action)
+//
+//	1  0   0  1
+//	1  1   1  0
+//	0  X   q  !q  (data doesn't matter, no clock high to trigger a store-it action)
 type LevelTriggeredDTypeLatch struct {
 	rs       *RSFlipFlop
 	rAnd     *ANDGate
@@ -115,15 +117,17 @@ func (l *NBitLevelTriggeredDTypeLatch) Shutdown() {
 }
 
 // LevelTriggeredDTypeLatchWithClear is a type of latch/flipflop which will store the value of data only when the clock is high (on) and Clear is off ("Level" = clock high/low, "D" = data 0/1)
+//
 //	This is almost like a NewLevelTriggeredDTypeLatch, BUT it adds a Clear input, which if on, will force Q off no matter what else is going on
 //
 // Truth Table
 // clk d clr   q  !q
-//  1  0  0    0  1
-//  1  1  0    1  0
-//  0  X  0    q  !q  (data doesn't matter, no clock high to trigger a store-it action)
-//  X  X  1    0  1   (clear forces reset so data and clock do not matter)
-//  1  1  1    X  X   (generally deemed invalid)
+//
+//	1  0  0    0  1
+//	1  1  0    1  0
+//	0  X  0    q  !q  (data doesn't matter, no clock high to trigger a store-it action)
+//	X  X  1    0  1   (clear forces reset so data and clock do not matter)
+//	1  1  1    X  X   (generally deemed invalid)
 type LevelTriggeredDTypeLatchWithClear struct {
 	rs       *RSFlipFlop
 	rAnd     *ANDGate
@@ -170,7 +174,8 @@ type NBitLevelTriggeredDTypeLatchWithClear struct {
 }
 
 // NewNBitLevelTriggeredDTypeLatchWithClear returns an NBitLevelTriggeredDTypeLatchWithClear whose storing of the data pin value of EVERY internal latch will occur when the clock pin is on BUT the clear is off
-//  If Clear is on, Q is forced off regardless of any other circuit power
+//
+//	If Clear is on, Q is forced off regardless of any other circuit power
 func NewNBitLevelTriggeredDTypeLatchWithClear(name string, clrPin, clkInPin chargeEmitter, dataInPins []chargeEmitter) *NBitLevelTriggeredDTypeLatchWithClear {
 	latch := &NBitLevelTriggeredDTypeLatchWithClear{}
 
@@ -210,7 +215,8 @@ type EdgeTriggeredDTypeLatch struct {
 }
 
 // NewEdgeTriggeredDTypeLatch returns an EdgeTriggeredDTypeLatch component controlled by a Clock pin, which will control how the Data pin is handled
-//   (where Data will only get transferred to the output when the Clock transitions from 0 to 1)
+//
+//	(where Data will only get transferred to the output when the Clock transitions from 0 to 1)
 func NewEdgeTriggeredDTypeLatch(name string, clkInPin, dataInPin chargeEmitter) *EdgeTriggeredDTypeLatch {
 	latch := &EdgeTriggeredDTypeLatch{}
 
@@ -242,8 +248,9 @@ func (l *EdgeTriggeredDTypeLatch) Shutdown() {
 }
 
 // FrequencyDivider is a special type of EdgeTriggeredDTypeLatch whose Clock pin is controlled by an Oscillator and whose Data pin is fed from its own QBar output
-//    Every time the clock oscillates to 1, the Q/QBar outputs will output their state change, where Q is the FrequencyDivider's output and QBar feeds back to flip the value of Q for the next clock oscillation
-//    On its own (though fragile), it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter...right???)
+//
+//	Every time the clock oscillates to 1, the Q/QBar outputs will output their state change, where Q is the FrequencyDivider's output and QBar feeds back to flip the value of Q for the next clock oscillation
+//	On its own (though fragile), it basically acts like an oscillator itself, running at half the rate of the Clock pin's oscillator input (Sooooo, we should be able to chain this component with more to make a ripple counter...right???)
 type FrequencyDivider struct {
 	wireLoopBack *Wire
 	latch        *EdgeTriggeredDTypeLatch
@@ -273,7 +280,8 @@ func (d *FrequencyDivider) Shutdown() {
 }
 
 // NBitRippleCounter is a chain of N number of frequency dividers where each divider's clock will be controlled by the left-side neighboring divider's QBar out
-//   This should allow a rudimentary binary counter operation to occur, ticking at the rate of the outside driver clock
+//
+//	This should allow a rudimentary binary counter operation to occur, ticking at the rate of the outside driver clock
 type NBitRippleCounter struct {
 	freqDivs []*FrequencyDivider
 	Qs       []*NORGate
@@ -312,12 +320,13 @@ func (c *NBitRippleCounter) Shutdown() {
 // EdgeTriggeredDTypeLatchWithPresetAndClear is like an Edge-triggered D-Type Latch, but with an added Preset and Clear input to force the state to 1 or 0 regardless of clock/data
 //
 // pre clr d clk   q  !q
-//  1   0  X  X    1  0   preset makes data and clock not matter, forces Q
-//  0   1  X  X    0  1   clear makes data and clock not matter, forces QBar
-//  0   0  0  ^    0  1	  should take the data value since clock was raised (transitioned to 1)
-//  0   0  1  ^    1  0   should take the data value since clock was raised (transitioned to 1)
-//  0   0  X  0    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
-//  0   0  X  1    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
+//
+//	1   0  X  X    1  0   preset makes data and clock not matter, forces Q
+//	0   1  X  X    0  1   clear makes data and clock not matter, forces QBar
+//	0   0  0  ^    0  1	  should take the data value since clock was raised (transitioned to 1)
+//	0   0  1  ^    1  0   should take the data value since clock was raised (transitioned to 1)
+//	0   0  X  0    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
+//	0   0  X  1    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
 type EdgeTriggeredDTypeLatchWithPresetAndClear struct {
 	wireluQOut    *Wire
 	wireluQBarOut *Wire

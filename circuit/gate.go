@@ -9,6 +9,7 @@ import (
 )
 
 // ANDGate is a standard AND logic gate
+//
 //	Wired like a NOR gate, but each relay is chained via the CLOSED out
 //
 // Truth Table
@@ -69,6 +70,7 @@ func (g *ANDGate) Shutdown() {
 }
 
 // ORGate is a standard OR logic gate.
+//
 //	Wired like a NAND gate, but wired up to the CLOSED outs of each relay.
 //
 // Truth Table
@@ -93,7 +95,7 @@ func NewORGate(name string, pins ...chargeEmitter) *ORGate {
 
 	// to track if loopback, to avoid deadlock on mu
 	var lockedContext atomic.Value
-	lockedContext.Store(uuid.Must(uuid.NewV4()))
+	lockedContext.Store(uuid.Must(uuid.NewV4(), nil))
 
 	// build a relay and associated listen/transmit funcs to deal with each input pin
 	inputStates := make([]atomic.Value, len(pins))
@@ -120,11 +122,11 @@ func NewORGate(name string, pins ...chargeEmitter) *ORGate {
 							mu.Lock()
 							ownsLock = true
 
-							// must register a unique lockId value on the Charge to check for potential case where the charge flow loops back through here
-							lockId := uuid.Must(uuid.NewV4())
-							lockedContext.Store(lockId)
-							Debug(name, fmt.Sprintf("(Relays[%d]) Registering new lockContext (%v)", index, lockId))
-							c.AddContext(lockId)
+							// must register a unique lockID value on the Charge to check for potential case where the charge flow loops back through here
+							lockID := uuid.Must(uuid.NewV4(), nil)
+							lockedContext.Store(lockID)
+							Debug(name, fmt.Sprintf("(Relays[%d]) Registering new lockContext (%v)", index, lockID))
+							c.AddContext(lockID)
 						} else {
 							Debug(name, fmt.Sprintf("(Relays[%d]) Loopback (bypassing lock)", index))
 						}
@@ -185,6 +187,7 @@ func (g *ORGate) Shutdown() {
 }
 
 // NANDGate is a standard NAND (Not-AND) logic gate.
+//
 //	Wired like an OR gate, but wired up to the OPEN outs of each relay.
 //
 // Truth Table
@@ -209,7 +212,7 @@ func NewNANDGate(name string, pins ...chargeEmitter) *NANDGate {
 
 	// to track if loopback, to avoid deadlock on mu
 	var lockedContext atomic.Value
-	lockedContext.Store(uuid.Must(uuid.NewV4()))
+	lockedContext.Store(uuid.Must(uuid.NewV4(), nil))
 
 	// build a relay and associated listen/transmit funcs to deal with each input pin
 	inputStates := make([]atomic.Value, len(pins))
@@ -236,11 +239,11 @@ func NewNANDGate(name string, pins ...chargeEmitter) *NANDGate {
 							mu.Lock()
 							ownsLock = true
 
-							// must register a unique lockId value on the Charge to check for potential case where the charge flow loops back through here
-							lockId := uuid.Must(uuid.NewV4())
-							lockedContext.Store(lockId)
-							Debug(name, fmt.Sprintf("(Relays[%d]) Registering new lockContext (%v)", index, lockId))
-							e.AddContext(lockId)
+							// must register a unique lockID value on the Charge to check for potential case where the charge flow loops back through here
+							lockID := uuid.Must(uuid.NewV4(), nil)
+							lockedContext.Store(lockID)
+							Debug(name, fmt.Sprintf("(Relays[%d]) Registering new lockContext (%v)", index, lockID))
+							e.AddContext(lockID)
 						} else {
 							Debug(name, fmt.Sprintf("(Relays[%d]) Loopback (bypassing lock)", index))
 						}
@@ -301,6 +304,7 @@ func (g *NANDGate) Shutdown() {
 }
 
 // NORGate is a standard NOR (Not-OR) logic gate.
+//
 //	Wired like an AND gate, but each relay is chained via the OPEN out
 //
 // Truth Table
@@ -418,7 +422,8 @@ func (g *XORGate) Shutdown() {
 }
 
 // XNORGate is a standard XNOR (Exclusive-Not-OR) logic gate (aka equivalence gate).
-// 	The approach to the circuit is simplified by just using an Inverter on an XOR gate (yeah, I cheated).
+//
+//	The approach to the circuit is simplified by just using an Inverter on an XOR gate (yeah, I cheated).
 //
 // Truth Table
 // in in out

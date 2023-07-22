@@ -6,10 +6,11 @@ import "fmt"
 //
 // Truth Table
 // sel a  b out
-//  0  0  x  0
-//  0  1  x  1
-//  1  x  0  0
-//  1  x  1  1
+//
+//	0  0  x  0
+//	0  1  x  1
+//	1  x  0  0
+//	1  x  1  1
 type TwoToOneSelector struct {
 	aANDs     []*ANDGate
 	bANDs     []*ANDGate
@@ -18,6 +19,7 @@ type TwoToOneSelector struct {
 }
 
 // NewTwoToOneSelector will return an 2-to-1 Selector component whose output will depend on the state of the selector signal input pin
+//
 //	With selector off, the first set of pins will be the output.  If on, the second set is the output.
 func NewTwoToOneSelector(name string, signal chargeEmitter, aPins, bPins []chargeEmitter) (*TwoToOneSelector, error) {
 

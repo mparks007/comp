@@ -8,9 +8,10 @@ import (
 )
 
 // Charge will be the the pimary means for indicating current flowing from component to component (and flagging if propogation of state change has ended)
-//   The reference to "flow" is used loosley as electric current and hole current are of differing directions and that electrons don't flow per se, but jump and bump.
-//   It doesn't really matter overall as a closed circuit generally gets "hot" throughout, instantly.
-//   For simplicity, I have the concept of a Charge object "moving through the wire", from one end to the other, propogating its charge to each component encountered
+//
+//	The reference to "flow" is used loosley as electric current and hole current are of differing directions and that electrons don't flow per se, but jump and bump.
+//	It doesn't really matter overall as a closed circuit generally gets "hot" throughout, instantly.
+//	For simplicity, I have the concept of a Charge object "moving through the wire", from one end to the other, propogating its charge to each component encountered
 type Charge struct {
 	sender       string
 	state        bool

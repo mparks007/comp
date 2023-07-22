@@ -3,6 +3,7 @@ package circuit
 import "fmt"
 
 // HalfAdder is a standard Half Adder circuit
+//
 //	A and B inputs result in Sum and Carry outputs (as normal, this circuit doesn't handle a carry in (needs FullAdder for that)
 //
 // Truth Table
@@ -33,7 +34,8 @@ func (h *HalfAdder) Shutdown() {
 }
 
 // FullAdder is a standard Full Adder circuit
-// 	A, B, and Carry in result in Sum and Carry out (can handle "1 + 1 = 0 carry the 1"!)
+//
+//	A, B, and Carry in result in Sum and Carry out (can handle "1 + 1 = 0 carry the 1"!)
 //
 // Truth Table
 // A B CarrIn  Sum	Carry
@@ -72,9 +74,11 @@ func (f *FullAdder) Shutdown() {
 }
 
 // NBitAdder allows the summing of two binary numbers
-//	Handles a Carry bit in and holds potential Carry bit after summing all
 //
-//    10011101
+//		Handles a Carry bit in and holds potential Carry bit after summing all
+//
+//	   10011101
+//
 // +  11010110
 // = 101110011
 type NBitAdder struct {
@@ -200,6 +204,7 @@ type NNumberAdder struct {
 }
 
 // NewNNumberAdder returns an NNumberAdder which will allow the addition of any number of binary numbers
+//
 //	However, due to the answer latch being level-triggered and not edge-triggered, once active, it will kick off an infinite loop of addition in my code.
 //	This component is just a proof of concept on how to add multiple numbers without needing an internal 2-to-1 Selector
 //
