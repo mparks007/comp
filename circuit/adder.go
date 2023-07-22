@@ -205,8 +205,7 @@ type NNumberAdder struct {
 
 // NewNNumberAdder returns an NNumberAdder which will allow the addition of any number of binary numbers
 //
-//	However, due to the answer latch being level-triggered and not edge-triggered, once active, it will kick off an infinite loop of addition in my code.
-//	This component is just a proof of concept on how to add multiple numbers without needing an internal 2-to-1 Selector
+//	This component is just a proof of concept on how to add multiple numbers without needing an internal 2-to-1 Selector, BUT IT DEADLOCKS
 //
 //	Steps:
 //		1. On construction, send in the intial numbers

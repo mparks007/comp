@@ -326,7 +326,6 @@ func (c *NBitRippleCounter) Shutdown() {
 //	0   0  0  ^    0  1	  should take the data value since clock was raised (transitioned to 1)
 //	0   0  1  ^    1  0   should take the data value since clock was raised (transitioned to 1)
 //	0   0  X  0    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
-//	0   0  X  1    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
 type EdgeTriggeredDTypeLatchWithPresetAndClear struct {
 	wireluQOut    *Wire
 	wireluQBarOut *Wire

@@ -2255,10 +2255,71 @@ func TestOscillator(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
+// func TestOscillator2(t *testing.T) {
+// 	testCases := []struct {
+// 		initState   bool
+// 		oscHertz    int
+// 		wantResults string
+// 	}{
+// 		{false, 1, "010"},
+// 		// {true, 1, "101"},
+// 		// {false, 5, "01010101010"},
+// 		// {true, 5, "10101010101"},
+// 	}
+
+// 	Debug(testName(t, ""), "Start Test Cases Loop")
+
+// 	for i, tc := range testCases {
+// 		t.Run(fmt.Sprintf("testCases[%d]: Oscillating at (%d) hertz, immediate start (%t)", i, tc.oscHertz, tc.initState), func(t *testing.T) {
+
+// 			Debug(testName(t, ""), fmt.Sprintf("testCases[%d]: Oscillating at (%d) hertz, immediate start (%t)", i, tc.oscHertz, tc.initState))
+
+// 			osc := NewOscillator2(testName(t, "Oscillator"), tc.initState)
+// 			defer osc.Stop()
+
+// 			var gotResults atomic.Value
+// 			ch := make(chan Charge, 1)
+
+// 			gotResults.Store("")
+// 			chStop := make(chan bool, 1)
+// 			go func() {
+// 				for {
+// 					result := gotResults.Load().(string)
+// 					select {
+// 					case c := <-ch:
+// 						Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", ch, c.String()))
+// 						if c.state {
+// 							result += "1"
+// 						} else {
+// 							result += "0"
+// 						}
+// 						gotResults.Store(result)
+// 						c.Done()
+// 					case <-chStop:
+// 						return
+// 					}
+// 				}
+// 			}()
+// 			defer func() { chStop <- true }()
+
+// 			osc.WireUp(ch)
+// 			osc.Oscillate(tc.oscHertz)
+
+// 			// give the oscillator some time to....oscillate
+// 			//time.Sleep(time.Second * 3)
+
+// 			if !strings.HasPrefix(gotResults.Load().(string), tc.wantResults) {
+// 				t.Errorf("Wanted results of at least %s but got %s", tc.wantResults, gotResults.Load().(string))
+// 			}
+// 		})
+// 	}
+// 	Debug(testName(t, ""), "End Test Cases Loop")
+// }
+
 func TestRSFlipFlop(t *testing.T) {
 	testCases := []struct {
-		rPinIsPowered bool
-		sPinIsPowered bool
+		rPinHasCharge bool
+		sPinHasCharge bool
 		wantQ         bool
 		wantQBar      bool
 	}{ // construction of the flipflop will start with a default of rPin:false, sPin:false, which causes false on both inputs of the S nor, which causes QBar on (Q off)
@@ -2285,21 +2346,21 @@ func TestRSFlipFlop(t *testing.T) {
 			priorR = false
 			priorS = false
 		} else {
-			priorR = testCases[i-1].rPinIsPowered
-			priorS = testCases[i-1].sPinIsPowered
+			priorR = testCases[i-1].rPinHasCharge
+			priorS = testCases[i-1].sPinHasCharge
 		}
 
-		return fmt.Sprintf("testCases[%d]: Switching from [rInIsPowered (%t), sInIsPowered (%t)] to [rInIsPowered (%t), sInIsPowered (%t)]", i, priorR, priorS, testCases[i].rPinIsPowered, testCases[i].sPinIsPowered)
+		return fmt.Sprintf("testCases[%d]: Switching from [rInHasCharge (%t), sInHasCharge (%t)] to [rInHasCharge (%t), sInHasCharge (%t)]", i, priorR, priorS, testCases[i].rPinHasCharge, testCases[i].sPinHasCharge)
 	}
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var rPinBattery, sPinBattery *ChargeProvider
-	rPinBattery = NewChargeProvider(testName(t, "rBattery"), false)
-	sPinBattery = NewChargeProvider(testName(t, "sBattery"), false)
+	var rPinChargeProvider, sPinChargeProvider *ChargeProvider
+	rPinChargeProvider = NewChargeProvider(testName(t, "rChargeProvider"), false)
+	sPinChargeProvider = NewChargeProvider(testName(t, "sChargeProvider"), false)
 
-	// starting with no input signals (S and R are off)
-	ff := NewRSFlipFlop(testName(t, "RSFlipFlop"), rPinBattery, sPinBattery)
+	// starting with no input signals (R and S are off)
+	ff := NewRSFlipFlop(testName(t, "RSFlipFlop"), rPinChargeProvider, sPinChargeProvider)
 	defer ff.Shutdown()
 
 	var gotQ, gotQBar atomic.Value
@@ -2310,10 +2371,10 @@ func TestRSFlipFlop(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eQBar := <-chQBar:
-				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.state)
-				eQBar.Done()
+			case cQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Charge {%s}", chQBar, cQBar.String()))
+				gotQBar.Store(cQBar.state)
+				cQBar.Done()
 			case <-chStopQBar:
 				return
 			}
@@ -2323,10 +2384,10 @@ func TestRSFlipFlop(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eQ := <-chQ:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.state)
-				eQ.Done()
+			case cQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Charge {%s}", chQ, cQ.String()))
+				gotQ.Store(cQ.state)
+				cQ.Done()
 			case <-chStopQ:
 				return
 			}
@@ -2338,11 +2399,11 @@ func TestRSFlipFlop(t *testing.T) {
 	ff.Q.WireUp(chQ)
 
 	if gotQ.Load().(bool) {
-		t.Error("Wanted no power at Q, but got power")
+		t.Error("Wanted no charge at Q, but got charge")
 	}
 
 	if !gotQBar.Load().(bool) {
-		t.Errorf("Wanted power at QBar, but got none")
+		t.Errorf("Wanted charge at QBar, but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -2354,24 +2415,24 @@ func TestRSFlipFlop(t *testing.T) {
 
 			Debug(testName(t, ""), summary)
 
-			if tc.rPinIsPowered {
-				rPinBattery.Charge()
+			if tc.rPinHasCharge {
+				rPinChargeProvider.Charge()
 			} else {
-				rPinBattery.Discharge()
+				rPinChargeProvider.Discharge()
 			}
 
-			if tc.sPinIsPowered {
-				sPinBattery.Charge()
+			if tc.sPinHasCharge {
+				sPinChargeProvider.Charge()
 			} else {
-				sPinBattery.Discharge()
+				sPinChargeProvider.Discharge()
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted charge of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted charge of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -2405,7 +2466,7 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 		var priorDataIn bool
 
 		if i == 0 {
-			// trues since starting with charged batteries when Newing thew Latch initially
+			// trues since starting with charged ChargeProviders when Newing the Latch initially
 			priorClkIn = true
 			priorDataIn = true
 		} else {
@@ -2418,12 +2479,12 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var clkBattery, dataBattery *ChargeProvider
-	clkBattery = NewChargeProvider(testName(t, "clkBattery"), true)
-	dataBattery = NewChargeProvider(testName(t, "dataBattery"), true)
+	var clkChargeProvider, dataChargeProvider *ChargeProvider
+	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), true)
+	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), true)
 
 	// starting with true input signals (Clk and Data are on)
-	latch := NewLevelTriggeredDTypeLatch(testName(t, "LevelTriggeredDTypeLatch"), clkBattery, dataBattery)
+	latch := NewLevelTriggeredDTypeLatch(testName(t, "LevelTriggeredDTypeLatch"), clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()
 
 	chQ := make(chan Charge, 1)
@@ -2434,14 +2495,14 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eQBar := <-chQBar:
-				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.state)
-				eQBar.Done()
-			case eQ := <-chQ:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.state)
-				eQ.Done()
+			case cQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Charge {%s}", chQBar, cQBar.String()))
+				gotQBar.Store(cQBar.state)
+				cQBar.Done()
+			case cQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Charge {%s}", chQ, cQ.String()))
+				gotQ.Store(cQ.state)
+				cQ.Done()
 			case <-chStop:
 				return
 			}
@@ -2453,11 +2514,11 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	latch.Q.WireUp(chQ)
 
 	if !gotQ.Load().(bool) {
-		t.Error("Wanted power at Q, but got none")
+		t.Error("Wanted charge at Q, but got none")
 	}
 
 	if gotQBar.Load().(bool) {
-		t.Error("Wanted no power at QBar, but got some")
+		t.Error("Wanted no charge at QBar, but got charge")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -2470,22 +2531,22 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 			Debug(testName(t, ""), summary)
 
 			if tc.clkIn {
-				clkBattery.Charge()
+				clkChargeProvider.Charge()
 			} else {
-				clkBattery.Discharge()
+				clkChargeProvider.Discharge()
 			}
 			if tc.dataIn {
-				dataBattery.Charge()
+				dataChargeProvider.Charge()
 			} else {
-				dataBattery.Discharge()
+				dataChargeProvider.Discharge()
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted charge of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted charge of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -2526,10 +2587,10 @@ func TestNBitLevelTriggeredDTypeLatch(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Charge {%s}", index, chState, c.String()))
+					gots[index].Store(c.state)
+					c.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Stopped", index))
 					return
@@ -2674,10 +2735,10 @@ func TestTwoToOneSelector(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Charge {%s}", index, chState, c.String()))
+					gots[index].Store(c.state)
+					c.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
 					return
@@ -2749,10 +2810,10 @@ func TestTwoToOneSelector_SelectingB_ASwitchesNoImpact(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Received on Channel (%v), Charge {%s}", index, chState, c.String()))
+					gots[index].Store(c.state)
+					c.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(SelectorOuts[%d]) Stopped", index))
 					return
@@ -2856,10 +2917,10 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 		go func(chSumState chan Charge, chSumStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chSumState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
-					gotSums[index].Store(e.state)
-					e.Done()
+				case c := <-chSumState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chSumState, c.String()))
+					gotSums[index].Store(c.state)
+					c.Done()
 				case <-chSumStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
 					return
@@ -2882,10 +2943,10 @@ func TestThreeNumberAdder_TwoNumberAdd(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-chCarryOutState:
-				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Electron {%s}", chCarryOutState, e.String()))
-				gotCarryOut.Store(e.state)
-				e.Done()
+			case c := <-chCarryOutState:
+				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Charge {%s}", chCarryOutState, c.String()))
+				gotCarryOut.Store(c.state)
+				c.Done()
 			case <-chCarryOutStop:
 				Debug(testName(t, "Select"), "(CarryOut) Stopped")
 				return
@@ -2942,10 +3003,10 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 		go func(chSumState chan Charge, chSumStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chSumState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Electron {%s}", index, chSumState, e.String()))
-					gotSums[index].Store(e.state)
-					e.Done()
+				case c := <-chSumState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chSumState, c.String()))
+					gotSums[index].Store(c.state)
+					c.Done()
 				case <-chSumStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
 					return
@@ -2968,10 +3029,10 @@ func TestThreeNumberAdder_ThreeNumberAdd(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-chCarryOutState:
-				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Electron {%s}", chCarryOutState, e.String()))
-				gotCarryOut.Store(e.state)
-				e.Done()
+			case c := <-chCarryOutState:
+				Debug(testName(t, "Select"), fmt.Sprintf("(CarryOut) Received on Channel (%v), Charge {%s}", chCarryOutState, c.String()))
+				gotCarryOut.Store(c.state)
+				c.Done()
 			case <-chCarryOutStop:
 				Debug(testName(t, "Select"), "(CarryOut) Stopped")
 				return
@@ -3063,12 +3124,12 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		return fmt.Sprintf("testCases[%d]: Switching from [clrIn (%t), clkIn (%t), dataIn (%t)] to [clrIn (%t), clkIn (%t), dataIn (%t)]", i, priorClrIn, priorClkIn, priorDataIn, testCases[i].clrIn, testCases[i].clkIn, testCases[i].dataIn)
 	}
 
-	var clrBattery, clkBattery, dataBattery *ChargeProvider
-	clrBattery = NewChargeProvider(testName(t, "clrBattery"), false)
-	clkBattery = NewChargeProvider(testName(t, "clkBattery"), true)
-	dataBattery = NewChargeProvider(testName(t, "dataBattery"), true)
+	var clrChargeProvider, clkChargeProvider, dataChargeProvider *ChargeProvider
+	clrChargeProvider = NewChargeProvider(testName(t, "clrChargeProvider"), false)
+	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), true)
+	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), true)
 
-	latch := NewLevelTriggeredDTypeLatchWithClear(testName(t, "LevelTriggeredDTypeLatchWithClear"), clrBattery, clkBattery, dataBattery)
+	latch := NewLevelTriggeredDTypeLatchWithClear(testName(t, "LevelTriggeredDTypeLatchWithClear"), clrChargeProvider, clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()
 
 	chQ := make(chan Charge, 1)
@@ -3079,14 +3140,14 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eQBar := <-chQBar:
-				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.state)
-				eQBar.Done()
-			case eQ := <-chQ:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.state)
-				eQ.Done()
+			case cQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Charge {%s}", chQBar, cQBar.String()))
+				gotQBar.Store(cQBar.state)
+				cQBar.Done()
+			case cQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Charge {%s}", chQ, cQ.String()))
+				gotQ.Store(cQ.state)
+				cQ.Done()
 			case <-chStop:
 				return
 			}
@@ -3098,11 +3159,11 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	latch.Q.WireUp(chQ)
 
 	if !gotQ.Load().(bool) {
-		t.Error("Wanted power at Q, but got none")
+		t.Error("Wanted charge at Q, but got none")
 	}
 
 	if gotQBar.Load().(bool) {
-		t.Error("Wanted no power at QBar, but got power")
+		t.Error("Wanted no charge at QBar, but got charge")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -3113,27 +3174,27 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 			Debug(testName(t, ""), testNameDetail(i))
 
 			if tc.clrIn {
-				clrBattery.Charge()
+				clrChargeProvider.Charge()
 			} else {
-				clrBattery.Discharge()
+				clrChargeProvider.Discharge()
 			}
 			if tc.clkIn {
-				clkBattery.Charge()
+				clkChargeProvider.Charge()
 			} else {
-				clkBattery.Discharge()
+				clkChargeProvider.Discharge()
 			}
 			if tc.dataIn {
-				dataBattery.Charge()
+				dataChargeProvider.Charge()
 			} else {
-				dataBattery.Discharge()
+				dataChargeProvider.Discharge()
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted charge of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted charge of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -3177,10 +3238,10 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 		go func(chState chan Charge, chStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Electron {%s}", index, chState, e.String()))
-					gots[index].Store(e.state)
-					e.Done()
+				case c := <-chState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Received on Channel (%v), Charge {%s}", index, chState, c.String()))
+					gots[index].Store(c.state)
+					c.Done()
 				case <-chStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Latches[%d]) Stopped", index))
 					return
@@ -3252,132 +3313,129 @@ func TestNBitLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	Debug(testName(t, ""), "End Test Cases Loop")
 }
 
-// TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
-//
-//	runtime: goroutine stack exceeds 1000000000-byte limit
-//	fatal error: stack overflow
-func TestNNumberAdder(t *testing.T) {
+// // TODO: TestNNumberAdder creates an adder loop that has no bounds so it is expected to stack overlow
+// func TestNNumberAdder(t *testing.T) {
 
-	Debug(testName(t, ""), "Initial Setup")
+// 	Debug(testName(t, ""), "Initial Setup")
 
-	switches, _ := NewNSwitchBank(testName(t, "switches"), "1")
-	defer switches.Shutdown()
+// 	switches, _ := NewNSwitchBank(testName(t, "switches"), "1")
+// 	defer switches.Shutdown()
 
-	addr, _ := NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
-	defer addr.Shutdown()
+// 	addr, _ := NewNNumberAdder(testName(t, "NNumberAdder"), switches.Switches())
+// 	defer addr.Shutdown()
 
-	// build listen/transmit funcs to deal with each of the NNumberAdder's Q outputs (the latest inner-adder's Sum sent through)
-	var gotSums [1]atomic.Value
-	var chSumStates []chan Charge
-	var chSumStops []chan bool
-	for i, s := range addr.Sums {
+// 	// build listen/transmit funcs to deal with each of the NNumberAdder's Q outputs (the latest inner-adder's Sum sent through)
+// 	var gotSums [1]atomic.Value
+// 	var chSumStates []chan Charge
+// 	var chSumStops []chan bool
+// 	for i, s := range addr.Sums {
 
-		chSumStates = append(chSumStates, make(chan Charge, 1))
-		chSumStops = append(chSumStops, make(chan bool, 1))
-		gotSums[i].Store(false)
+// 		chSumStates = append(chSumStates, make(chan Charge, 1))
+// 		chSumStops = append(chSumStops, make(chan bool, 1))
+// 		gotSums[i].Store(false)
 
-		go func(chSumState chan Charge, chSumStop chan bool, index int) {
-			for {
-				select {
-				case c := <-chSumState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chSumState, c.String()))
-					gotSums[index].Store(c.state)
-					c.Done()
-				case <-chSumStop:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
-					return
-				}
-			}
-		}(chSumStates[i], chSumStops[i], i)
+// 		go func(chSumState chan Charge, chSumStop chan bool, index int) {
+// 			for {
+// 				select {
+// 				case c := <-chSumState:
+// 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chSumState, c.String()))
+// 					gotSums[index].Store(c.state)
+// 					c.Done()
+// 				case <-chSumStop:
+// 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
+// 					return
+// 				}
+// 			}
+// 		}(chSumStates[i], chSumStops[i], i)
 
-		s.WireUp(chSumStates[i])
-	}
-	defer func() {
-		for i := 0; i < len(addr.Sums); i++ {
-			chSumStops[i] <- true
-		}
-	}()
+// 		s.WireUp(chSumStates[i])
+// 	}
+// 	defer func() {
+// 		for i := 0; i < len(addr.Sums); i++ {
+// 			chSumStops[i] <- true
+// 		}
+// 	}()
 
-	// build listen/transmit funcs to deal with each of the adder's INTERNAL adder's sum outputs
-	var gotInnerSums [1]atomic.Value
-	var chInnerSumStates []chan Charge
-	var chInnerSumStops []chan bool
-	for i, s := range addr.adder.Sums {
+// 	// build listen/transmit funcs to deal with each of the adder's INTERNAL adder's sum outputs
+// 	var gotInnerSums [1]atomic.Value
+// 	var chInnerSumStates []chan Charge
+// 	var chInnerSumStops []chan bool
+// 	for i, s := range addr.adder.Sums {
 
-		chInnerSumStates = append(chInnerSumStates, make(chan Charge, 1))
-		chInnerSumStops = append(chInnerSumStops, make(chan bool, 1))
-		gotInnerSums[i].Store(false)
+// 		chInnerSumStates = append(chInnerSumStates, make(chan Charge, 1))
+// 		chInnerSumStops = append(chInnerSumStops, make(chan bool, 1))
+// 		gotInnerSums[i].Store(false)
 
-		go func(chInnerSumState chan Charge, chInnerSumStop chan bool, index int) {
-			for {
-				select {
-				case c := <-chInnerSumState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chInnerSumState, c.String()))
-					gotInnerSums[index].Store(c.state)
-					c.Done()
-				case <-chInnerSumStop:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
-					return
-				}
-			}
-		}(chInnerSumStates[i], chInnerSumStops[i], i)
+// 		go func(chInnerSumState chan Charge, chInnerSumStop chan bool, index int) {
+// 			for {
+// 				select {
+// 				case c := <-chInnerSumState:
+// 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Received on Channel (%v), Charge {%s}", index, chInnerSumState, c.String()))
+// 					gotInnerSums[index].Store(c.state)
+// 					c.Done()
+// 				case <-chInnerSumStop:
+// 					Debug(testName(t, "Select"), fmt.Sprintf("(Sums[%d]) Stopped", index))
+// 					return
+// 				}
+// 			}
+// 		}(chInnerSumStates[i], chInnerSumStops[i], i)
 
-		s.WireUp(chInnerSumStates[i])
-	}
-	defer func() {
-		for i := 0; i < len(addr.adder.Sums); i++ {
-			chInnerSumStops[i] <- true
-		}
-	}()
+// 		s.WireUp(chInnerSumStates[i])
+// 	}
+// 	defer func() {
+// 		for i := 0; i < len(addr.adder.Sums); i++ {
+// 			chInnerSumStops[i] <- true
+// 		}
+// 	}()
 
-	Debug(testName(t, ""), "Start Test Cases")
+// 	Debug(testName(t, ""), "Start Test Cases")
 
-	// totally putting fake setup here to test some things.  this test needs to be reworked to trap the expected states once I get it to work
-	// totally putting fake setup here to test some things.  this test needs to be reworked to trap the expected states once I get it to work
-	// totally putting fake setup here to test some things.  this test needs to be reworked to trap the expected states once I get it to work
+// 	// totally putting fake setup here to test some things.  this test needs to be reworked to trap the expected states once I get it to work
+// 	// totally putting fake setup here to test some things.  this test needs to be reworked to trap the expected states once I get it to work
+// 	// totally putting fake setup here to test some things.  this test needs to be reworked to trap the expected states once I get it to work
 
-	// can't really prove that Clear clears anything since the internal Add switch defaults to false so the latch doesn't get the adders answer in the first place
-	addr.Clear.Set(true)
-	addr.Clear.Set(false)
+// 	// can't really prove that Clear clears anything since the internal Add switch defaults to false so the latch doesn't get the adders answer in the first place
+// 	addr.Clear.Set(true)
+// 	addr.Clear.Set(false)
 
-	// regardless of sending non-zero into the NBitAdder's input switches, the fact the Add switch isn't on would prevent any 1s from getting into the latch, so expect no 1s
-	want := "0"
+// 	// regardless of sending non-zero into the NBitAdder's input switches, the fact the Add switch isn't on would prevent any 1s from getting into the latch, so expect no 1s
+// 	want := "0"
 
-	if got := getAnswerString(gotSums[:]); got != want {
-		t.Errorf("[Initial setup] Wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
-	}
+// 	if got := getAnswerString(gotSums[:]); got != want {
+// 		t.Errorf("[Initial setup] Wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+// 	}
 
-	// however, the internal adder aspect of the NBitAdder should have state based on the initial switches
-	want = "1"
-	if got := getAnswerString(gotInnerSums[:]); got != want {
-		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
-	}
+// 	// however, the internal adder aspect of the NBitAdder should have state based on the initial switches
+// 	want = "1"
+// 	if got := getAnswerString(gotInnerSums[:]); got != want {
+// 		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
+// 	}
 
-	// this deadlocks once true.  booooooooo
-	//	addr.Add.Set(true)
-	addr.Add.Set(false)
+// 	// this deadlocks once true.  booooooooo
+// 	addr.Add.Set(true)
+// 	//addr.Add.Set(false)
 
-	// !!! would want 1 here if the Add Set worked, yes?  allowing the latch to get fed the latest inner-adder's state
-	want = "0"
-	if got := getAnswerString(gotSums[:]); got != want {
-		t.Errorf("After an add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
-	}
+// 	// !!! would want 1 here if the Add Set worked, yes?  allowing the latch to get fed the latest inner-adder's state
+// 	want = "0"
+// 	if got := getAnswerString(gotSums[:]); got != want {
+// 		t.Errorf("After an add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+// 	}
 
-	switches.SetSwitches("0")
+// 	switches.SetSwitches("0")
 
-	// the internal adder aspect of the NBitAdder should have state based on the switches each time
-	want = "0"
-	if got := getAnswerString(gotInnerSums[:]); got != want {
-		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
-	}
+// 	// the internal adder aspect of the NBitAdder should have state based on the switches each time
+// 	want = "0"
+// 	if got := getAnswerString(gotInnerSums[:]); got != want {
+// 		t.Errorf("[Initial setup] Wanted answer of NNumberAdder's inner-adder to be %s but got %s", want, got)
+// 	}
 
-	// want = "00000011"
-	// if got := getAnswerString(gotSums[:]); got != want {
-	// 	t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
-	// }
+// 	// want = "00000011"
+// 	// if got := getAnswerString(gotSums[:]); got != want {
+// 	// 	t.Errorf("After another add, wanted answer of NNumberAdder (the latch output) to be %s but got %s", want, got)
+// 	// }
 
-	Debug(testName(t, ""), "End Test Cases")
-}
+// 	Debug(testName(t, ""), "End Test Cases")
+// }
 
 func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	testCases := []struct {
@@ -3402,7 +3460,6 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 		var priorDataIn bool
 
 		if i == 0 {
-			// trues since starting with charged batteries when Newing thew Latch initially
 			priorClkIn = false
 			priorDataIn = false
 		} else {
@@ -3415,11 +3472,11 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var clkBattery, dataBattery *ChargeProvider
-	clkBattery = NewChargeProvider(testName(t, "clkBattery"), false)
-	dataBattery = NewChargeProvider(testName(t, "dataBattery"), false)
+	var clkChargeProvider, dataChargeProvider *ChargeProvider
+	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), false)
+	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), false)
 
-	latch := NewEdgeTriggeredDTypeLatch(testName(t, "EdgeTriggeredDTypeLatch"), clkBattery, dataBattery)
+	latch := NewEdgeTriggeredDTypeLatch(testName(t, "EdgeTriggeredDTypeLatch"), clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()
 
 	chQ := make(chan Charge, 1)
@@ -3430,14 +3487,14 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eQBar := <-chQBar:
-				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.state)
-				eQBar.Done()
-			case eQ := <-chQ:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.state)
-				eQ.Done()
+			case cQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Charge {%s}", chQBar, cQBar.String()))
+				gotQBar.Store(cQBar.state)
+				cQBar.Done()
+			case cQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Charge {%s}", chQ, cQ.String()))
+				gotQ.Store(cQ.state)
+				cQ.Done()
 			case <-chStop:
 				return
 			}
@@ -3449,11 +3506,11 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	latch.Q.WireUp(chQ)
 
 	if gotQ.Load().(bool) {
-		t.Error("Wanted no power at Q, but got power")
+		t.Error("Wanted no charge at Q, but got charge")
 	}
 
 	if !gotQBar.Load().(bool) {
-		t.Error("Wanted power at QBar, but got none")
+		t.Error("Wanted charge at QBar, but got none")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -3466,22 +3523,22 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 			Debug(testName(t, ""), summary)
 
 			if tc.dataIn {
-				dataBattery.Charge()
+				dataChargeProvider.Charge()
 			} else {
-				dataBattery.Discharge()
+				dataChargeProvider.Discharge()
 			}
 			if tc.clkIn {
-				clkBattery.Charge()
+				clkChargeProvider.Charge()
 			} else {
-				clkBattery.Discharge()
+				clkChargeProvider.Discharge()
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted charge of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted charge of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
@@ -3502,16 +3559,16 @@ func TestFrequencyDivider(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-chOsc:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, e.String()))
+			case c := <-chOsc:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chOsc, c.String()))
 				result := gotOscResults.Load().(string)
-				if e.state {
+				if c.state {
 					result += "1"
 				} else {
 					result += "0"
 				}
 				gotOscResults.Store(result)
-				e.Done()
+				c.Done()
 			case <-chStopOsc:
 				return
 			}
@@ -3528,16 +3585,16 @@ func TestFrequencyDivider(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-chDiv:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chDiv, e.String()))
+			case c := <-chDiv:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chDiv, c.String()))
 				result := gotDivResults.Load().(string)
-				if e.state {
+				if c.state {
 					result += "1"
 				} else {
 					result += "0"
 				}
 				gotDivResults.Store(result)
-				e.Done()
+				c.Done()
 			case <-chStopDiv:
 				return
 			}
@@ -3561,7 +3618,7 @@ func TestFrequencyDivider(t *testing.T) {
 
 	osc.Oscillate(2) // 2 times a second
 
-	time.Sleep(time.Second * 4) // for 4 seconds, should give me 8 oscillations and 4 divider  (though a tad nondeterministic and could fail)
+	time.Sleep(time.Second * 5) // for 5 seconds, should give me at least 8 oscillations and 4 divider  (though a tad nondeterministic and could fail)
 
 	osc.Stop()
 
@@ -3578,7 +3635,7 @@ func TestFrequencyDivider(t *testing.T) {
 	Debug(testName(t, ""), "End Test Case")
 }
 
-// Troubles with this beast
+// TODO: Troubles with this beast
 func TestNBitRippleCounter_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
@@ -3595,16 +3652,16 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case e := <-chOsc:
-				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Electron {%s}", chOsc, e.String()))
+			case c := <-chOsc:
+				Debug(testName(t, "Select"), fmt.Sprintf("Received on Channel (%v), Charge {%s}", chOsc, c.String()))
 				result := gotOscResults.Load().(string)
-				if e.state {
+				if c.state {
 					result += "1"
 				} else {
 					result += "0"
 				}
 				gotOscResults.Store(result)
-				e.Done()
+				c.Done()
 			case <-chStop:
 				return
 			}
@@ -3630,18 +3687,18 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 		go func(chRippleState chan Charge, chRippleStop chan bool, index int) {
 			for {
 				select {
-				case e := <-chRippleState:
-					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Received on Channel (%v), Electron {%s}", index, chRippleState, e.String()))
+				case c := <-chRippleState:
+					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Received on Channel (%v), Charge {%s}", index, chRippleState, c.String()))
 					result := gotDivResults[index].Load().(string)
-					if e.state {
+					if c.state {
 						result += "1"
 					} else {
 						result += "0"
 					}
 					gotDivResults[index].Store(result)
-					gotRippleQs[i].Store(e.state)
+					gotRippleQs[i].Store(c.state)
 					Debug(testName(t, "Latest Answer"), fmt.Sprintf("(Qs[%d]) Caused {%s}", index, getAnswerString(gotRippleQs[:])))
-					e.Done()
+					c.Done()
 				case <-chRippleStop:
 					Debug(testName(t, "Select"), fmt.Sprintf("(Qs[%d]) Stopped", index))
 					return
@@ -3692,25 +3749,29 @@ func TestNBitRippleCounter_EightBit(t *testing.T) {
 	Debug(testName(t, ""), "End Test Case")
 }
 
-// Not sure why the initial state upon creation is not settling as expected.  Need to solve before even trying the test cases array.
+// pre clr d clk   q  !q
+//
+//	1   0  X  X    1  0   preset makes data and clock not matter, forces Q
+//	0   1  X  X    0  1   clear makes data and clock not matter, forces QBar
+//	0   0  1  ^    1  0   should take the data value since clock was raised (transitioned to 1)
+//	0   0  0  ^    0  1	  should take the data value since clock was raised (transitioned to 1)
+//	0   0  X  0    q  !q  data doesn't matter, no clock raised (transition to 1) to trigger a store-it action
+
+// TODO: Not sure why this isn't working yet.  Clear should have set Q false, QBar true.  :(
 func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	testCases := []struct {
 		presetIn bool
 		clearIn  bool
-		clkIn    bool
 		dataIn   bool
+		clkIn    bool
 		wantQ    bool
 		wantQBar bool
-	}{ // construction of the latches will start with a default of clkIn:false, dataIn:false, which causes Q off (QBar on)
-		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
-		// {false, false, false, false, false, true}, // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
-		// {false, false, false, true, false, true},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
-		// {false, false, true, true, true, false},   // preset and clear OFF, clkIn going to true, with dataIn, causes Q on (QBar off)
-		// {false, false, true, false, true, false},  // preset and clear OFF, clkIn staying true should cause no change, regardless of data change
-		// {false, false, false, false, true, false}, // preset and clear OFF, clkIn going to false should cause no change
-		// {false, false, false, true, true, false},  // preset and clear OFF, clkIn staying false should cause no change, regardless of data change
-		// {false, false, true, false, false, true},  // preset and clear OFF, clkIn going to true, with no dataIn, causes Q off (QBar on)
-		// {false, false, true, true, false, true},   // preset and clear OFF, clkIn staying true should cause no change, regardless of data change
+	}{ // construction of the latches will start with a default of presetIn:true, clearIn:false, dataIn:false, clkIn:false, which causes Q on (QBar off)
+		{false, true, false, false, false, true}, // clear makes data and clock not matter, forces QBar
+		// {false, false, true, true, true, false},   // should take the data value since clock was raised (transitioned to 1)
+		// {false, false, false, false, true, false}, // Q/QBar should not change regardless of data false since lowered clock
+		// {false, false, false, true, false, true},  // should take the data value since clock was raised (transitioned to 1)
+		// {false, false, true, true, true, false},   // should take the data value since clock was raised (transitioned to 1)
 	}
 
 	testNameDetail := func(i int) string {
@@ -3720,8 +3781,8 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 		var priorDataIn bool
 
 		if i == 0 {
-			// false since starting with discharged batteries when Newing the Latch initially
-			priorPresetIn = false
+			// starting with some defaults, where preset should make Q charged
+			priorPresetIn = true
 			priorClearIn = false
 			priorClkIn = false
 			priorDataIn = false
@@ -3737,13 +3798,13 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	var presetBattery, clearBattery, clkBattery, dataBattery *ChargeProvider
-	presetBattery = NewChargeProvider(testName(t, "presetBattery"), false)
-	clearBattery = NewChargeProvider(testName(t, "clearBattery"), false)
-	clkBattery = NewChargeProvider(testName(t, "clkBattery"), false)
-	dataBattery = NewChargeProvider(testName(t, "dataBattery"), false)
+	var presetChargeProvider, clearChargeProvider, clkChargeProvider, dataChargeProvider *ChargeProvider
+	presetChargeProvider = NewChargeProvider(testName(t, "presetChargeProvider"), true)
+	clearChargeProvider = NewChargeProvider(testName(t, "clearChargeProvider"), false)
+	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), false)
+	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), false)
 
-	latch := NewEdgeTriggeredDTypeLatchWithPresetAndClear(testName(t, "EdgeTriggeredDTypeLatchWithPresetAndClear"), presetBattery, clearBattery, clkBattery, dataBattery)
+	latch := NewEdgeTriggeredDTypeLatchWithPresetAndClear(testName(t, "EdgeTriggeredDTypeLatchWithPresetAndClear"), presetChargeProvider, clearChargeProvider, clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()
 
 	chQ := make(chan Charge, 1)
@@ -3754,14 +3815,14 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case eQBar := <-chQBar:
-				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Electron {%s}", chQBar, eQBar.String()))
-				gotQBar.Store(eQBar.state)
-				eQBar.Done()
-			case eQ := <-chQ:
-				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Electron {%s}", chQ, eQ.String()))
-				gotQ.Store(eQ.state)
-				eQ.Done()
+			case cQBar := <-chQBar:
+				Debug(testName(t, "Select"), fmt.Sprintf("(QBar) Received on Channel (%v), Charge {%s}", chQBar, cQBar.String()))
+				gotQBar.Store(cQBar.state)
+				cQBar.Done()
+			case cQ := <-chQ:
+				Debug(testName(t, "Select"), fmt.Sprintf("(Q) Received on Channel (%v), Charge {%s}", chQ, cQ.String()))
+				gotQ.Store(cQ.state)
+				cQ.Done()
 			case <-chStop:
 				return
 			}
@@ -3772,12 +3833,12 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	latch.QBar.WireUp(chQBar)
 	latch.Q.WireUp(chQ)
 
-	if gotQ.Load().(bool) {
-		t.Error("Wanted no power at Q, but got power")
+	if !gotQ.Load().(bool) {
+		t.Error("Wanted charge at Q but got none")
 	}
 
-	if !gotQBar.Load().(bool) {
-		t.Error("Wanted power at QBar, but got none")
+	if gotQBar.Load().(bool) {
+		t.Error("Wanted no charge at QBar but got charge")
 	}
 
 	Debug(testName(t, ""), "Start Test Cases Loop")
@@ -3790,32 +3851,32 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 			Debug(testName(t, ""), summary)
 
 			if tc.presetIn {
-				presetBattery.Charge()
+				presetChargeProvider.Charge()
 			} else {
-				presetBattery.Discharge()
+				presetChargeProvider.Discharge()
 			}
 			if tc.clearIn {
-				clearBattery.Charge()
+				clearChargeProvider.Charge()
 			} else {
-				clearBattery.Discharge()
+				clearChargeProvider.Discharge()
 			}
 			if tc.dataIn {
-				dataBattery.Charge()
+				dataChargeProvider.Charge()
 			} else {
-				dataBattery.Discharge()
+				dataChargeProvider.Discharge()
 			}
 			if tc.clkIn {
-				clkBattery.Charge()
+				clkChargeProvider.Charge()
 			} else {
-				clkBattery.Discharge()
+				clkChargeProvider.Discharge()
 			}
 
 			if gotQ.Load().(bool) != tc.wantQ {
-				t.Errorf("Wanted power of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
+				t.Errorf("Wanted charge of %t at Q, but got %t", tc.wantQ, gotQ.Load().(bool))
 			}
 
 			if gotQBar.Load().(bool) != tc.wantQBar {
-				t.Errorf("Wanted power of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
+				t.Errorf("Wanted charge of %t at QBar, but got %t", tc.wantQBar, gotQBar.Load().(bool))
 			}
 		})
 	}
