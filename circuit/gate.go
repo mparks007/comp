@@ -31,7 +31,7 @@ func NewANDGate(name string, pins ...chargeEmitter) *ANDGate {
 
 	for i, pin := range pins {
 		if i == 0 {
-			gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewChargeProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
+			gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewPowerProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
 		} else {
 			gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), &gate.relays[i-1].ClosedOut, pin))
 		}
@@ -101,7 +101,7 @@ func NewORGate(name string, pins ...chargeEmitter) *ORGate {
 	inputStates := make([]atomic.Value, len(pins))
 	var chStates []chan Charge
 	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewChargeProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
+		gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewPowerProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
 
 		chStates = append(chStates, make(chan Charge, 1))
 		gate.chStops = append(gate.chStops, make(chan bool, 1))
@@ -218,7 +218,7 @@ func NewNANDGate(name string, pins ...chargeEmitter) *NANDGate {
 	inputStates := make([]atomic.Value, len(pins))
 	var chStates []chan Charge
 	for i, pin := range pins {
-		gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewChargeProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
+		gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewPowerProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
 
 		chStates = append(chStates, make(chan Charge, 1))
 		gate.chStops = append(gate.chStops, make(chan bool, 1))
@@ -326,7 +326,7 @@ func NewNORGate(name string, pins ...chargeEmitter) *NORGate {
 
 	for i, pin := range pins {
 		if i == 0 {
-			gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewChargeProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
+			gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), NewPowerProvider(fmt.Sprintf("%s-Relays[%d]-pin1ChargeProvider", name, i), true), pin))
 		} else {
 			gate.relays = append(gate.relays, NewRelay(fmt.Sprintf("%s-Relays[%d]", name, i), &gate.relays[i-1].OpenOut, pin))
 		}

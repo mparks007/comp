@@ -33,6 +33,17 @@ func (cs *chargeSource) WireUp(ch chan Charge) {
 	wg.Wait()
 }
 
+// WireUp allows another component to subscribe to the charge source (via the passed in channel) in order to be told of charge state changes
+func (cs *chargeSource) ConnectionAdd(ch chargeReceiverTransmitter) {
+	cs.outChannels = append(cs.outChannels, ch)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	Debug(cs.Name, fmt.Sprintf("Transmitting (%t) to Channel (%v) due to WireUp", cs.hasCharge.Load().(bool), ch))
+	ch <- Charge{sender: cs.Name, state: cs.hasCharge.Load().(bool), wg: wg, mu: &sync.RWMutex{}}
+	wg.Wait()
+}
+
 // Transmit will push out the charge source's new charge state (IF state changed) to each wired up component
 func (cs *chargeSource) Transmit(c Charge) {
 

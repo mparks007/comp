@@ -221,7 +221,7 @@ func NewNNumberAdder(name string, inputs []chargeEmitter) (*NNumberAdder, error)
 
 	addr.loopRibbon = NewRibbonCable(fmt.Sprintf("%s-loopRibbonCable", name), uint(len(inputs)))
 
-	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewChargeProvider(fmt.Sprintf("%s-carryInChargeProvider", name), false))
+	addr.adder, _ = NewNBitAdder(fmt.Sprintf("%s-NBitAdder", name), inputs, addr.loopRibbon.Wires, NewPowerProvider(fmt.Sprintf("%s-carryInChargeProvider", name), false))
 
 	addr.latches = NewNBitLevelTriggeredDTypeLatchWithClear(fmt.Sprintf("%s-NBitLevelTriggeredDTypeLatchWithClear", name), addr.Clear, addr.Add, addr.adder.Sums)
 

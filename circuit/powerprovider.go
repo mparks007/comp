@@ -5,8 +5,8 @@ type ChargeProvider struct {
 	chargeSource
 }
 
-// NewChargeProvider will return a generic charge provider whose initial state is based on the passed in initialization value
-func NewChargeProvider(name string, startState bool) *ChargeProvider {
+// NewPowerProvider will return a generic charge provider whose initial state is based on the passed in initialization value
+func NewPowerProvider(name string, startState bool) *ChargeProvider {
 	cp := &ChargeProvider{}
 	cp.Init()
 	cp.Name = name

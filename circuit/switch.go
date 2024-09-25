@@ -19,8 +19,8 @@ func NewSwitch(name string, startState bool) *Switch {
 	sw.Name = name
 
 	// setup the ChargeProvider-based relay pins, where pin2's ChargeProvider will be used to toggle on/off of the switch (see Set(bool) method)
-	sw.pin2ChargeProvider = NewChargeProvider(fmt.Sprintf("%s-Relay-pin2ChargeProvider", name), startState)
-	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewChargeProvider(fmt.Sprintf("%s-Relay-pin1ChargeProvider", name), true), sw.pin2ChargeProvider)
+	sw.pin2ChargeProvider = NewPowerProvider(fmt.Sprintf("%s-Relay-pin2ChargeProvider", name), startState)
+	sw.relay = NewRelay(fmt.Sprintf("%s-Relay", name), NewPowerProvider(fmt.Sprintf("%s-Relay-pin1ChargeProvider", name), true), sw.pin2ChargeProvider)
 
 	chState := make(chan Charge, 1)
 	go func() {

@@ -11,6 +11,9 @@ import (
 // Debugging is the master flag to control very verbose logging to the console
 var Debugging = false
 
+// PowerBus simulates the power buss on a breadboard
+var PowerBus = NewPowerProvider(fmt.Sprintf("PowerBus"), true)
+
 // wireUpper allows a circuit component to wire up to a transmitter component in order to be told of the transmitter's power state
 type wireUpper interface {
 	WireUp(ch chan Charge)
@@ -23,6 +26,12 @@ type transmitter interface {
 
 // chargeEmitter allows a circuit component to take part in the power subscription/transmission process (what is a better name for this??)
 type chargeEmitter interface {
+	wireUpper
+	transmitter
+}
+
+// chargeEmitter allows a circuit component to take part in the power subscription/transmission process (what is a better name for this??)
+type chargeReceiverTransmitter interface {
 	wireUpper
 	transmitter
 }

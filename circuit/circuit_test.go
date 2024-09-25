@@ -125,7 +125,7 @@ func TestChargeSource(t *testing.T) {
 }
 
 func TestChargeProvider(t *testing.T) {
-	cp := NewChargeProvider(testName(t, "ChargeProvider"), true)
+	cp := NewPowerProvider(testName(t, "ChargeProvider"), true)
 
 	var want bool
 	var got atomic.Value
@@ -366,7 +366,7 @@ func TestRibbonCable(t *testing.T) {
 	rib := NewRibbonCable(testName(t, "RibbonCable"), 2)
 	defer rib.Shutdown()
 
-	rib.SetInputs(NewChargeProvider(testName(t, "ChargeProvider1"), false), NewChargeProvider(testName(t, "ChargeProvider2"), true))
+	rib.SetInputs(NewPowerProvider(testName(t, "ChargeProvider1"), false), NewPowerProvider(testName(t, "ChargeProvider2"), true))
 
 	var want bool
 	var got1, got2 atomic.Value
@@ -429,8 +429,8 @@ func TestRelay_WithChargeProviders(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	var pin1ChargeProvider, pin2ChargeProvider *ChargeProvider
-	pin1ChargeProvider = NewChargeProvider(testName(t, "ChargeProvider1"), true)
-	pin2ChargeProvider = NewChargeProvider(testName(t, "ChargeProvider2"), true)
+	pin1ChargeProvider = NewPowerProvider(testName(t, "ChargeProvider1"), true)
+	pin2ChargeProvider = NewPowerProvider(testName(t, "ChargeProvider2"), true)
 
 	rel := NewRelay(testName(t, "Relay"), pin1ChargeProvider, pin2ChargeProvider)
 	defer rel.Shutdown()
@@ -942,13 +942,13 @@ func TestLoopedANDGates(t *testing.T) {
 	defer wire2.Shutdown()
 
 	// defaulting one input pin on gate1 to off will ensure a false output on startup
-	gate1pin1ChargeProvider := NewChargeProvider("gate1pin1ChargeProvider", false)
+	gate1pin1ChargeProvider := NewPowerProvider("gate1pin1ChargeProvider", false)
 	gate1 := NewANDGate(fmt.Sprintf("%s-ANDGate1", name), gate1pin1ChargeProvider, wire1)
 	defer gate1.Shutdown()
 	gate1.WireUp(wire2.Input)
 
 	// defaulting one input pin on gate2 to off will ensure a false output on startup
-	gate2pin1ChargeProvider := NewChargeProvider("gate2pin1ChargeProvider", false)
+	gate2pin1ChargeProvider := NewPowerProvider("gate2pin1ChargeProvider", false)
 	gate2 := NewANDGate(fmt.Sprintf("%s-ANDGate2", name), gate2pin1ChargeProvider, wire2)
 	defer gate2.Shutdown()
 	gate2.WireUp(wire1.Input)
@@ -1119,13 +1119,13 @@ func TestLoopedORGates(t *testing.T) {
 	defer wire2.Shutdown()
 
 	// defaulting one input pin on gate1 to off will ensure a false output on startup
-	gate1pin1ChargeProvider := NewChargeProvider("gate1pin1ChargeProvider", false)
+	gate1pin1ChargeProvider := NewPowerProvider("gate1pin1ChargeProvider", false)
 	gate1 := NewORGate(fmt.Sprintf("%s-ORGate1", name), gate1pin1ChargeProvider, wire1)
 	defer gate1.Shutdown()
 	gate1.WireUp(wire2.Input)
 
 	// defaulting one input pin on gate2 to off will ensure a false output on startup
-	gate2pin1ChargeProvider := NewChargeProvider("gate2pin1ChargeProvider", false)
+	gate2pin1ChargeProvider := NewPowerProvider("gate2pin1ChargeProvider", false)
 	gate2 := NewORGate(fmt.Sprintf("%s-ORGate2", name), gate2pin1ChargeProvider, wire2)
 	defer gate2.Shutdown()
 	gate2.WireUp(wire1.Input)
@@ -1429,7 +1429,7 @@ func TestInverter(t *testing.T) {
 
 	Debug(testName(t, ""), "Initial Setup")
 
-	pin1ChargeProvider := NewChargeProvider(testName(t, "ChargeProvider"), true)
+	pin1ChargeProvider := NewPowerProvider(testName(t, "ChargeProvider"), true)
 	inv := NewInverter(testName(t, "Inverter"), pin1ChargeProvider)
 	defer inv.Shutdown()
 
@@ -2356,8 +2356,8 @@ func TestRSFlipFlop(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	var rPinChargeProvider, sPinChargeProvider *ChargeProvider
-	rPinChargeProvider = NewChargeProvider(testName(t, "rChargeProvider"), false)
-	sPinChargeProvider = NewChargeProvider(testName(t, "sChargeProvider"), false)
+	rPinChargeProvider = NewPowerProvider(testName(t, "rChargeProvider"), false)
+	sPinChargeProvider = NewPowerProvider(testName(t, "sChargeProvider"), false)
 
 	// starting with no input signals (R and S are off)
 	ff := NewRSFlipFlop(testName(t, "RSFlipFlop"), rPinChargeProvider, sPinChargeProvider)
@@ -2480,8 +2480,8 @@ func TestLevelTriggeredDTypeLatch(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	var clkChargeProvider, dataChargeProvider *ChargeProvider
-	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), true)
-	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), true)
+	clkChargeProvider = NewPowerProvider(testName(t, "clkChargeProvider"), true)
+	dataChargeProvider = NewPowerProvider(testName(t, "dataChargeProvider"), true)
 
 	// starting with true input signals (Clk and Data are on)
 	latch := NewLevelTriggeredDTypeLatch(testName(t, "LevelTriggeredDTypeLatch"), clkChargeProvider, dataChargeProvider)
@@ -3125,9 +3125,9 @@ func TestLevelTriggeredDTypeLatchWithClear(t *testing.T) {
 	}
 
 	var clrChargeProvider, clkChargeProvider, dataChargeProvider *ChargeProvider
-	clrChargeProvider = NewChargeProvider(testName(t, "clrChargeProvider"), false)
-	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), true)
-	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), true)
+	clrChargeProvider = NewPowerProvider(testName(t, "clrChargeProvider"), false)
+	clkChargeProvider = NewPowerProvider(testName(t, "clkChargeProvider"), true)
+	dataChargeProvider = NewPowerProvider(testName(t, "dataChargeProvider"), true)
 
 	latch := NewLevelTriggeredDTypeLatchWithClear(testName(t, "LevelTriggeredDTypeLatchWithClear"), clrChargeProvider, clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()
@@ -3473,8 +3473,8 @@ func TestEdgeTriggeredDTypeLatch(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	var clkChargeProvider, dataChargeProvider *ChargeProvider
-	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), false)
-	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), false)
+	clkChargeProvider = NewPowerProvider(testName(t, "clkChargeProvider"), false)
+	dataChargeProvider = NewPowerProvider(testName(t, "dataChargeProvider"), false)
 
 	latch := NewEdgeTriggeredDTypeLatch(testName(t, "EdgeTriggeredDTypeLatch"), clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()
@@ -3799,10 +3799,10 @@ func TestEdgeTriggeredDTypeLatchWithPresetAndClear(t *testing.T) {
 	Debug(testName(t, ""), "Initial Setup")
 
 	var presetChargeProvider, clearChargeProvider, clkChargeProvider, dataChargeProvider *ChargeProvider
-	presetChargeProvider = NewChargeProvider(testName(t, "presetChargeProvider"), true)
-	clearChargeProvider = NewChargeProvider(testName(t, "clearChargeProvider"), false)
-	clkChargeProvider = NewChargeProvider(testName(t, "clkChargeProvider"), false)
-	dataChargeProvider = NewChargeProvider(testName(t, "dataChargeProvider"), false)
+	presetChargeProvider = NewPowerProvider(testName(t, "presetChargeProvider"), true)
+	clearChargeProvider = NewPowerProvider(testName(t, "clearChargeProvider"), false)
+	clkChargeProvider = NewPowerProvider(testName(t, "clkChargeProvider"), false)
+	dataChargeProvider = NewPowerProvider(testName(t, "dataChargeProvider"), false)
 
 	latch := NewEdgeTriggeredDTypeLatchWithPresetAndClear(testName(t, "EdgeTriggeredDTypeLatchWithPresetAndClear"), presetChargeProvider, clearChargeProvider, clkChargeProvider, dataChargeProvider)
 	defer latch.Shutdown()

@@ -51,7 +51,7 @@ func (c *Charge) String() string {
 	return fmt.Sprintf("self (%p), sender (%s), state (%t), lockContexts (%v)", c, c.sender, c.state, c.lockContexts)
 }
 
-// Done will let the internal waitgroup know the processing for the Charge has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls, sending the current down ALL paths)
+// Done will let the internal waitgroup know the processing for the Charge has finished (to allow the parent to 'unwind by one' in order to eventually finish the Transmit calls, sending the charge down ALL paths)
 func (c *Charge) Done() {
 	c.wg.Done()
 }

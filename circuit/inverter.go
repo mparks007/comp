@@ -19,7 +19,7 @@ func NewInverter(name string, pin chargeEmitter) *Inverter {
 	inv.Init()
 	inv.Name = name
 
-	cp := NewChargeProvider(fmt.Sprintf("%s-Relay-pin1ChargeProvider", name), true)
+	cp := NewPowerProvider(fmt.Sprintf("%s-Relay-pin1ChargeProvider", name), true)
 	inv.relay = NewRelay(fmt.Sprintf("%s-Relay", name), cp, pin)
 
 	chState := make(chan Charge, 1)
